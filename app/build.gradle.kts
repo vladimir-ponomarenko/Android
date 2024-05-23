@@ -59,6 +59,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
     implementation("androidx.compose.material:material:1.0.0")
     implementation ("com.google.android.gms:play-services-maps:17.0.0")
     implementation ("com.google.android.gms:play-services-location:17.0.0")
