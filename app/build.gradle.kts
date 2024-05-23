@@ -59,6 +59,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.material:material:1.0.0")
     implementation ("com.google.android.gms:play-services-maps:17.0.0")
     implementation ("com.google.android.gms:play-services-location:17.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

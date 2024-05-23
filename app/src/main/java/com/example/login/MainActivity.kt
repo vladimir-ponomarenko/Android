@@ -2,20 +2,17 @@
 
 package com.example.login
 
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.telephony.CellInfoLte
 import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
@@ -32,11 +29,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Scaffold
+import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.Tab
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRow
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,7 +52,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -101,13 +101,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         private const val PASSWORD_KEY = "password"
         private const val JWT_TOKEN_KEY = "jwt_token"
         private const val REMEMBER_ME_KEY = "remember_me"
+
+        // ID уведомления и имя канала
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "location_service_channel"
     }
 
     private lateinit var state: MainActivityState
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var httpClient: OkHttpClient
-    private lateinit var webSocket: WebSocket
-    private var isWebSocketConnected = false
+    private var webSocket: WebSocket? = null
+    private var isWebSocketConnected by mutableStateOf(false)
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,6 +126,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         checkAndRequestPermissions()
         // Загрузка данных из SharedPreferences при запуске
         state.loadLoginData()
+
+        // Запуск ForegroundService
+        Intent(this, ForegroundService::class.java).also {
+            startService(it)
+        }
     }
 
     private fun registerUser(email: String, password: String, onComplete: (String?) -> Unit) {
@@ -222,6 +231,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             if (email != null && jwt != null) {
                                 Log.d(TAG, "User authenticated successfully")
                                 connectWebSocket(jwt)
+                                isWebSocketConnected = true // Устанавливаем флаг подключения
                             } else {
                                 Log.e(TAG, "Failed to authenticate user: Invalid response format")
                             }
@@ -235,6 +245,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     private fun connectWebSocket(jwt: String) {
+        if (webSocket != null) {
+            // Проверяем, был ли WebSocket уже создан
+            return
+        }
         val client = OkHttpClient.Builder()
             .pingInterval(5, TimeUnit.SECONDS)
             .build()
@@ -263,6 +277,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(TAG, "WebSocket connection closed: $code, $reason")
+                isWebSocketConnected = false // Сбрасываем флаг подключения
+                this@MainActivity.webSocket = null // Обнуляем ссылку на WebSocket
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -271,18 +287,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     Log.e(TAG, "Response message: ${response.message}")
                     Log.e(TAG, "Response code: ${response.code}")
                 }
+                isWebSocketConnected = false // Сбрасываем флаг подключения
+                this@MainActivity.webSocket = null // Обнуляем ссылку на WebSocket
             }
         })
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun generateJSON(state: MainActivityState): String {
-        val currentTimestamp = Instant.now().toString() // Преобразование Instant в String
-
-        // Форматирование строки
+        val currentTimestamp = Instant.now().toString()
         val formattedTimestamp = String.format(DateTimeFormatter.ISO_INSTANT.format(Instant.parse(currentTimestamp)))
 
-        // Преобразование строк в числа
         val rsrp = state.Rsrp.replace(" dBm", "").toLongOrNull() ?: 0L
         val rssi = state.Rssi.replace(" dBm", "").toLongOrNull() ?: 0L
         val rsrq = state.Rsrq.replace(" dB", "").toLongOrNull() ?: 0L
@@ -291,9 +306,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val bandwidth = state.Bandwidth.toLongOrNull() ?: 0L
         val cellid = state.Cellid.toLongOrNull() ?: 0L
 
-        // Создание объекта MessageData
         val messageData = MessageData(
-            formattedTimestamp, // Передача отформатированного времени
+            formattedTimestamp,
             state.Latitude.toDoubleOrNull() ?: 0.0,
             state.Longtitude.toDoubleOrNull() ?: 0.0,
             rsrp,
@@ -324,7 +338,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             )
         } else {
             getLocation(state, applicationContext)
-
         }
     }
 
@@ -352,56 +365,77 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     fun MainContent(state: MainActivityState) {
         val context = LocalContext.current
         var permissionsGranted by remember { mutableStateOf(checkPermissions(context)) }
+        val scaffoldState = rememberScaffoldState()
+        var showConnectionSnackbar by remember { mutableStateOf(false) }
+
+        // Запускаем корутину для показа Snackbar
+        LaunchedEffect(isWebSocketConnected) {
+            if (isWebSocketConnected) {
+                showConnectionSnackbar = true
+                // Отображаем Snackbar
+                scaffoldState.snackbarHostState.showSnackbar(
+                    message = "WebSocket connected!",
+                    duration = SnackbarDuration.Short
+                )
+                delay(2000) // Прячем Snackbar через 2 секунды
+                showConnectionSnackbar = false
+            }
+        }
 
         LaunchedEffect(context) {
             permissionsGranted = checkPermissions(context)
         }
 
-        if (permissionsGranted) {
-            LaunchedEffect(Unit) {
-                while (true) {
-                    getLocation(state, applicationContext)
-                    getSignalStrength(state)
-                    delay(UPDATE_INTERVAL)
+        Scaffold(
+            scaffoldState = scaffoldState
+        ) { innerPadding ->
+            if (permissionsGranted) {
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        getLocation(state, applicationContext)
+                        getSignalStrength(state)
+                        delay(UPDATE_INTERVAL)
+                    }
                 }
-            }
 
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TabRow(selectedTabIndex = state.selectedTabIndex) {
-                    Tab(
-                        selected = state.selectedTabIndex == 0,
-                        onClick = { state.selectedTabIndex = 0 },
-                        text = { Text("Вход") }
-                    )
-                    Tab(
-                        selected = state.selectedTabIndex == 1,
-                        onClick = { state.selectedTabIndex = 1 },
-                        text = { Text("Данные") }
-                    )
-                    Tab(
-                        selected = state.selectedTabIndex == 2,
-                        onClick = { state.selectedTabIndex = 2 },
-                        text = { Text("Графики") }
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding), // Добавляем отступы от Scaffold
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TabRow(selectedTabIndex = state.selectedTabIndex) {
+                        Tab(
+                            selected = state.selectedTabIndex == 0,
+                            onClick = { state.selectedTabIndex = 0 },
+                            text = { Text("Вход") }
+                        )
+                        Tab(
+                            selected = state.selectedTabIndex == 1,
+                            onClick = { state.selectedTabIndex = 1 },
+                            text = { Text("Данные") }
+                        )
+                        Tab(
+                            selected = state.selectedTabIndex == 2,
+                            onClick = { state.selectedTabIndex = 2 },
+                            text = { Text("Графики") }
+                        )
+                    }
+                    when (state.selectedTabIndex) {
+                        0 -> LoginScreen(state)
+                        1 -> DataScreen(state)
+                        2 -> RSRPGraph(state)
+                    }
                 }
-                when (state.selectedTabIndex) {
-                    0 -> LoginScreen(state)
-                    1 -> DataScreen(state)
-                    2 -> RSRPGraph(state)
-                }
+            } else {
+                Text("Waiting for permissions...")
             }
-        } else {
-            Text("Waiting for permissions...")
         }
     }
 
     private fun getLocation(state: MainActivityState, context: Context) {
         Log.d(TAG, "getLocation() called")
 
-        // Проверка разрешения на доступ к местоположению
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -415,7 +449,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             )
             return
         }
-
 
         if (ContextCompat.checkSelfPermission(
                 context,
@@ -453,9 +486,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }, null)
     }
-
-
-
 
     private fun getSignalStrength(state: MainActivityState) {
         if (checkPhoneStatePermission(state.context)) {
@@ -581,7 +611,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     state.Password = password
                     state.JwtToken = jwtToken
                     state.RememberMe = rememberMe
-                    // Сохранение данных после авторизации
                     state.saveLoginData()
                     authenticateUser(email, password, jwtToken)
                 }) {
@@ -691,6 +720,277 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+    class ForegroundService : LifecycleService() {
+        @SuppressLint("ForegroundServiceType")
+        override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+            super.onStartCommand(intent, flags, startId)
+            // Создаем канал уведомлений (для Android 8.0 и выше)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    "Location Service Channel",
+                    NotificationManager.IMPORTANCE_LOW
+                )
+                val manager = getSystemService(NotificationManager::class.java)
+                manager?.createNotificationChannel(channel)
+            }
+
+            val notificationIntent = Intent(this, MainActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Location Service")
+                .setContentText("Running in background...")
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // Замените на ваш значок
+                .setContentIntent(pendingIntent)
+                .build()
+
+            startForeground(NOTIFICATION_ID, notification)
+
+            // Запуск BackgroundService
+            Intent(this, BackgroundService::class.java).also {
+                startService(it)
+            }
+
+            return START_STICKY
+        }
+
+        override fun onBind(intent: Intent): IBinder? {
+            super.onBind(intent)
+            return null
+        }
+    }
+
+    class BackgroundService : LifecycleService() {
+
+        private lateinit var state: MainActivityState
+        private lateinit var fusedLocationClient: FusedLocationProviderClient
+        private lateinit var httpClient: OkHttpClient
+        private var webSocket: WebSocket? = null
+        private var isWebSocketConnected = false
+        private val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
+                locationResult.lastLocation?.let { location ->
+                    state.Latitude = location.latitude.toString()
+                    state.Longtitude = location.longitude.toString()
+                    Log.d(TAG, "Location updated (from service): Lat=${state.Latitude}, Lon=${state.Longtitude}")
+                }
+            }
+        }
+
+        override fun onCreate() {
+            super.onCreate()
+            state = MainActivityState(this)
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            httpClient = OkHttpClient()
+
+            // Загрузка данных из SharedPreferences
+            state.loadLoginData()
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+            super.onStartCommand(intent, flags, startId)
+            // Запуск корутины для фоновой работы
+            lifecycleScope.launch {
+                while (true) {
+                    if (state.JwtToken.isNotEmpty()) {
+                        getLocation(state, this@BackgroundService)
+                        getSignalStrength(state)
+                        connectWebSocket(state.JwtToken)
+                        if (isWebSocketConnected) {
+                            sendLocationData(state)
+                        }
+                    }
+                    delay(UPDATE_INTERVAL)
+                }
+            }
+            return START_STICKY
+        }
+
+        override fun onDestroy() {
+            super.onDestroy()
+            // Остановка обновлений местоположения при уничтожении сервиса
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        private fun sendLocationData(state: MainActivityState) {
+            val jsonString = generateJSON(state)
+            webSocket?.send(jsonString)
+            Log.d(TAG, "Sent JSON to server (from service): $jsonString")
+        }
+
+        private fun connectWebSocket(jwt: String) {
+            if (webSocket != null) {
+                // Проверяем, был ли WebSocket уже создан
+                return
+            }
+            val client = OkHttpClient.Builder()
+                .pingInterval(5, TimeUnit.SECONDS)
+                .build()
+            val request = Request.Builder()
+                .url("$SERVER_URL1$WEBSOCKET_ENDPOINT")
+                .header("Authorization", "Bearer $jwt")
+                .build()
+
+            webSocket = client.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    Log.d(TAG, "WebSocket connection established (from service)")
+                    isWebSocketConnected = true
+                }
+
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    Log.d(TAG, "Received message from server (from service): $text")
+                }
+
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closed (from service): $code, $reason")
+                    isWebSocketConnected = false
+                    this@BackgroundService.webSocket = null
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    Log.e(TAG, "WebSocket connection failure (from service)", t)
+                    if (response != null) {
+                        Log.e(TAG, "Response message (from service): ${response.message}")
+                        Log.e(TAG, "Response code (from service): ${response.code}")
+                    }
+                    isWebSocketConnected = false
+                    this@BackgroundService.webSocket = null
+                }
+            })
+        }
+
+        private fun getLocation(state: MainActivityState, context: Context) {
+            Log.d(TAG, "getLocation() called (from service)")
+
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.d(TAG, "No permission to write to external storage (from service)")
+                return
+            }
+
+            val locationRequest = LocationRequest.create().apply {
+                interval = UPDATE_INTERVAL
+                fastestInterval = UPDATE_INTERVAL
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
+
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    state.Latitude = location.latitude.toString()
+                    state.Longtitude = location.longitude.toString()
+                    Log.d(TAG, "Location received (from service): Lat=${state.Latitude}, Lon=${state.Longtitude}")
+                }
+            }.addOnFailureListener { e ->
+                Log.e(TAG, "Failed to get last known location (from service)", e)
+            }
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+        }
+
+        private fun getSignalStrength(state: MainActivityState) {
+            if (checkPhoneStatePermission(state.context)) {
+                val telephonyManager =
+                    state.context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val               cellInfoList = telephonyManager.allCellInfo
+                if (cellInfoList.isNullOrEmpty()) {
+                    // Обработка пустого списка CellInfo
+                } else {
+                    for (info in cellInfoList) {
+                        if (info is CellInfoLte) {
+                            val cellSignalStrengthLte = info.cellSignalStrength
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                state.Rsrp = "${cellSignalStrengthLte.rsrp} dBm"
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    state.Rssi = "${cellSignalStrengthLte.rssi} dBm"
+                                }
+                                state.Rsrq = "${cellSignalStrengthLte.rsrq} dB"
+                                state.Rssnr = "${cellSignalStrengthLte.rssnr} dB"
+                                state.Cqi = "${cellSignalStrengthLte.cqi}"
+                                state.Bandwidth = "${telephonyManager.dataNetworkType}"
+                                state.Cellid = when (val cellLocation = telephonyManager.cellLocation) {
+                                    is GsmCellLocation -> cellLocation.cid.toString()
+                                    is CdmaCellLocation -> cellLocation.baseStationId.toString()
+                                    else -> "Cell ID not available"
+                                }
+                                Log.d(TAG, "RSRP value (from service): ${state.Rsrp}")
+                                Log.d(TAG, "Rssi value (from service): ${state.Rssi}")
+                                Log.d(TAG, "Rsrq value (from service): ${state.Rsrq}")
+                                Log.d(TAG, "Rssnr value (from service): ${state.Rssnr}")
+                                Log.d(TAG, "Cqi value (from service): ${state.Cqi}")
+                                Log.d(TAG, "Bandwidth value (from service): ${state.Bandwidth}")
+                                Log.d(TAG, "Cell ID value (from service): ${state.Cellid}")
+                            }
+                            break
+                        }
+                    }
+                }
+            } else {
+                // Обработка отсутствия разрешения READ_PHONE_STATE
+            }
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        private fun generateJSON(state: MainActivityState): String {
+            val currentTimestamp = Instant.now().toString()
+            val formattedTimestamp =
+                String.format(DateTimeFormatter.ISO_INSTANT.format(Instant.parse(currentTimestamp)))
+
+            val rsrp = state.Rsrp.replace(" dBm", "").toLongOrNull() ?: 0L
+            val rssi = state.Rssi.replace(" dBm", "").toLongOrNull() ?: 0L
+            val rsrq = state.Rsrq.replace(" dB", "").toLongOrNull() ?: 0L
+            val rssnr = state.Rssnr.replace(" dB", "").toLongOrNull() ?: 0L
+            val cqi = state.Cqi.toLongOrNull() ?: 0L
+            val bandwidth = state.Bandwidth.toLongOrNull() ?: 0L
+            val cellid = state.Cellid.toLongOrNull() ?: 0L
+
+            val messageData = MessageData(
+                formattedTimestamp,
+                state.Latitude.toDoubleOrNull() ?: 0.0,
+                state.Longtitude.toDoubleOrNull() ?: 0.0,
+                rsrp,
+                rssi,
+                rsrq,
+                rssnr,
+                cqi,
+                bandwidth,
+                cellid
+            )
+
+            return Json.encodeToString(messageData)
+        }
+
+        override fun onBind(intent: Intent): IBinder? {
+            super.onBind(intent)
+            return null
+        }
+
+        private fun checkPhoneStatePermission(context: Context): Boolean {
+            return ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_PHONE_STATE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
@@ -709,9 +1009,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var JwtToken by mutableStateOf("")
         var RememberMe by mutableStateOf(false)
 
-        // Функции для сохранения и загрузки данных из SharedPreferences
         fun saveLoginData() {
-            val sharedPreferences = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+            val sharedPreferences =
+                context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString(EMAIL_KEY, Email)
                 putString(PASSWORD_KEY, Password)
@@ -722,7 +1022,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         fun loadLoginData() {
-            val sharedPreferences = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+            val sharedPreferences =
+                context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
             Email = sharedPreferences.getString(EMAIL_KEY, "") ?: ""
             Password = sharedPreferences.getString(PASSWORD_KEY, "") ?: ""
             JwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "") ?: ""
