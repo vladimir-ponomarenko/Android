@@ -24,9 +24,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
@@ -48,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -63,6 +65,13 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -81,6 +90,7 @@ import java.io.IOException
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
+
 
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -429,11 +439,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             onClick = { state.selectedTabIndex = 2 },
                             text = { Text("Графики") }
                         )
+                        Tab(
+                            selected = state.selectedTabIndex == 3,
+                            onClick = { state.selectedTabIndex = 3 },
+                            text = { Text("Карта") }
+                        )
                     }
                     when (state.selectedTabIndex) {
                         0 -> LoginScreen(state)
                         1 -> DataScreen(state)
                         2 -> RSRPGraph(state)
+                        3 -> MapScreen(state)
                     }
                 }
             } else {
@@ -509,6 +525,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 state.Cqi = "CellInfo list is empty"
                 state.Bandwidth = "CellInfo list is empty"
                 state.Cellid = "Cell Info not available"
+                state.Mcc = "N/A"
+                state.Mnc = "N/A"
+                state.Lac = "N/A"
+                state.Tac = "N/A"
+                state.Pci = "N/A"
+                state.Earfcn = "N/A"
+                state.Ci = "N/A"
+                state.NetworkType = "N/A"
+                state.SignalStrength = "N/A"
+                state.BitErrorRate = "N/A"
+                state.TimingAdvance = "N/A"
+
             } else {
                 for (info in cellInfoList) {
                     if (info is CellInfoLte) {
@@ -527,6 +555,39 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 is CdmaCellLocation -> cellLocation.baseStationId.toString()
                                 else -> "Cell ID not available"
                             }
+                            // Используйте CellInfoLte для получения MCC и MNC
+                            state.Mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.cellIdentity.mccString ?: "N/A"
+                            } else {
+                                "N/A"
+                            }
+                            state.Mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.cellIdentity.mncString ?: "N/A"
+                            } else {
+                                "N/A"
+                            }
+                            state.Lac = try {
+                                (telephonyManager.cellLocation as? GsmCellLocation)?.lac?.toString() ?: "N/A"
+                            } catch (e: Exception) {
+                                "N/A"
+                            }
+                            state.Tac = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                                info.cellIdentity.tac.toString()
+                            } else {
+                                "N/A"
+                            }
+                            state.Pci = info.cellIdentity.pci.toString()
+                            state.Earfcn = info.cellIdentity.earfcn.toString()
+                            state.Ci = info.cellIdentity.ci.toString()
+                            state.NetworkType = telephonyManager.networkType.toString()
+                            state.SignalStrength =
+                                cellSignalStrengthLte.dbm.toString() // Используем уровень сигнала в dBm
+                            state.BitErrorRate = "N/A" // Недоступно для LTE
+                            state.TimingAdvance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                cellSignalStrengthLte.timingAdvance.toString()
+                            } else {
+                                "N/A"
+                            }
                             Log.d(TAG, "RSRP value: ${state.Rsrp}")
                             Log.d(TAG, "Rssi value: ${state.Rssi}")
                             Log.d(TAG, "Rsrq value: ${state.Rsrq}")
@@ -534,6 +595,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             Log.d(TAG, "Cqi value: ${state.Cqi}")
                             Log.d(TAG, "Bandwidth value: ${state.Bandwidth}")
                             Log.d(TAG, "Cell ID value: ${state.Cellid}")
+                            Log.d(TAG, "MCC: ${state.Mcc}")
+                            Log.d(TAG, "MNC: ${state.Mnc}")
+                            Log.d(TAG, "LAC: ${state.Lac}")
+                            Log.d(TAG, "TAC: ${state.Tac}")
+                            Log.d(TAG, "PCI: ${state.Pci}")
+                            Log.d(TAG, "EARFCN: ${state.Earfcn}")
+                            Log.d(TAG, "CI: ${state.Ci}")
+                            Log.d(TAG, "Network Type: ${state.NetworkType}")
+                            Log.d(TAG, "Signal Strength: ${state.SignalStrength}")
+                            Log.d(TAG, "Bit Error Rate: ${state.BitErrorRate}")
+                            Log.d(TAG, "Timing Advance: ${state.TimingAdvance}")
                         }
                         break
                     }
@@ -547,6 +619,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             state.Cqi = "No READ_PHONE_STATE permission"
             state.Bandwidth = "No READ_PHONE_STATE permission"
             state.Cellid = "No READ_PHONE_STATE permission"
+            state.Mcc = "No READ_PHONE_STATE permission"
+            state.Mnc = "No READ_PHONE_STATE permission"
+            state.Lac = "No READ_PHONE_STATE permission"
+            state.Tac = "No READ_PHONE_STATE permission"
+            state.Pci = "No READ_PHONE_STATE permission"
+            state.Earfcn = "No READ_PHONE_STATE permission"
+            state.Ci = "No READ_PHONE_STATE permission"
+            state.NetworkType = "No READ_PHONE_STATE permission"
+            state.SignalStrength = "No READ_PHONE_STATE permission"
+            state.BitErrorRate = "No READ_PHONE_STATE permission"
+            state.TimingAdvance = "No READ_PHONE_STATE permission"
         }
     }
 
@@ -679,6 +762,51 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 text = "LON: ${state.Longtitude}",
                 modifier = Modifier.padding(16.dp)
             )
+            // Вывод новых данных
+            Text(
+                text = "MCC: ${state.Mcc}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "MNC: ${state.Mnc}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "LAC: ${state.Lac}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "TAC: ${state.Tac}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "PCI: ${state.Pci}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "EARFCN: ${state.Earfcn}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "CI: ${state.Ci}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Network Type: ${state.NetworkType}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Signal Strength: ${state.SignalStrength}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Bit Error Rate: ${state.BitErrorRate}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Timing Advance: ${state.TimingAdvance}",
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 
@@ -689,49 +817,91 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun RSRPGraph(state: MainActivityState) {
-        val cellData = remember { mutableStateListOf<Pair<String, Float>>() }
+        val rsrpData = remember { mutableStateListOf<Pair<Long, Float>>() }
 
-        LaunchedEffect(state.Cellid) {
-            cellData.add(Pair(state.Cellid, state.Rsrp.toFloatOrNull() ?: 0f))
+        // Запускаем корутину для добавления новых данных в список
+        LaunchedEffect(state.Rsrp) {
+            val timestamp = System.currentTimeMillis()
+            val rsrpValue = state.Rsrp.replace(" dBm", "").toFloatOrNull() ?: 0f
+            rsrpData.add(Pair(timestamp, rsrpValue))
         }
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawLine(
-                start = Offset(0f, size.height),
-                end = Offset(size.width, size.height),
-                color = Color.Black
-            )
+        // Используем Box для компоновки Canvas и осей
+        Box(modifier = Modifier.fillMaxSize()) {
 
-            if (cellData.size >= 2) {
-                val xInterval = size.width / (cellData.size - 1)
+            // Оси графика размещаем внизу Canvas
+            Column(modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(top = 16.dp) // Добавлен отступ сверху
+            ) {
+                Text("Время", modifier = Modifier
+                    .padding(8.dp)
+                    .align(Alignment.CenterHorizontally)
+                )
+            }
+            Row(modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxHeight()
+                .padding(end = 16.dp) 
+            ) {
+                Text("RSRP (dBm)", modifier = Modifier
+                    .padding(8.dp)
+                    .align(Alignment.CenterVertically)
+                )
+            }
 
-                val paint = androidx.compose.ui.graphics.Paint().asFrameworkPaint()
-                paint.color = Color.Black.toArgb()
-                paint.textSize = 30f
+            // Canvas для отрисовки графика (сверху осей)
+            Canvas(modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 48.dp, start = 48.dp, end = 16.dp, top = 48.dp) // Отступы для осей и сверху
+            ) {
+                // Определяем максимальное значение RSRP для масштабирования
+                val maxRSRP = rsrpData.maxOfOrNull { it.second } ?: 0f
 
-                cellData.forEachIndexed { index, pair ->
-                    val x = index * xInterval
-                    val y = size.height - pair.second
-                    drawCircle(color = Color.Blue, center = Offset(x, y), radius = 5f)
-                    drawContext.canvas.nativeCanvas.drawText(pair.first, x, size.height + 20f, paint)
-                }
+                // Рисуем график
+                rsrpData.forEachIndexed { index, (timestamp, rsrp) ->
+                    // Вычисляем координаты точки на графике
+                    val x = (index * size.width / (rsrpData.size - 1)).toFloat()
+                    val y = size.height - (rsrp / maxRSRP * size                   .height)
 
-                (0 until cellData.size - 1).forEach { index ->
-                    val startX = index * xInterval
-                    val startY = size.height - cellData[index].second
-                    val endX = (index + 1) * xInterval
-                    val endY = size.height - cellData[index + 1].second
-                    drawLine(
-                        start = Offset(startX, startY),
-                        end = Offset(endX, endY),
-                        color = Color.Red,
-                        strokeWidth = 2f
+                    // Рисуем точку
+                    drawCircle(
+                        color = Color.Blue,
+                        center = Offset(x, y),
+                        radius = 5f
                     )
+
+                    // Соединяем точки линией, если это не первая точка
+                    if (index > 0) {
+                        val previousX = ((index - 1) * size.width / (rsrpData.size - 1)).toFloat()
+                        val previousY = size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
+                        drawLine(
+                            start = Offset(previousX, previousY),
+                            end = Offset(x, y),
+                            color = Color.Red,
+                            strokeWidth = 2f
+                        )
+                    }
                 }
             }
         }
+    }
+
+    fun generateColorFromRSRP(rsrp: Int): Color {
+        val minRSRP = -140 // Наихудший сигнал
+        val maxRSRP = -44 // Наилучший сигнал
+
+        val normalizedRSRP = (rsrp - minRSRP).toFloat() / (maxRSRP - minRSRP)
+
+        val red = (255 * (1 - normalizedRSRP)).toInt().coerceIn(0, 255)
+        val green = (255 * normalizedRSRP).toInt().coerceIn(0, 255)
+        val blue = 0
+
+        return Color(red, green, blue)
     }
 
     // Метод для запуска BackgroundService
@@ -743,7 +913,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             startService(it)
         }
     }
-
     // Метод для остановки BackgroundService (при необходимости)
     private fun stopBackgroundService() {
         Intent(this, BackgroundService::class.java).also {
@@ -752,6 +921,32 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+    @Composable
+    fun MapScreen(state: MainActivityState) {
+        val currentLocation = LatLng(state.Latitude.toDoubleOrNull() ?: 0.0,
+            state.Longtitude.toDoubleOrNull() ?: 0.0)
+        val cameraPositionState = rememberCameraPositionState {
+            position = CameraPosition.fromLatLngZoom(currentLocation, 15f)
+        }
+
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState
+        ) {
+            // Отображаем маркер на текущей позиции с цветом, основанным на RSRP
+            Marker(
+                state = MarkerState(position = currentLocation),
+                title = "Текущая позиция",
+                icon = BitmapDescriptorFactory.defaultMarker(
+                    generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140).toArgb().toFloat().let { colorArgb ->
+                        val hsv = FloatArray(3)
+                        android.graphics.Color.colorToHSV(colorArgb.toInt(), hsv)
+                        hsv[0]  // Возвращаем значение Hue
+                    }
+                )
+            )
+        }
+    }
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
@@ -763,6 +958,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Cqi by mutableStateOf("")
         var Bandwidth by mutableStateOf("")
         var Cellid by mutableStateOf("")
+        // Новые поля для дополнительных данных
+        var Mcc by mutableStateOf("")
+        var Mnc by mutableStateOf("")
+        var Lac by mutableStateOf("")
+        var Tac by mutableStateOf("")
+        var Pci by mutableStateOf("")
+        var Earfcn by mutableStateOf("")
+        var Ci by mutableStateOf("")
+        var NetworkType by mutableStateOf("")
+        var SignalStrength by mutableStateOf("")
+        var BitErrorRate by mutableStateOf("")
+        var TimingAdvance by mutableStateOf("")
         var selectedTabIndex by mutableStateOf(0)
 
         var Email by mutableStateOf("")
@@ -850,7 +1057,7 @@ class ForegroundService : LifecycleService() {
                 val notification = NotificationCompat.Builder(this, MainActivity.CHANNEL_ID)
                     .setContentTitle("Location Service")
                     .setContentText("Running in background...")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground) // Замените на ваш значок
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentIntent(pendingIntent)
                     .build()
 
@@ -902,6 +1109,7 @@ class BackgroundService : LifecycleService() {
     }
     // PhoneStateListener для получения информации о сигнале
     private val phoneStateListener = object : PhoneStateListener() {
+        @Deprecated("Deprecated in Java")
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
             super.onSignalStrengthsChanged(signalStrength)
@@ -1081,37 +1289,78 @@ class BackgroundService : LifecycleService() {
         if (checkPhoneStatePermission(state.context)) {
             val cellInfoList = telephonyManager.allCellInfo
             if (cellInfoList.isNullOrEmpty()) {
-                state.Rsrp = "CellInfo list is empty"
-                state.Rssi = "CellInfo list is empty"
-                state.Rsrq = "CellInfo list is empty"
-                state.Rssnr = "CellInfo list is empty"
-                state.Cqi = "CellInfo list is empty"
-                state.Bandwidth = "CellInfo list is empty"
-                state.Cellid = "Cell Info not available"
+                // Обработка пустого списка CellInfo
             } else {
                 for (info in cellInfoList) {
                     if (info is CellInfoLte) {
                         val cellSignalStrengthLte = info.cellSignalStrength
-                        state.Rsrp = "${cellSignalStrengthLte.rsrp} dBm"
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            state.Rssi = "${cellSignalStrengthLte.rssi} dBm"
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            state.Rsrp = "${cellSignalStrengthLte.rsrp} dBm"
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                state.Rssi = "${cellSignalStrengthLte.rssi} dBm"
+                            }
+                            state.Rsrq = "${cellSignalStrengthLte.rsrq} dB"
+                            state.Rssnr = "${cellSignalStrengthLte.rssnr} dB"
+                            state.Cqi = "${cellSignalStrengthLte.cqi}"
+                            state.Bandwidth = "${telephonyManager.dataNetworkType}"
+                            state.Cellid = when (val cellLocation = telephonyManager.cellLocation) {
+                                is GsmCellLocation -> cellLocation.cid.toString()
+                                is CdmaCellLocation -> cellLocation.baseStationId.toString()
+                                else -> "Cell ID not available"
+                            }
+                            // Используйте CellInfoLte для получения MCC и MNC
+                            state.Mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.cellIdentity.mccString ?: "N/A"
+                            } else {
+                                "N/A"
+                            }
+                            state.Mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                info.cellIdentity.mncString ?: "N/A"
+                            } else {
+                                "N/A"
+                            }
+                            state.Lac = try {
+                                (telephonyManager.cellLocation as? GsmCellLocation)?.lac?.toString()
+                                    ?: "N/A"
+                            } catch (e: Exception) {
+                                "N/A"
+                            }
+                            state.Tac = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                                info.cellIdentity.tac.toString()
+                            } else {
+                                "N/A"
+                            }
+                            state.Pci = info.cellIdentity.pci.toString()
+                            state.Earfcn = info.cellIdentity.earfcn.toString()
+                            state.Ci = info.cellIdentity.ci.toString()
+                            state.NetworkType = telephonyManager.networkType.toString()
+                            state.SignalStrength =
+                                cellSignalStrengthLte.dbm.toString() // Используем уровень сигнала в dBm
+                            state.BitErrorRate = "N/A" // Недоступно для LTE
+                            state.TimingAdvance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                cellSignalStrengthLte.timingAdvance.toString()
+                            } else {
+                                "N/A"
+                            }
+                            Log.d(MainActivity.TAG, "RSRP value: ${state.Rsrp}")
+                            Log.d(MainActivity.TAG, "Rssi value: ${state.Rssi}")
+                            Log.d(MainActivity.TAG, "Rsrq value: ${state.Rsrq}")
+                            Log.d(MainActivity.TAG, "Rssnr value: ${state.Rssnr}")
+                            Log.d(MainActivity.TAG, "Cqi value: ${state.Cqi}")
+                            Log.d(MainActivity.TAG, "Bandwidth value: ${state.Bandwidth}")
+                            Log.d(MainActivity.TAG, "Cell ID value: ${state.Cellid}")
+                            Log.d(MainActivity.TAG, "MCC: ${state.Mcc}")
+                            Log.d(MainActivity.TAG, "MNC: ${state.Mnc}")
+                            Log.d(MainActivity.TAG, "LAC: ${state.Lac}")
+                            Log.d(MainActivity.TAG, "TAC: ${state.Tac}")
+                            Log.d(MainActivity.TAG, "PCI: ${state.Pci}")
+                            Log.d(MainActivity.TAG, "EARFCN: ${state.Earfcn}")
+                            Log.d(MainActivity.TAG, "CI: ${state.Ci}")
+                            Log.d(MainActivity.TAG, "Network Type: ${state.NetworkType}")
+                            Log.d(MainActivity.TAG, "Signal Strength: ${state.SignalStrength}")
+                            Log.d(MainActivity.TAG, "Bit Error Rate: ${state.BitErrorRate}")
+                            Log.d(MainActivity.TAG, "Timing Advance: ${state.TimingAdvance}")
                         }
-                        state.Rsrq = "${cellSignalStrengthLte.rsrq} dB"
-                        state.Rssnr = "${cellSignalStrengthLte.rssnr} dB"
-                        state.Cqi = "${cellSignalStrengthLte.cqi}"
-                        state.Bandwidth = "${telephonyManager.dataNetworkType}"
-                        state.Cellid = when (val cellLocation = telephonyManager.cellLocation) {
-                            is GsmCellLocation -> cellLocation.cid.toString()
-                            is CdmaCellLocation -> cellLocation.baseStationId.toString()
-                            else -> "Cell ID not available"
-                        }
-                        Log.d(MainActivity.TAG, "RSRP value (from service): ${state.Rsrp}")
-                        Log.d(MainActivity.TAG, "Rssi value (from service): ${state.Rssi}")
-                        Log.d(MainActivity.TAG, "Rsrq value (from service): ${state.Rsrq}")
-                        Log.d(MainActivity.TAG, "Rssnr value (from service): ${state.Rssnr}")
-                        Log.d(MainActivity.TAG, "Cqi value (from service): ${state.Cqi}")
-                        Log.d(MainActivity.TAG, "Bandwidth value (from service): ${state.Bandwidth}")
-                        Log.d(MainActivity.TAG, "Cell ID value (from service): ${state.Cellid}")
                         break
                     }
                 }
