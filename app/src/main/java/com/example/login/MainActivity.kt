@@ -51,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -65,12 +64,12 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -90,7 +89,6 @@ import java.io.IOException
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
-
 
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -846,7 +844,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Row(modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxHeight()
-                .padding(end = 16.dp) 
+                .padding(end = 16.dp) // Добавлен отступ справа
             ) {
                 Text("RSRP (dBm)", modifier = Modifier
                     .padding(8.dp)
@@ -878,7 +876,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     // Соединяем точки линией, если это не первая точка
                     if (index > 0) {
                         val previousX = ((index - 1) * size.width / (rsrpData.size - 1)).toFloat()
-                        val previousY = size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
+                        val                       previousY = size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
                         drawLine(
                             start = Offset(previousX, previousY),
                             end = Offset(x, y),
@@ -923,30 +921,38 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @Composable
     fun MapScreen(state: MainActivityState) {
-        val currentLocation = LatLng(state.Latitude.toDoubleOrNull() ?: 0.0,
-            state.Longtitude.toDoubleOrNull() ?: 0.0)
-        val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(currentLocation, 15f)
+        val locations = remember { mutableStateListOf<LatLng>() }
+        LaunchedEffect(state.Latitude, state.Longtitude) {
+            val lat = state.Latitude.toDoubleOrNull()
+            val lng = state.Longtitude.toDoubleOrNull()
+            if (lat != null && lng != null) {
+                locations.add(LatLng(lat, lng))
+            }
         }
-
+        val cameraPositionState = rememberCameraPositionState {
+            position = CameraPosition.fromLatLngZoom(LatLng(55.0415, 82.9346), 10f)
+        }
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            // Отображаем маркер на текущей позиции с цветом, основанным на RSRP
-            Marker(
-                state = MarkerState(position = currentLocation),
-                title = "Текущая позиция",
-                icon = BitmapDescriptorFactory.defaultMarker(
-                    generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140).toArgb().toFloat().let { colorArgb ->
-                        val hsv = FloatArray(3)
-                        android.graphics.Color.colorToHSV(colorArgb.toInt(), hsv)
-                        hsv[0]  // Возвращаем значение Hue
-                    }
-                )
+            // Линия
+            Polyline(
+                points = locations,
+                color = Color.Red,
+                width = 5f
             )
+            // Маркеры
+            locations.forEach { location ->
+                Marker(
+                    state = MarkerState(position = location),
+                    title = "RSRP: ${state.Rsrp}",
+                    snippet = "LatLng: (${location.latitude}, ${location.longitude})"
+                )
+            }
         }
     }
+
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
