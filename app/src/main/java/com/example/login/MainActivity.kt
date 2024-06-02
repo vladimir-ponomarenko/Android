@@ -24,6 +24,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
 import androidx.compose.material.OutlinedTextField
@@ -90,6 +93,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
+
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -126,6 +130,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private lateinit var httpClient: OkHttpClient
     private var webSocket: WebSocket? = null
     private var isWebSocketConnected by mutableStateOf(false)
+    private var isSendingData by mutableStateOf(false) // Флаг отправки данных
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -241,7 +246,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             if (email != null && jwt != null) {
                                 Log.d(TAG, "User authenticated successfully")
                                 // Запускаем сервис после успешной авторизации
-                                startBackgroundService(email, jwt)
+//                                startBackgroundService(email, jwt)
+                                connectWebSocket(jwt)
                                 isWebSocketConnected = true // Устанавливаем флаг подключения
                             } else {
                                 Log.e(TAG, "Failed to authenticate user: Invalid response format")
@@ -277,6 +283,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         delay(UPDATE_INTERVAL)
                         val jsonString = generateJSON(state)
                         webSocket.send(jsonString)
+                        isSendingData = true // Устанавливаем флаг отправки
+                        delay(500) // Задержка для отображения индикатора
+                        isSendingData = false // Сбрасываем флаг отправки
                         Log.d(TAG, "Sent JSON to server: $jsonString")
                     }
                 }
@@ -403,55 +412,67 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             permissionsGranted = checkPermissions(context)
         }
 
-        Scaffold(
-            scaffoldState = scaffoldState
-        ) { innerPadding ->
-            if (permissionsGranted) {
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        getLocation(state, applicationContext)
-                        getSignalStrength(state)
-                        delay(UPDATE_INTERVAL)
+        Box(modifier = Modifier.fillMaxSize()) { // Используем Box для позиционирования
+            Scaffold(
+                scaffoldState = scaffoldState
+            ) { innerPadding ->
+                if (permissionsGranted) {
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            getLocation(state, applicationContext)
+                            getSignalStrength(state)
+                            delay(UPDATE_INTERVAL)
+                        }
                     }
-                }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding), // Добавляем отступы от Scaffold
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TabRow(selectedTabIndex = state.selectedTabIndex) {
-                        Tab(
-                            selected = state.selectedTabIndex == 0,
-                            onClick = { state.selectedTabIndex = 0 },
-                            text = { Text("Вход") }
-                        )
-                        Tab(
-                            selected = state.selectedTabIndex == 1,
-                            onClick = { state.selectedTabIndex = 1 },
-                            text = { Text("Данные") }
-                        )
-                        Tab(
-                            selected = state.selectedTabIndex == 2,
-                            onClick = { state.selectedTabIndex = 2 },
-                            text = { Text("Графики") }
-                        )
-                        Tab(
-                            selected = state.selectedTabIndex == 3,
-                            onClick = { state.selectedTabIndex = 3 },
-                            text = { Text("Карта") }
-                        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding), // Добавляем отступы от Scaffold
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        TabRow(selectedTabIndex = state.selectedTabIndex) {
+                            Tab(
+                                selected = state.selectedTabIndex == 0,
+                                onClick = { state.selectedTabIndex = 0 },
+                                text = { Text("Вход") }
+                            )
+                            Tab(
+                                selected = state.selectedTabIndex == 1,
+                                onClick = { state.selectedTabIndex = 1 },
+                                text = { Text("Данные") }
+                            )
+                            Tab(
+                                selected = state.selectedTabIndex == 2,
+                                onClick = { state.selectedTabIndex = 2 },
+                                text = { Text("Графики") }
+                            )
+                            Tab(
+                                selected = state.selectedTabIndex == 3,
+                                onClick = { state.selectedTabIndex = 3 },
+                                text = { Text("Карта") }
+                            )
+                        }
+                        when (state.selectedTabIndex) {
+                            0 -> LoginScreen(state)
+                            1 -> DataScreen(state)
+                            2 -> RSRPGraph(state)
+                            3 -> MapScreen(state)
+                        }
                     }
-                    when (state.selectedTabIndex) {
-                        0 -> LoginScreen(state)
-                        1 -> DataScreen(state)
-                        2 -> RSRPGraph(state)
-                        3 -> MapScreen(state)
-                    }
+                } else {
+                    Text("Waiting for permissions...")
                 }
-            } else {
-                Text("Waiting for permissions...")
+            }
+            // Индикатор отправки данных в правом нижнем углу
+            if (isSendingData) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd) // Выравнивание по правому нижнему углу
+                        .padding(16.dp)
+                        .size(16.dp)
+                        .background(Color.Green, CircleShape)
+                )
             }
         }
     }
@@ -703,6 +724,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     state.RememberMe = rememberMe
                     state.saveLoginData()
                     authenticateUser(email, password, jwtToken)
+
+                    // Переносим установку и сброс флага внутрь LaunchedEffect
+                    lifecycleScope.launch {
+                        isSendingData = true // Устанавливаем флаг отправки
+                        delay(500) // Задержка для отображения индикатора
+                        isSendingData = false // Сбрасываем флаг отправки
+                    }
                 }) {
                     Text("Login")
                 }
@@ -902,23 +930,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         return Color(red, green, blue)
     }
 
-    // Метод для запуска BackgroundService
-    private fun startBackgroundService(email: String, jwt: String) {
-        Intent(this, BackgroundService::class.java).also {
-            it.action = ACTION_START_SERVICE
-            it.putExtra("email", email) // Передаем email в сервис
-            it.putExtra("jwt", jwt) // Передаем JWT в сервис
-            startService(it)
-        }
-    }
-    // Метод для остановки BackgroundService (при необходимости)
-    private fun stopBackgroundService() {
-        Intent(this, BackgroundService::class.java).also {
-            it.action = ACTION_STOP_SERVICE
-            startService(it)
-        }
-    }
-
     @Composable
     fun MapScreen(state: MainActivityState) {
         val locations = remember { mutableStateListOf<LatLng>() }
@@ -952,6 +963,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
+
 
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
