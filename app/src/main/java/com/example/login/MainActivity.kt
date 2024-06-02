@@ -34,14 +34,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Checkbox
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.OutlinedTextField
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Scaffold
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.SnackbarDuration
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Tab
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRow
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,9 +63,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -246,7 +257,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             if (email != null && jwt != null) {
                                 Log.d(TAG, "User authenticated successfully")
                                 // Запускаем сервис после успешной авторизации
-//                                startBackgroundService(email, jwt)
+                                //startBackgroundService(email, jwt)
                                 connectWebSocket(jwt)
                                 isWebSocketConnected = true // Устанавливаем флаг подключения
                             } else {
@@ -849,7 +860,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val rsrpData = remember { mutableStateListOf<Pair<Long, Float>>() }
 
         // Запускаем корутину для добавления новых данных в список
-        LaunchedEffect(state.Rsrp) {
+        LaunchedEffect(state.Rsrp, state.Cellid) {
             val timestamp = System.currentTimeMillis()
             val rsrpValue = state.Rsrp.replace(" dBm", "").toFloatOrNull() ?: 0f
             rsrpData.add(Pair(timestamp, rsrpValue))
@@ -865,8 +876,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 .padding(top = 16.dp) // Добавлен отступ сверху
             ) {
                 Text("Время", modifier = Modifier
-                    .padding(8.dp)
-                    .align(Alignment.CenterHorizontally)
+                    .padding(8.dp).align(Alignment.CenterHorizontally)
                 )
             }
             Row(modifier = Modifier
@@ -892,7 +902,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 rsrpData.forEachIndexed { index, (timestamp, rsrp) ->
                     // Вычисляем координаты точки на графике
                     val x = (index * size.width / (rsrpData.size - 1)).toFloat()
-                    val y = size.height - (rsrp / maxRSRP * size                   .height)
+                    val y = size.height - (rsrp / maxRSRP * size.height)
 
                     // Рисуем точку
                     drawCircle(
@@ -904,7 +914,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     // Соединяем точки линией, если это не первая точка
                     if (index > 0) {
                         val previousX = ((index - 1) * size.width / (rsrpData.size - 1)).toFloat()
-                        val                       previousY = size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
+                        val previousY = size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
                         drawLine(
                             start = Offset(previousX, previousY),
                             end = Offset(x, y),
@@ -912,6 +922,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             strokeWidth = 2f
                         )
                     }
+
+                    // Отображаем Cell ID под точкой
+                    drawContext.canvas.nativeCanvas.drawText(
+                        state.Cellid,
+                        x,
+                        y + 20.dp.toPx(), // Сдвигаем текст вниз от точки
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                        }
+                    )
                 }
             }
         }
@@ -976,7 +997,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Cqi by mutableStateOf("")
         var Bandwidth by mutableStateOf("")
         var Cellid by mutableStateOf("")
-        // Новые поля для дополнительных данных
         var Mcc by mutableStateOf("")
         var Mnc by mutableStateOf("")
         var Lac by mutableStateOf("")
@@ -1092,7 +1112,7 @@ class ForegroundService : LifecycleService() {
             }
         }
 
-        return START_NOT_STICKY // Сервис не будет перезапускаться после остановки системой
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -1175,7 +1195,7 @@ class BackgroundService : LifecycleService() {
             while (true) {
                 if (jwt.isNotEmpty()) {
                     getLocation(state, this@BackgroundService)
-                    // getSignalStrength(state) // Теперь получаем данные о сигнале через PhoneStateListener
+                    // getSignalStrength(state)
                     connectWebSocket(jwt)
                     if (isWebSocketConnected) {
                         sendLocationData(state)
@@ -1326,7 +1346,6 @@ class BackgroundService : LifecycleService() {
                                 is CdmaCellLocation -> cellLocation.baseStationId.toString()
                                 else -> "Cell ID not available"
                             }
-                            // Используйте CellInfoLte для получения MCC и MNC
                             state.Mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                 info.cellIdentity.mccString ?: "N/A"
                             } else {
