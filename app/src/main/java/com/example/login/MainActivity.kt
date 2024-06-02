@@ -64,7 +64,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -79,12 +78,10 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
@@ -966,18 +963,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 color = Color.Red,
                 width = 5f
             )
-            // Маркеры
+            // Точки
             locations.forEach { (location, color) ->
-                val hue = color.toArgb().let { colorArgb ->
-                    val hsv = FloatArray(3)
-                    android.graphics.Color.colorToHSV(colorArgb, hsv) // Передаем Int
-                    hsv[0] // Получаем Hue
-                }
-                Marker(
-                    state = MarkerState(position = location),
-                    title = "RSRP: ${state.Rsrp}",
-                    snippet = "LatLng: (${location.latitude}, ${location.longitude})",
-                    icon = BitmapDescriptorFactory.defaultMarker(hue)
+                Circle(
+                    center = location,
+                    radius = 10.0, // Радиус точки
+                    fillColor = color, // Цвет точки
+                    strokeColor = color, // Цвет границы точки
+                    strokeWidth = 3f // Толщина границы точки
                 )
             }
         }
@@ -988,7 +981,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         return when {
             rsrp >= -80 -> Color.Red // Хороший сигнал
             rsrp in -90..-81 -> Color.Blue // Средний сигнал
-            else -> Color.White // Слабый сигнал
+            else -> Color.Cyan // Слабый сигнал
         }
     }
 
