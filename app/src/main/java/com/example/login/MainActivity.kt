@@ -2,6 +2,15 @@
 
 package com.example.login
 
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -34,23 +43,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Checkbox
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.OutlinedTextField
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Scaffold
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.SnackbarDuration
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Tab
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRow
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -78,6 +79,7 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -938,27 +940,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-    fun generateColorFromRSRP(rsrp: Int): Color {
-        val minRSRP = -140 // Наихудший сигнал
-        val maxRSRP = -44 // Наилучший сигнал
 
-        val normalizedRSRP = (rsrp - minRSRP).toFloat() / (maxRSRP - minRSRP)
-
-        val red = (255 * (1 - normalizedRSRP)).toInt().coerceIn(0, 255)
-        val green = (255 * normalizedRSRP).toInt().coerceIn(0, 255)
-        val blue = 0
-
-        return Color(red, green, blue)
-    }
 
     @Composable
     fun MapScreen(state: MainActivityState) {
-        val locations = remember { mutableStateListOf<LatLng>() }
-        LaunchedEffect(state.Latitude, state.Longtitude) {
+        val locations = remember { mutableStateListOf<Pair<LatLng, Color>>() }
+        LaunchedEffect(state.Latitude, state.Longtitude, state.Rsrp) {
             val lat = state.Latitude.toDoubleOrNull()
             val lng = state.Longtitude.toDoubleOrNull()
             if (lat != null && lng != null) {
-                locations.add(LatLng(lat, lng))
+                val color = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
+                locations.add(Pair(LatLng(lat, lng), color))
             }
         }
         val cameraPositionState = rememberCameraPositionState {
@@ -970,21 +962,35 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         ) {
             // Линия
             Polyline(
-                points = locations,
+                points = locations.map { it.first },
                 color = Color.Red,
                 width = 5f
             )
             // Маркеры
-            locations.forEach { location ->
+            locations.forEach { (location, color) ->
+                val hue = color.toArgb().let { colorArgb ->
+                    val hsv = FloatArray(3)
+                    android.graphics.Color.colorToHSV(colorArgb, hsv) // Передаем Int
+                    hsv[0] // Получаем Hue
+                }
                 Marker(
                     state = MarkerState(position = location),
                     title = "RSRP: ${state.Rsrp}",
-                    snippet = "LatLng: (${location.latitude}, ${location.longitude})"
+                    snippet = "LatLng: (${location.latitude}, ${location.longitude})",
+                    icon = BitmapDescriptorFactory.defaultMarker(hue)
                 )
             }
         }
     }
 
+    fun generateColorFromRSRP(rsrp: Int): Color {
+        // Генерация цвета
+        return when {
+            rsrp >= -80 -> Color.Red // Хороший сигнал
+            rsrp in -90..-81 -> Color.Blue // Средний сигнал
+            else -> Color.White // Слабый сигнал
+        }
+    }
 
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
