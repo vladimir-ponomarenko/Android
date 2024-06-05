@@ -2,15 +2,6 @@
 
 package com.example.login
 
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
-//noinspection UsingMaterialAndMaterial3Libraries
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -360,24 +351,49 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     private fun checkAndRequestPermissions() {
         val context = applicationContext
-        if (!checkPermissions(context)) {
-            Log.d(TAG, "Requesting permissions")
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ),
-                REQUEST_CODE_PERMISSIONS
-            )
-        } else {
-            getLocation(state, applicationContext)
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) { // Android 11 (API 30) и ниже
+            if (!checkPermissions(context)) {
+                Log.d(TAG, "Requesting permissions (API <= 30)")
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.READ_PHONE_STATE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ),
+                    REQUEST_CODE_PERMISSIONS
+                )
+            } else {
+                getLocation(state, applicationContext)
+            }
+        } else { // Android 13 (API 33) и выше
+            if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    !checkPermissionsForAndroid13(context)
+                } else {
+                    TODO("VERSION.SDK_INT < TIRAMISU")
+                }
+            ) {
+                Log.d(TAG, "Requesting permissions (API >= 33)")
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.READ_PHONE_STATE,
+                        Manifest.permission.READ_MEDIA_IMAGES, // Для доступа к изображениям
+                        Manifest.permission.READ_MEDIA_VIDEO, // Для доступа к видео
+                        Manifest.permission.READ_MEDIA_AUDIO  // Для доступа к аудио
+                    ),
+                    REQUEST_CODE_PERMISSIONS
+                )
+            } else {
+                getLocation(state, applicationContext)
+            }
         }
     }
 
-    private fun checkPermissions(context: Context): Boolean {
+    private fun checkPermissions(context: Context): Boolean { // Для Android 11 (API 30) и ниже
         return ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_COARSE_LOCATION
@@ -396,11 +412,46 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU) // Для Android 13 (API 33) и выше
+    private fun checkPermissionsForAndroid13(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_PHONE_STATE
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_MEDIA_IMAGES // Для доступа к изображениям
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_MEDIA_VIDEO // Для доступа к видео
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_MEDIA_AUDIO // Для доступа к аудио
+                ) == PackageManager.PERMISSION_GRANTED
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun MainContent(state: MainActivityState) {
         val context = LocalContext.current
-        var permissionsGranted by remember { mutableStateOf(checkPermissions(context)) }
+        var permissionsGranted by remember { mutableStateOf(
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
+            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                checkPermissionsForAndroid13(context)
+            } else {
+                TODO("VERSION.SDK_INT < TIRAMISU")
+            }
+        ) }
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
 
@@ -419,7 +470,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         LaunchedEffect(context) {
-            permissionsGranted = checkPermissions(context)
+            permissionsGranted =
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
+                else checkPermissionsForAndroid13(context)
         }
 
         Box(modifier = Modifier.fillMaxSize()) { // Используем Box для позиционирования
@@ -676,7 +729,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            verticalArrangement = androidx.compose           .foundation.layout.Arrangement.Center
         ) {
             if (showRegistration) {
                 OutlinedTextField(
