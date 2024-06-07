@@ -59,6 +59,7 @@ android {
 }
 
 dependencies {
+    //implementation ("com.github.alexbbb:NetStats:0.3")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("org.osmdroid:osmdroid-android:6.1.13") //open street map
     implementation("com.google.maps.android:maps-compose:2.11.4") //Google карта
