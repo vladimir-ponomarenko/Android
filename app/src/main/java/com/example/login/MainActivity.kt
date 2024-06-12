@@ -4,11 +4,15 @@ package com.example.login
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.usage.NetworkStatsManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.net.TrafficStats
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.telephony.CellInfoLte
 import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
@@ -43,7 +47,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -352,6 +355,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         return Json.encodeToString(messageData)
     }
 
+    private fun requestUsageStatsPermission() {
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        startActivity(intent)
+    }
+
     private fun checkAndRequestPermissions() {
         val context = applicationContext
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) { // Android 11 (API 30) и ниже
@@ -605,22 +613,19 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }, null)
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     private fun getSignalStrength(state: MainActivityState) {
         if (checkPhoneStatePermission(state.context)) {
             val telephonyManager =
                 state.context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
             val cellInfoList = telephonyManager.allCellInfo
-
             if (cellInfoList.isNullOrEmpty()) {
-                // Очищаем данные, если список пуст
-                state.Rsrp = "N/A"
-                state.Rssi = "N/A"
-                state.Rsrq = "N/A"
-                state.Rssnr = "N/A"
-                state.Cqi = "N/A"
-                state.Bandwidth = "N/A"
-                state.Cellid = "N/A"
+                state.Rsrp = "CellInfo list is empty"
+                state.Rssi = "CellInfo list is empty"
+                state.Rsrq = "CellInfo list is empty"
+                state.Rssnr = "CellInfo list is empty"
+                state.Cqi = "CellInfo list is empty"
+                state.Bandwidth = "CellInfo list is empty"
+                state.Cellid = "Cell Info not available"
                 state.Mcc = "N/A"
                 state.Mnc = "N/A"
                 state.Lac = "N/A"
@@ -632,9 +637,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 state.SignalStrength = "N/A"
                 state.BitErrorRate = "N/A"
                 state.TimingAdvance = "N/A"
-                state.Band = "N/A"
-                state.Operator = "N/A"
-                state.Technology = "N/A"
+
             } else {
                 for (info in cellInfoList) {
                     if (info is CellInfoLte) {
@@ -647,15 +650,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             state.Rsrq = "${cellSignalStrengthLte.rsrq} dB"
                             state.Rssnr = "${cellSignalStrengthLte.rssnr} dB"
                             state.Cqi = "${cellSignalStrengthLte.cqi}"
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                state.Bandwidth = "${info.cellIdentity.bandwidth / 1000} MHz"
-                            }
+                            state.Bandwidth = "${telephonyManager.dataNetworkType}"
                             state.Cellid = when (val cellLocation = telephonyManager.cellLocation) {
                                 is GsmCellLocation -> cellLocation.cid.toString()
                                 is CdmaCellLocation -> cellLocation.baseStationId.toString()
-                                else -> "N/A"
+                                else -> "Cell ID not available"
                             }
-
+                            // Используйте CellInfoLte для получения MCC и MNC
                             state.Mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                 info.cellIdentity.mccString ?: "N/A"
                             } else {
@@ -691,9 +692,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 } else {
                                     "N/A"
                                 }
-                            state.Band = getBandFromEarfcn(info.cellIdentity.earfcn)
-                            state.Operator = telephonyManager.networkOperatorName
-                            state.Technology = "LTE"
                             Log.d(TAG, "RSRP value: ${state.Rsrp}")
                             Log.d(TAG, "Rssi value: ${state.Rssi}")
                             Log.d(TAG, "Rsrq value: ${state.Rsrq}")
@@ -712,9 +710,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             Log.d(TAG, "Signal Strength: ${state.SignalStrength}")
                             Log.d(TAG, "Bit Error Rate: ${state.BitErrorRate}")
                             Log.d(TAG, "Timing Advance: ${state.TimingAdvance}")
-                            Log.d(TAG, "Band: ${state.Band}")
-                            Log.d(TAG, "Operator: ${state.Operator}")
-                            Log.d(TAG, "Technology: ${state.Technology}")
                         }
                         break
                     }
@@ -739,12 +734,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             state.SignalStrength = "No READ_PHONE_STATE permission"
             state.BitErrorRate = "No READ_PHONE_STATE permission"
             state.TimingAdvance = "No READ_PHONE_STATE permission"
-            state.Band = "No READ_PHONE_STATE permission"
-            state.Operator = "No READ_PHONE_STATE permission"
-            state.Technology = "No READ_PHONE_STATE permission"
         }
     }
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
@@ -779,7 +770,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         if (response != null) {
                             jwtToken = response.jwt
                             state.JwtToken = response.jwt // Сохраняем JWT в state
-                            state.Uuid = response.uuid
+                            state.Uuid = response.uuid // Сохраняем UUID в state
                             state.saveLoginData() // Сохраняем данные в SharedPreferences
                             showSuccessMessage = true
                             showRegistration = false
@@ -806,7 +797,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     value = jwtToken,
                     onValueChange = { jwtToken = it },
                     label = { Text("JWT Token") },
-                    enabled = true // Делаем поле JWT Token редактируемым
+                    enabled = true // Делаем поле JWT Token нередактируемым
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
@@ -845,42 +836,92 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @Composable
     fun DataScreen(state: MainActivityState) {
-        val dataItems = listOf(
-            "RSRP value: ${state.Rsrp}",
-            "Rssi value: ${state.Rssi}",
-            "Rsrq value: ${state.Rsrq}",
-            "Rssnr value: ${state.Rssnr}",
-            "Cqi value: ${state.Cqi}",
-            "Bandwidth: ${state.Bandwidth}",
-            "Cell ID: ${state.Cellid}",
-            "LAT: ${state.Latitude}",
-            "LON: ${state.Longtitude}",
-            "MCC: ${state.Mcc}",
-            "MNC: ${state.Mnc}",
-            "LAC: ${state.Lac}",
-            "TAC: ${state.Tac}",
-            "PCI: ${state.Pci}",
-            "EARFCN: ${state.Earfcn}",
-            "CI: ${state.Ci}",
-            "Network Type: ${state.NetworkType}",
-            "Signal Strength: ${state.SignalStrength}",
-            "Bit Error Rate: ${state.BitErrorRate}",
-            "Timing Advance: ${state.TimingAdvance}",
-            "Band: ${state.Band}",
-            "Technology: ${state.Technology}",
-            "Operator: ${state.Operator}"
-        )
-
-        LazyColumn(
+        Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(dataItems) { item ->
-                Text(text = item, modifier = Modifier.padding(16.dp))
-            }
+            Text(
+                text = "RSRP value: ${state.Rsrp}"
+            )
+            Text(
+                text = "Rssi value: ${state.Rssi}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Rsrq value: ${state.Rsrq}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Rssnr value: ${state.Rssnr}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Cqi value: ${state.Cqi}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Bandwidth: ${state.Bandwidth}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Cell ID: ${state.Cellid}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "LAT: ${state.Latitude}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "LON: ${state.Longtitude}",
+                modifier = Modifier.padding(16.dp)
+            )
+            // Вывод новых данных
+            Text(
+                text = "MCC: ${state.Mcc}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "MNC: ${state.Mnc}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "LAC: ${state.Lac}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "TAC: ${state.Tac}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "PCI: ${state.Pci}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "EARFCN: ${state.Earfcn}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "CI: ${state.Ci}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Network Type: ${state.NetworkType}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Signal Strength: ${state.SignalStrength}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Bit Error Rate: ${state.BitErrorRate}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Timing Advance: ${state.TimingAdvance}",
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
-
 
     private fun checkPhoneStatePermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(
@@ -909,7 +950,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = 16.dp) // Добавлен отступ сверху
             ) {
                 Text(
                     "Время", modifier = Modifier
@@ -920,7 +961,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxHeight()
-                    .padding(end = 16.dp)
+                    .padding(end = 16.dp) // Добавлен отступ справа
             ) {
                 Text(
                     "RSRP (dBm)", modifier = Modifier
@@ -1022,21 +1063,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
 
-
-
-    private val totalRxBytes = mutableStateMapOf<Int, Long>()
-    private val totalTxBytes = mutableStateMapOf<Int, Long>()
-    private val totalWifiRxBytes = mutableStateMapOf<Int, Long>()
-    private val totalWifiTxBytes = mutableStateMapOf<Int, Long>()
-    private val totalMobileRxBytes = mutableStateMapOf<Int, Long>()
-    private val totalMobileTxBytes = mutableStateMapOf<Int, Long>()
-
     @Composable
     fun TrafficScreen(state: MainActivityState) {
         val context = LocalContext.current
         val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
 
-        LaunchedEffect(Unit) {
+        // Добавляем state.mobileTraffic и state.wifiTraffic в зависимости LaunchedEffect
+        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic) {
             while (true) {
                 appTrafficData.value = getAppTrafficData(context).sortedByDescending { it.totalBytes }
                 state.mobileTraffic =
@@ -1049,11 +1082,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            // Общий
             Text(
                 text = "Total Traffic: ${(state.mobileTraffic + state.wifiTraffic) / 1024} Kb, Mobile: ${(state.mobileTraffic / 1024).toString()} Kb, Wi-Fi: ${(state.wifiTraffic / 1024).toString()} Kb",
                 modifier = Modifier.padding(16.dp)
             )
+
+            Button(onClick = {
+                // Запрашиваем разрешение при нажатии на кнопку
+                requestUsageStatsPermission()
+            }) {
+                Text("Grant Usage Stats Permission")
+            }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(appTrafficData.value) { appData ->
@@ -1072,79 +1111,54 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         ) {
             Text(text = appData.appName)
             Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
-            Text(text = "Wi-Fi Total: ${(appData.wifiTotalBytes / 1024).toString()} Kb")
-            Text(text = "Mobile Total: ${(appData.mobileTotalBytes / 1024).toString()} Kb")
-            Text(text = "Wi-Fi Downlink: ${(appData.wifiRxBytes / 1024).toString()} Kb")
-            Text(text = "Wi-Fi Uplink: ${(appData.wifiTxBytes / 1024).toString()} Kb")
-            Text(text = "Mobile Downlink: ${(appData.mobileRxBytes / 1024).toString()} Kb")
-            Text(text = "Mobile Uplink: ${(appData.mobileTxBytes / 1024).toString()} Kb")
+            Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
+            Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")
         }
     }
-    //        TODO: настроить анализ трафика для каждого приложения. Сейчас у каждого приложения все поля равны 0.
-//        Возможные варианты: использовать скрытый API; использовать NetStats.
+
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun getAppTrafficData(context: Context): List<AppTrafficData> {
         val appTrafficDataList = mutableListOf<AppTrafficData>()
         val packageManager = context.packageManager
-        val sharedPreferences = context.getSharedPreferences("traffic_stats", Context.MODE_PRIVATE)
+        val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
+
+        val currentTime = System.currentTimeMillis()
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(1) // Статистика за последние 24 часа
 
         for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
             val uid = packageInfo.uid
             val appName = packageManager.getApplicationLabel(packageInfo).toString()
 
-            // Получаем текущие значения трафика
-            val rxBytes = TrafficStats.getUidRxBytes(uid)
-            val txBytes = TrafficStats.getUidTxBytes(uid)
+            try {
+                // Получаем суммарную статистику для мобильных данных для каждого пользователя
+                val mobileBucket = networkStatsManager.querySummaryForUser(ConnectivityManager.TYPE_MOBILE,
+                    null, startTime, currentTime)
+                val mobileBytes = mobileBucket.rxBytes + mobileBucket.txBytes
 
-            // Получаем предыдущие значения трафика из SharedPreferences
-            val prevRxBytes = sharedPreferences.getLong("rxBytes_$uid", 0)
-            val prevTxBytes = sharedPreferences.getLong("txBytes_$uid", 0)
+                // Получаем суммарную статистику для Wi-Fi для каждого пользователя
+                val wifiBucket = networkStatsManager.querySummaryForUser(ConnectivityManager.TYPE_WIFI,
+                    null, startTime, currentTime)
+                val wifiBytes = wifiBucket.rxBytes + wifiBucket.txBytes
 
-            // Вычисляем разницу
-            val diffRxBytes = rxBytes - prevRxBytes
-            val diffTxBytes = txBytes - prevTxBytes
+                // Суммарный трафик
+                val totalBytes = mobileBytes + wifiBytes
 
-            // Сохраняем текущие значения как предыдущие для следующей итерации
-            sharedPreferences.edit()
-                .putLong("rxBytes_$uid", rxBytes)
-                .putLong("txBytes_$uid", txBytes)
-                .apply()
-
-            // Мобильный и Wi-Fi трафик
-            val mobileRxBytes = TrafficStats.getUidRxBytes(uid)
-            val mobileTxBytes = TrafficStats.getUidTxBytes(uid)
-            val wifiRxBytes = diffRxBytes - mobileRxBytes
-            val wifiTxBytes = diffTxBytes - mobileTxBytes
-
-            appTrafficDataList.add(
-                AppTrafficData(
-                    appName,
-                    diffRxBytes,
-                    diffTxBytes,
-                    wifiRxBytes,
-                    wifiTxBytes,
-                    mobileRxBytes,
-                    mobileTxBytes
-                )
-            )
+                appTrafficDataList.add(AppTrafficData(appName, totalBytes, mobileBytes, wifiBytes))
+            } catch (e: Exception) {
+                // Обработка ошибок (например,  отсутствия разрешения)
+                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}")
+            }
         }
 
         return appTrafficDataList
     }
 
-
     data class AppTrafficData(
         val appName: String,
-        val rxBytes: Long,
-        val txBytes: Long,
-        val wifiRxBytes: Long,
-        val wifiTxBytes: Long,
-        val mobileRxBytes: Long,
-        val mobileTxBytes: Long
-    ) {
-        val totalBytes: Long = rxBytes + txBytes
-        val wifiTotalBytes: Long = wifiRxBytes + wifiTxBytes
-        val mobileTotalBytes: Long = mobileRxBytes + mobileTxBytes
-    }
+        val totalBytes: Long,
+        val mobileBytes: Long,
+        val wifiBytes: Long
+    )
 
     fun generateColorFromRSRP(rsrp: Int): Color {
         // Генерация цвета
@@ -1152,22 +1166,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             rsrp >= -80 -> Color.Red // Хороший сигнал
             rsrp in -90..-81 -> Color.Blue // Средний сигнал
             else -> Color.Cyan // Слабый сигнал
-        }
-    }
-    // Добавляем функцию для определения диапазона частот (Band)
-    private fun getBandFromEarfcn(earfcn: Int): String {
-        return when (earfcn) {
-            in 1..600 -> "Band 1 (2100 MHz)"
-            in 1200..1950 -> "Band 3 (1800 MHz)"
-            in 1951..2650 -> "Band 4 (1700/2100 MHz AWS)"
-            in 2750..3450 -> "Band 7 (2600 MHz)"
-            in 3600..4150 -> "Band 8 (900 MHz)"
-            in 6600..7100 -> "Band 20 (800 DD)"
-            in 9210..9660 -> "Band 28 (700 APT)"
-            in 9770..10280 -> "Band 38 (TD 2600)"
-            in 25700..26200 -> "Band 41 (TD 2500)"
-            in 65536..67535 -> "Band 71 (600 MHz)"
-            else -> "Unknown"
         }
     }
 
@@ -1193,9 +1191,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var SignalStrength by mutableStateOf("")
         var BitErrorRate by mutableStateOf("")
         var TimingAdvance by mutableStateOf("")
-        var Band by mutableStateOf("")
-        var Technology by mutableStateOf("")
-        var Operator by mutableStateOf("")
         var selectedTabIndex by mutableStateOf(0)
 
         //Для тепловой карты (точки)
@@ -1213,7 +1208,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Email by mutableStateOf("")
         var Password by mutableStateOf("")
         var JwtToken by mutableStateOf("")
-        var Uuid by mutableStateOf("")
+        var Uuid by mutableStateOf("") // Добавляем UUID в state
         var RememberMe by mutableStateOf(false)
 
         fun saveLoginData() {
@@ -1223,7 +1218,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 putString(EMAIL_KEY, Email)
                 putString(PASSWORD_KEY, Password)
                 putString(JWT_TOKEN_KEY, JwtToken)
-                putString(UUID_KEY, Uuid)
+                putString(UUID_KEY, Uuid) // Сохраняем UUID
                 putBoolean(REMEMBER_ME_KEY, RememberMe)
                 apply()
             }
@@ -1235,7 +1230,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Email = sharedPreferences.getString(EMAIL_KEY, "") ?: ""
             Password = sharedPreferences.getString(PASSWORD_KEY, "") ?: ""
             JwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "") ?: ""
-            Uuid = sharedPreferences.getString(UUID_KEY, "") ?: ""
+            Uuid = sharedPreferences.getString(UUID_KEY, "") ?: "" // Загружаем UUID
             RememberMe = sharedPreferences.getBoolean(REMEMBER_ME_KEY, false)
         }
     }
@@ -1267,7 +1262,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val rssnr: Long,
         val cqi: Long,
         val bandwidth: Long,
-        val cellID: Long,
+        val cellID: Long
     )
 
     @Serializable
