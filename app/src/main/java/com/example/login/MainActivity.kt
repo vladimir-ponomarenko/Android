@@ -4,6 +4,7 @@ package com.example.login
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.Intent
@@ -656,7 +657,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 is CdmaCellLocation -> cellLocation.baseStationId.toString()
                                 else -> "Cell ID not available"
                             }
-                            // Используйте CellInfoLte для получения MCC и MNC
                             state.Mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                                 info.cellIdentity.mccString ?: "N/A"
                             } else {
@@ -797,7 +797,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     value = jwtToken,
                     onValueChange = { jwtToken = it },
                     label = { Text("JWT Token") },
-                    enabled = true // Делаем поле JWT Token нередактируемым
+                    enabled = true // Делаем поле JWT Token редактируемым
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
@@ -1063,21 +1063,37 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
 
+    data class AppTrafficData(
+        val appName: String,
+        val totalBytes: Long,
+        val mobileBytes: Long,
+        val wifiBytes: Long
+    )
+
     @Composable
     fun TrafficScreen(state: MainActivityState) {
         val context = LocalContext.current
         val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
+        var days by remember { mutableStateOf("1") } // Состояние для хранения введенного количества дней
+        var showError by remember { mutableStateOf(false) } // Состояние для отображения ошибки
 
         // Добавляем state.mobileTraffic и state.wifiTraffic в зависимости LaunchedEffect
-        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic) {
-            while (true) {
-                appTrafficData.value = getAppTrafficData(context).sortedByDescending { it.totalBytes }
-                state.mobileTraffic =
-                    TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
-                state.wifiTraffic =
-                    TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
-                            TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
-                delay(1000) // Обновляем каждую секунду
+        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic, days) {
+            // Проверяем, что days - это число
+            val numDays = days.toIntOrNull()
+            if (numDays != null) {
+                showError = false // Скрываем сообщение об ошибке, если число корректно
+                while (true) {
+                    appTrafficData.value = getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
+                    state.mobileTraffic =
+                        TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
+                    state.wifiTraffic =
+                        TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
+                                TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
+                    delay(1000) // Обновляем каждую секунду
+                }
+            } else {
+                showError = true // Отображаем сообщение об ошибке, если не число
             }
         }
 
@@ -1086,6 +1102,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 text = "Total Traffic: ${(state.mobileTraffic + state.wifiTraffic) / 1024} Kb, Mobile: ${(state.mobileTraffic / 1024).toString()} Kb, Wi-Fi: ${(state.wifiTraffic / 1024).toString()} Kb",
                 modifier = Modifier.padding(16.dp)
             )
+
+            // Поле для ввода количества дней
+            OutlinedTextField(
+                value = days,
+                onValueChange = { days = it },
+                label = { Text("Days") },
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // Сообщение об ошибке
+            if (showError) {
+                Text(
+                    text = "Invalid number of days",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
 
             Button(onClick = {
                 // Запрашиваем разрешение при нажатии на кнопку
@@ -1117,51 +1150,67 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun getAppTrafficData(context: Context): List<AppTrafficData> {
+    private fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
         val appTrafficDataList = mutableListOf<AppTrafficData>()
         val packageManager = context.packageManager
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         val currentTime = System.currentTimeMillis()
-        val startTime = currentTime - TimeUnit.DAYS.toMillis(1) // Статистика за последние 24 часа
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(days.toLong()) // Статистика за указанное количество дней
 
         for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
             val uid = packageInfo.uid
             val appName = packageManager.getApplicationLabel(packageInfo).toString()
 
+            var mobileBytes = 0L
+            var wifiBytes = 0L
+
             try {
-                // Получаем суммарную статистику для мобильных данных для каждого пользователя
-                val mobileBucket = networkStatsManager.querySummaryForUser(ConnectivityManager.TYPE_MOBILE,
-                    null, startTime, currentTime)
-                val mobileBytes = mobileBucket.rxBytes + mobileBucket.txBytes
+                // Получаем мобильный трафик для UID
+                val mobileStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_MOBILE,
+                    null,
+                    startTime,
+                    currentTime,
+                    uid
+                )
+                var bucket = NetworkStats.Bucket()
+                while (mobileStats.hasNextBucket()) {
+                    mobileStats.getNextBucket(bucket)
+                    if (bucket.uid == uid) {
+                        mobileBytes += bucket.rxBytes + bucket.txBytes
+                    }
+                }
+                mobileStats.close()
 
-                // Получаем суммарную статистику для Wi-Fi для каждого пользователя
-                val wifiBucket = networkStatsManager.querySummaryForUser(ConnectivityManager.TYPE_WIFI,
-                    null, startTime, currentTime)
-                val wifiBytes = wifiBucket.rxBytes + wifiBucket.txBytes
+                // Получаем Wi-Fi трафик для UID
+                val wifiStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_WIFI,
+                    null,
+                    startTime,
+                    currentTime,
+                    uid
+                )
+                bucket = NetworkStats.Bucket()
+                while (wifiStats.hasNextBucket()) {
+                    wifiStats.getNextBucket(bucket)
+                    if (bucket.uid == uid) {
+                        wifiBytes += bucket.rxBytes + bucket.txBytes
+                    }
+                }
+                wifiStats.close()
 
-                // Суммарный трафик
                 val totalBytes = mobileBytes + wifiBytes
-
                 appTrafficDataList.add(AppTrafficData(appName, totalBytes, mobileBytes, wifiBytes))
+
             } catch (e: Exception) {
-                // Обработка ошибок (например,  отсутствия разрешения)
-                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}")
+                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
             }
         }
 
         return appTrafficDataList
     }
-
-    data class AppTrafficData(
-        val appName: String,
-        val totalBytes: Long,
-        val mobileBytes: Long,
-        val wifiBytes: Long
-    )
-
     fun generateColorFromRSRP(rsrp: Int): Color {
-        // Генерация цвета
         return when {
             rsrp >= -80 -> Color.Red // Хороший сигнал
             rsrp in -90..-81 -> Color.Blue // Средний сигнал
