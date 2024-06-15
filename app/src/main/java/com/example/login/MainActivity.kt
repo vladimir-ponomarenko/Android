@@ -24,25 +24,33 @@ import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
 import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.Surface
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,12 +62,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -468,6 +479,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
+        var showChart by remember { mutableStateOf(false) } // Состояние для отображения графика
+        var selectedAppName by remember { mutableStateOf("") } // Состояние для имени выбранного приложения
 
         // Запускаем корутину для показа Snackbar
         LaunchedEffect(isWebSocketConnected) {
@@ -555,6 +568,85 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         .padding(16.dp)
                         .size(16.dp)
                         .background(Color.Green, CircleShape)
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun TrafficScreen(state: MainActivityState) {
+        val context = LocalContext.current
+        val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
+        var days by remember { mutableStateOf("1") } // Состояние для хранения введенного количества дней
+        var showError by remember { mutableStateOf(false) } // Состояние для отображения ошибки
+        var showChart by remember { mutableStateOf(false) } // Состояние для отображения графика
+        var selectedAppName by remember { mutableStateOf("") } // Состояние для имени выбранного приложения
+
+        // Добавляем state.mobileTraffic и state.wifiTraffic в зависимости LaunchedEffect
+        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic, days) {
+            // Проверяем, что days - это число
+            val numDays = days.toIntOrNull()
+            if (numDays != null) {
+                showError = false // Скрываем сообщение об ошибке, если число корректно
+                while (true) {
+                    appTrafficData.value =
+                        getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
+                    state.mobileTraffic =
+                        TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
+                    state.wifiTraffic =
+                        TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
+                                TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
+                    delay(1000) // Обновляем каждую секунду
+                }
+            } else {
+                showError = true // Отображаем сообщение об ошибке, если не число
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "Total Traffic: ${(state.mobileTraffic + state.wifiTraffic) / 1024} Kb, Mobile: ${(state.mobileTraffic / 1024).toString()} Kb, Wi-Fi: ${(state.wifiTraffic / 1024).toString()} Kb",
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // Поле для ввода количества дней
+            OutlinedTextField(
+                value = days,
+                onValueChange = { days = it },
+                label = { Text("Days") },
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // Сообщение об ошибке
+            if (showError) {
+                Text(
+                    text = "Invalid number of days",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            Button(onClick = {
+                // Запрашиваем разрешение при нажатии на кнопку
+                requestUsageStatsPermission()
+            }) {
+                Text("Grant Usage Stats Permission")
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(appTrafficData.value) { appData ->
+                    TrafficItem(appData, onShowChart = { appName ->
+                        selectedAppName = appName
+                        showChart = true
+                    })
+                }
+            }
+            // Отображаем график, если showChart = true
+            if (showChart) {
+                HourlyTrafficChart(
+                    appName = selectedAppName,
+                    onClose = { showChart = false },
+                    context = context
                 )
             }
         }
@@ -1062,89 +1154,37 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-
     data class AppTrafficData(
         val appName: String,
         val totalBytes: Long,
         val mobileBytes: Long,
-        val wifiBytes: Long
+        val wifiBytes: Long,
+        val rxBytes: Long, // Downlink
+        val txBytes: Long  // Uplink
     )
 
     @Composable
-    fun TrafficScreen(state: MainActivityState) {
-        val context = LocalContext.current
-        val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
-        var days by remember { mutableStateOf("1") } // Состояние для хранения введенного количества дней
-        var showError by remember { mutableStateOf(false) } // Состояние для отображения ошибки
-
-        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic, days) {
-            // Проверяем, что days - это число
-            val numDays = days.toIntOrNull()
-            if (numDays != null) {
-                showError = false // Скрываем сообщение об ошибке, если число корректно
-                while (true) {
-                    appTrafficData.value = getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
-                    state.mobileTraffic =
-                        TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
-                    state.wifiTraffic =
-                        TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
-                                TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
-                    delay(1000) // Обновляем каждую секунду
-                }
-            } else {
-                showError = true // Отображаем сообщение об ошибке, если не число
-            }
-        }
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Total Traffic: ${(state.mobileTraffic + state.wifiTraffic) / 1024} Kb, Mobile: ${(state.mobileTraffic / 1024).toString()} Kb, Wi-Fi: ${(state.wifiTraffic / 1024).toString()} Kb",
-                modifier = Modifier.padding(16.dp)
-            )
-
-            // Поле для ввода количества дней
-            OutlinedTextField(
-                value = days,
-                onValueChange = { days = it },
-                label = { Text("Days") },
-                modifier = Modifier.padding(16.dp)
-            )
-
-            // Сообщение об ошибке
-            if (showError) {
-                Text(
-                    text = "Invalid number of days",
-                    color = Color.Red,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            Button(onClick = {
-                // Запрашиваем разрешение при нажатии на кнопку
-                requestUsageStatsPermission()
-            }) {
-                Text("Grant Usage Stats Permission")
-            }
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(appTrafficData.value) { appData ->
-                    TrafficItem(appData)
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun TrafficItem(appData: AppTrafficData) {
-        Column(
+    fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween, // Располагаем элементы по краям
+            verticalAlignment = Alignment.CenterVertically // Выравниваем элементы по вертикали
         ) {
-            Text(text = appData.appName)
-            Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
-            Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
-            Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")
+            Column {
+                Text(text = appData.appName)
+                Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
+                Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
+                Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")
+                // Downlink и Uplink
+                Text(text = "Downlink: ${(appData.rxBytes / 1024).toString()} Kb")
+                Text(text = "Uplink: ${(appData.txBytes / 1024).toString()} Kb")
+            }
+            // Кнопка "Show Chart"
+            Button(onClick = { onShowChart(appData.appName) }) {
+                Text("Show Chart")
+            }
         }
     }
 
@@ -1155,7 +1195,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         val currentTime = System.currentTimeMillis()
-        val startTime = currentTime - TimeUnit.DAYS.toMillis(days.toLong()) // Статистика за указанное количество дней
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(days.toLong())
 
         for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
             val uid = packageInfo.uid
@@ -1163,6 +1203,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
             var mobileBytes = 0L
             var wifiBytes = 0L
+            var totalDownlinkBytes = 0L  // Суммарный Downlink
+            var totalUplinkBytes = 0L    // Суммарный Uplink
 
             try {
                 // Получаем мобильный трафик для UID
@@ -1178,6 +1220,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     mobileStats.getNextBucket(bucket)
                     if (bucket.uid == uid) {
                         mobileBytes += bucket.rxBytes + bucket.txBytes
+                        totalDownlinkBytes += bucket.rxBytes // Суммируем Downlink
+                        totalUplinkBytes += bucket.txBytes   // Суммируем Uplink
                     }
                 }
                 mobileStats.close()
@@ -1195,12 +1239,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     wifiStats.getNextBucket(bucket)
                     if (bucket.uid == uid) {
                         wifiBytes += bucket.rxBytes + bucket.txBytes
+                        totalDownlinkBytes += bucket.rxBytes // Суммируем Downlink
+                        totalUplinkBytes += bucket.txBytes   // Суммируем Uplink
                     }
                 }
                 wifiStats.close()
 
                 val totalBytes = mobileBytes + wifiBytes
-                appTrafficDataList.add(AppTrafficData(appName, totalBytes, mobileBytes, wifiBytes))
+                appTrafficDataList.add(
+                    AppTrafficData(
+                        appName,
+                        totalBytes,
+                        mobileBytes,
+                        wifiBytes,
+                        totalDownlinkBytes, // Downlink
+                        totalUplinkBytes  // Uplink
+                    )
+                )
 
             } catch (e: Exception) {
                 Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
@@ -1209,6 +1264,136 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         return appTrafficDataList
     }
+    @RequiresApi(Build.VERSION_CODES.M)
+    @Composable
+    fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
+        val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, Long>>() }
+
+        // Получаем почасовую статистику трафика для приложения
+        LaunchedEffect(appName, hourlyTrafficData) { // Добавлена зависимость от hourlyTrafficData
+            hourlyTrafficData.clear() // Очищаем список перед добавлением новых данных
+            hourlyTrafficData.addAll(getHourlyTrafficData(context, appName))
+        }
+
+        // Диалог с графиком
+        Dialog(onDismissRequest = onClose) {
+            Surface(shape = RoundedCornerShape(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Заголовок с названием приложения
+                    Text(text = "Hourly Traffic for $appName", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+
+                    // Кнопка "Close"
+                    IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    }
+
+                    // График
+                    HourlyTrafficChartContent(hourlyTrafficData)
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    @Composable
+    fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+            val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second } ?: 0L
+            val hourWidth = size.width / 24
+
+            hourlyTrafficData.forEachIndexed { index, (hour, traffic) ->
+                val x = index * hourWidth
+                val y = size.height - (traffic / maxTraffic * size.height)
+
+                // Рисуем столбец
+                drawRect(
+                    color = Color.Blue,
+                    topLeft = Offset(x.toFloat(), y.toFloat()),
+                    size = Size(hourWidth.toFloat(), (traffic / maxTraffic * size.height).toFloat())
+                )
+
+                // Отображаем время под столбцом
+                drawContext.canvas.nativeCanvas.drawText(
+                    "$hour:00",
+                    x + hourWidth / 2 - 15f,
+                    size.height + 15f,
+                    android.graphics.Paint().apply {
+                        textSize = 10.sp.toPx()
+                        color = android.graphics.Color.BLACK
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                )
+            }
+        }
+    }
+
+    // Функция для получения почасовой статистики трафика
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getHourlyTrafficData(context: Context, appName: String): List<Pair<Int, Long>> {
+        val hourlyTrafficData = mutableListOf<Pair<Int, Long>>()
+        val packageManager = context.packageManager
+        val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
+
+        val currentTime = System.currentTimeMillis()
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(1) // Статистика за последние 24 часа
+
+        // Получаем информацию о пакете приложения
+        val packageInfo = try {
+            packageManager.getPackageInfo(appName, 0)
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.e("HourlyTraffic", "Error getting package info for $appName: ${e.message}", e)
+            return hourlyTrafficData // Возвращаем пустой список, если пакет не найден
+        }
+
+        for (hour in 0..23) {
+            val hourStart = startTime + TimeUnit.HOURS.toMillis(hour.toLong())
+            val hourEnd = hourStart + TimeUnit.HOURS.toMillis(1)
+
+            var mobileBytes = 0L
+            var wifiBytes = 0L
+
+            try {
+                // Получаем мобильный трафик для UID
+                val mobileStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_MOBILE,
+                    null,
+                    hourStart,
+                    hourEnd,
+                    packageInfo.applicationInfo.uid
+                )
+                var bucket = NetworkStats.Bucket()
+                while (mobileStats.hasNextBucket()) {
+                    mobileStats.getNextBucket(bucket)
+                    mobileBytes += bucket.rxBytes + bucket.txBytes
+                }
+                mobileStats.close()
+
+                // Получаем Wi-Fi трафик для UID
+                val wifiStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_WIFI,
+                    null,
+                    hourStart,
+                    hourEnd,
+                    packageInfo.applicationInfo.uid
+                )
+                bucket = NetworkStats.Bucket()
+                while (wifiStats.hasNextBucket()) {
+                    wifiStats.getNextBucket(bucket)
+                    wifiBytes += bucket.rxBytes + bucket.txBytes
+                }
+                wifiStats.close()
+
+            } catch (e: Exception) {
+                Log.e("HourlyTraffic", "Error getting traffic data for $appName: ${e.message}", e)
+            }
+
+            val totalBytes = mobileBytes + wifiBytes
+            hourlyTrafficData.add(Pair(hour, totalBytes))
+        }
+
+        return hourlyTrafficData
+    }
+
     fun generateColorFromRSRP(rsrp: Int): Color {
         return when {
             rsrp >= -80 -> Color.Red
