@@ -1077,7 +1077,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var days by remember { mutableStateOf("1") } // Состояние для хранения введенного количества дней
         var showError by remember { mutableStateOf(false) } // Состояние для отображения ошибки
 
-        // Добавляем state.mobileTraffic и state.wifiTraffic в зависимости LaunchedEffect
         LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic, days) {
             // Проверяем, что days - это число
             val numDays = days.toIntOrNull()
@@ -1212,9 +1211,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
     fun generateColorFromRSRP(rsrp: Int): Color {
         return when {
-            rsrp >= -80 -> Color.Red // Хороший сигнал
-            rsrp in -90..-81 -> Color.Blue // Средний сигнал
-            else -> Color.Cyan // Слабый сигнал
+            rsrp >= -80 -> Color.Red
+            rsrp in -90..-81 -> Color.Blue
+            else -> Color.Cyan
         }
     }
 
