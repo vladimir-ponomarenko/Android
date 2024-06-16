@@ -24,6 +24,7 @@ import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,8 +35,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
@@ -62,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
@@ -967,7 +969,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 text = "LON: ${state.Longtitude}",
                 modifier = Modifier.padding(16.dp)
             )
-            // Вывод новых данных
             Text(
                 text = "MCC: ${state.Mcc}",
                 modifier = Modifier.padding(16.dp)
@@ -1177,11 +1178,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
                 Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
                 Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")
-                // Downlink и Uplink
                 Text(text = "Downlink: ${(appData.rxBytes / 1024).toString()} Kb")
                 Text(text = "Uplink: ${(appData.txBytes / 1024).toString()} Kb")
             }
-            // Кнопка "Show Chart"
+            // Кнопка "Show Chart" - для отображения почасового графика
             Button(onClick = { onShowChart(appData.appName) }) {
                 Text("Show Chart")
             }
@@ -1220,8 +1220,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     mobileStats.getNextBucket(bucket)
                     if (bucket.uid == uid) {
                         mobileBytes += bucket.rxBytes + bucket.txBytes
-                        totalDownlinkBytes += bucket.rxBytes // Суммируем Downlink
-                        totalUplinkBytes += bucket.txBytes   // Суммируем Uplink
+                        totalDownlinkBytes += bucket.rxBytes
+                        totalUplinkBytes += bucket.txBytes
                     }
                 }
                 mobileStats.close()
@@ -1239,8 +1239,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     wifiStats.getNextBucket(bucket)
                     if (bucket.uid == uid) {
                         wifiBytes += bucket.rxBytes + bucket.txBytes
-                        totalDownlinkBytes += bucket.rxBytes // Суммируем Downlink
-                        totalUplinkBytes += bucket.txBytes   // Суммируем Uplink
+                        totalDownlinkBytes += bucket.rxBytes
+                        totalUplinkBytes += bucket.txBytes
                     }
                 }
                 wifiStats.close()
@@ -1268,11 +1268,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @Composable
     fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
         val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, Long>>() }
+        val packageName = getPackageNameForApp(context, appName) // Получаем имя пакета
 
         // Получаем почасовую статистику трафика для приложения
-        LaunchedEffect(appName, hourlyTrafficData) { // Добавлена зависимость от hourlyTrafficData
-            hourlyTrafficData.clear() // Очищаем список перед добавлением новых данных
-            hourlyTrafficData.addAll(getHourlyTrafficData(context, appName))
+        LaunchedEffect(packageName, hourlyTrafficData) {
+            if (packageName != null) { // Проверяем, что имя пакета найдено
+                hourlyTrafficData.clear() // Очищаем список перед добавлением новых данных
+                hourlyTrafficData.addAll(getHourlyTrafficData(context, packageName))
+            }
         }
 
         // Диалог с графиком
@@ -1287,61 +1290,117 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                     }
 
-                    // График
-                    HourlyTrafficChartContent(hourlyTrafficData)
+                    // График (отображаем, только если имя пакета найдено)
+                    if (packageName != null) {
+                        HourlyTrafficChartContent(hourlyTrafficData)
+                    } else {
+                        Text("Error: Package not found", color = Color.Red)
+                    }
                 }
             }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
+    private fun getPackageNameForApp(context: Context, appName: String): String? {
+        val packageManager = context.packageManager
+        for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
+            val currentAppName = packageManager.getApplicationLabel(packageInfo).toString()
+            if (currentAppName == appName) {
+                return packageInfo.packageName
+            }
+        }
+        return null // Возвращаем null, если пакет не найден
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
     @Composable
     fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-            val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second } ?: 0L
-            val hourWidth = size.width / 24
+        val scrollState = rememberScrollState()
+        val hourWidth = 100.dp
+        val chartWidth = hourWidth * 24
+        val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second } ?: 1L
+        val maxTrafficKb = (maxTraffic / 1024).toFloat() // Максимальное значение трафика в Кб (для оси Y)
 
-            hourlyTrafficData.forEachIndexed { index, (hour, traffic) ->
-                val x = index * hourWidth
-                val y = size.height - (traffic / maxTraffic * size.height)
-
-                // Рисуем столбец
-                drawRect(
-                    color = Color.Blue,
-                    topLeft = Offset(x.toFloat(), y.toFloat()),
-                    size = Size(hourWidth.toFloat(), (traffic / maxTraffic * size.height).toFloat())
-                )
-
-                // Отображаем время под столбцом
-                drawContext.canvas.nativeCanvas.drawText(
-                    "$hour:00",
-                    x + hourWidth / 2 - 15f,
-                    size.height + 15f,
-                    android.graphics.Paint().apply {
-                        textSize = 10.sp.toPx()
-                        color = android.graphics.Color.BLACK
-                        textAlign = android.graphics.Paint.Align.CENTER
+        Box(modifier = Modifier.horizontalScroll(scrollState)) {
+            Row {
+                // Рисуем вертикальную ось
+                Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
+                    val stepSize = maxTrafficKb / 5
+                    for (i in 0..5) {
+                        val y = size.height - i * (size.height / 5)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            String.format("%.0f", i * stepSize),
+                            10f,
+                            y,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.LEFT
+                            }
+                        )
                     }
-                )
+                }
+
+                // Рисуем столбчатую диаграмму
+                Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
+                    hourlyTrafficData.forEachIndexed { index, (hour, traffic) ->
+                        val x = index * hourWidth.toPx()
+                        val trafficKb = (traffic / 1024).toFloat() // Трафик в Кб
+                        val barHeight = trafficKb / maxTrafficKb * size.height // Высота столбца
+
+                        // Рисуем столбец
+                        drawRect(
+                            color = Color.Blue,
+                            topLeft = Offset(x, size.height - barHeight), // Столбец рисуется снизу вверх
+                            size = androidx.compose.ui.geometry.Size(hourWidth.toPx() - 4.dp.toPx(), barHeight)
+                        )
+
+                        // Отображаем время под столбцом
+                        drawContext.canvas.nativeCanvas.drawText(
+                            "$hour:00",
+                            x + hourWidth.toPx() / 2 - 15f,
+                            size.height + 15f,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        // Отображаем значение трафика над столбцом
+                        drawContext.canvas.nativeCanvas.drawText(
+                            String.format("%.1f", trafficKb), // Форматируем значение трафика с одним знаком после запятой
+                            x + hourWidth.toPx() / 2 - 15f, // Сдвигаем текст немного вправо
+                            size.height - barHeight - 5.dp.toPx(), // Позиционируем текст над столбцом
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+                    }
+                }
             }
         }
     }
 
-    // Функция для получения почасовой статистики трафика
+
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun getHourlyTrafficData(context: Context, appName: String): List<Pair<Int, Long>> {
+    private fun getHourlyTrafficData(context: Context, packageName: String): List<Pair<Int, Long>> {
         val hourlyTrafficData = mutableListOf<Pair<Int, Long>>()
         val packageManager = context.packageManager
-        val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
+        val networkStatsManager =
+            context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         val currentTime = System.currentTimeMillis()
         val startTime = currentTime - TimeUnit.DAYS.toMillis(1) // Статистика за последние 24 часа
 
         // Получаем информацию о пакете приложения
         val packageInfo = try {
-            packageManager.getPackageInfo(appName, 0)
+            packageManager.getPackageInfo(packageName, 0)
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.e("HourlyTraffic", "Error getting package info for $appName: ${e.message}", e)
+            Log.e("HourlyTraffic", "Error getting package info for $packageName: ${e.message}", e)
             return hourlyTrafficData // Возвращаем пустой список, если пакет не найден
         }
 
@@ -1384,7 +1443,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 wifiStats.close()
 
             } catch (e: Exception) {
-                Log.e("HourlyTraffic", "Error getting traffic data for $appName: ${e.message}", e)
+                Log.e("HourlyTraffic", "Error getting traffic data for $packageName: ${e.message}", e)
             }
 
             val totalBytes = mobileBytes + wifiBytes
