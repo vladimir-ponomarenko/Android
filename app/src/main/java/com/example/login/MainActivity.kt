@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
-import android.net.TrafficStats
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -374,6 +373,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         startActivity(intent)
     }
 
+    // Функция для проверки разрешения USAGE STATS
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun hasUsageStatsPermission(context: Context): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+            android.os.Process.myUid(), context.packageName)
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
     private fun checkAndRequestPermissions() {
         val context = applicationContext
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) { // Android 11 (API 30) и ниже
@@ -579,35 +587,36 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     fun TrafficScreen(state: MainActivityState) {
         val context = LocalContext.current
         val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
-        var days by remember { mutableStateOf("1") } // Состояние для хранения введенного количества дней
-        var showError by remember { mutableStateOf(false) } // Состояние для отображения ошибки
-        var showChart by remember { mutableStateOf(false) } // Состояние для отображения графика
-        var selectedAppName by remember { mutableStateOf("") } // Состояние для имени выбранного приложения
+        var days by remember { mutableStateOf("1") }
+        var showError by remember { mutableStateOf(false) }
+        var showChart by remember { mutableStateOf(false) }
+        var selectedAppName by remember { mutableStateOf("") }
 
-        // Добавляем state.mobileTraffic и state.wifiTraffic в зависимости LaunchedEffect
-        LaunchedEffect(appTrafficData.value, state.mobileTraffic, state.wifiTraffic, days) {
-            // Проверяем, что days - это число
+        // Получаем общую статистику трафика
+        val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
+
+        LaunchedEffect(appTrafficData.value, days) {
             val numDays = days.toIntOrNull()
             if (numDays != null) {
-                showError = false // Скрываем сообщение об ошибке, если число корректно
+                showError = false
                 while (true) {
                     appTrafficData.value =
                         getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
-                    state.mobileTraffic =
-                        TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
-                    state.wifiTraffic =
-                        TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
-                                TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
-                    delay(1000) // Обновляем каждую секунду
+                    // Обновляем общую статистику
+                    totalTrafficData.value = getTotalTrafficData(context, numDays)
+                    delay(5000) // Раз 5 секунд
                 }
             } else {
-                showError = true // Отображаем сообщение об ошибке, если не число
+                showError = true
             }
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
+            // Выводим общую статистику
             Text(
-                text = "Total Traffic: ${(state.mobileTraffic + state.wifiTraffic) / 1024} Kb, Mobile: ${(state.mobileTraffic / 1024).toString()} Kb, Wi-Fi: ${(state.wifiTraffic / 1024).toString()} Kb",
+                text = "Total Traffic: ${(totalTrafficData.value.totalBytes / 1024)} Kb, " +
+                        "Mobile: ${(totalTrafficData.value.mobileBytes / 1024)} Kb, " +
+                        "Wi-Fi: ${(totalTrafficData.value.wifiBytes / 1024)} Kb",
                 modifier = Modifier.padding(16.dp)
             )
 
@@ -628,11 +637,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 )
             }
 
-            Button(onClick = {
-                // Запрашиваем разрешение при нажатии на кнопку
-                requestUsageStatsPermission()
-            }) {
-                Text("Grant Usage Stats Permission")
+            // Проверяем, есть ли разрешение
+            if (!hasUsageStatsPermission(context)) {
+                Button(onClick = {
+                    requestUsageStatsPermission()
+                }) {
+                    Text("Grant Usage Stats Permission")
+                }
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -653,6 +664,39 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
+
+
+    // Функция для получения общей статистики трафика
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getTotalTrafficData(context: Context, days: Int): TotalTrafficData {
+        var mobileBytes = 0L
+        var wifiBytes = 0L
+        val currentTime = System.currentTimeMillis()
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(days.toLong())
+
+        val networkStatsManager = context.getSystemService(NETWORK_STATS_SERVICE) as NetworkStatsManager
+
+        try {
+            // Мобильный трафик
+            val mobileStats = networkStatsManager.querySummaryForDevice(ConnectivityManager.TYPE_MOBILE, null, startTime, currentTime)
+            mobileBytes = mobileStats.rxBytes + mobileStats.txBytes
+
+            // Wi-Fi трафик
+            val wifiStats = networkStatsManager.querySummaryForDevice(ConnectivityManager.TYPE_WIFI, null, startTime, currentTime)
+            wifiBytes = wifiStats.rxBytes + wifiStats.txBytes
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching network stats", e)
+        }
+
+        return TotalTrafficData(mobileBytes + wifiBytes, mobileBytes, wifiBytes)
+    }
+
+    // Класс для хранения данных общей статистики
+    data class TotalTrafficData(
+        val totalBytes: Long,
+        val mobileBytes: Long,
+        val wifiBytes: Long
+    )
 
     private fun getLocation(state: MainActivityState, context: Context) {
         Log.d(TAG, "getLocation() called")
@@ -1394,38 +1438,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun getHourlyTrafficData(context: Context, packageName: String): List<Pair<Int, Long>> {
-        val hourlyTrafficData = mutableListOf<Pair<Int, Long>>()
         val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-
-        var previousTotalBytes = 0L // Начинаем с 0 трафика
-
-        for (hourOffset in 1..24) { // Отсчёт: 1 час назад, 2 часа назад, ..., 24 часа назад
-            val totalBytes = getTrafficForPackage(context, packageName, hourOffset) // Трафик за hourOffset часов
-            val trafficForHour = totalBytes - previousTotalBytes  // Вычитаем трафик за предыдущий период
-            val displayHour = (currentHour - hourOffset + 24) % 24
-            hourlyTrafficData.add(Pair(displayHour, trafficForHour))
-            previousTotalBytes = totalBytes // Обновляем previousTotalBytes
-        }
-
-        return hourlyTrafficData.reversed() // Инвертируем список, чтобы часы шли по порядку
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun getTrafficForPackage(context: Context, packageName: String, hours: Int): Long {
+        val hourlyTrafficData = MutableList(24) { i -> Pair((i + currentHour) % 24, 0L) } // Заполняем список нулями
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
         val packageManager = context.packageManager
+
         val currentTime = System.currentTimeMillis()
-        val startTime = currentTime - TimeUnit.HOURS.toMillis(hours.toLong())
+        val startTime = currentTime - TimeUnit.DAYS.toMillis(1)
 
         val uid = try {
             packageManager.getApplicationInfo(packageName, 0).uid
         } catch (e: PackageManager.NameNotFoundException) {
             Log.e(TAG, "Error: Package $packageName not found", e)
-            return 0
+            return emptyList()
         }
 
-        var totalBytes = 0L
         try {
             // Мобильный трафик
             val mobileStats = networkStatsManager.queryDetailsForUid(
@@ -1435,14 +1462,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 currentTime,
                 uid
             )
-            while (mobileStats.hasNextBucket()) {
-                val bucket = NetworkStats.Bucket()
-                mobileStats.getNextBucket(bucket)
-                // Проверяем, что bucket попадает в запрашиваемый временной интервал
-                if (bucket.startTimeStamp >= startTime && bucket.endTimeStamp <= currentTime) {
-                    totalBytes += bucket.rxBytes + bucket.txBytes
-                }
-            }
+            sumTrafficForHours(mobileStats, hourlyTrafficData, currentHour)
             mobileStats.close()
 
             // Wi-Fi трафик
@@ -1453,19 +1473,43 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 currentTime,
                 uid
             )
-            while (wifiStats.hasNextBucket()) {
-                val bucket = NetworkStats.Bucket()
-                wifiStats.getNextBucket(bucket)
-                // Проверяем, что bucket попадает в запрашиваемый временной интервал
-                if (bucket.startTimeStamp >= startTime && bucket.endTimeStamp <= currentTime) {
-                    totalBytes += bucket.rxBytes + bucket.txBytes
-                }
-            }
+            sumTrafficForHours(wifiStats, hourlyTrafficData, currentHour)
             wifiStats.close()
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching network stats: ${e.message}", e)
         }
-        return totalBytes
+
+        return hourlyTrafficData
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun sumTrafficForHours(networkStats: NetworkStats, hourlyTrafficData: MutableList<Pair<Int, Long>>, currentHour: Int) {
+        while (networkStats.hasNextBucket()) {
+            val bucket = NetworkStats.Bucket()
+            networkStats.getNextBucket(bucket)
+
+            val bucketStartHour = java.util.Calendar.getInstance().apply {
+                timeInMillis = bucket.startTimeStamp
+            }.get(java.util.Calendar.HOUR_OF_DAY)
+
+            val bucketEndHour = java.util.Calendar.getInstance().apply {
+                timeInMillis = bucket.endTimeStamp
+            }.get(java.util.Calendar.HOUR_OF_DAY)
+
+            // Определяем, в какие часы попадает bucket
+            val hours = if (bucketStartHour <= bucketEndHour) {
+                bucketStartHour..bucketEndHour
+            } else {
+                (bucketStartHour..23) + (0..bucketEndHour)
+            }
+
+            hours.forEach { hour ->
+                val displayHour = (hour + currentHour) % 24
+                val index = (displayHour - currentHour + 24) % 24
+                val traffic = hourlyTrafficData[index].second
+                hourlyTrafficData[index] = Pair(displayHour, traffic + bucket.rxBytes + bucket.txBytes)
+            }
+        }
     }
 
 
@@ -1503,15 +1547,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         //Для тепловой карты (точки)
         val locations = mutableStateListOf<Pair<LatLng, Color>>()
-
-        // Для общего трафика
-        var mobileTraffic by mutableStateOf(
-            TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
-        )
-        var wifiTraffic by mutableStateOf(
-            TrafficStats.getTotalRxBytes() - TrafficStats.getMobileRxBytes() +
-                    TrafficStats.getTotalTxBytes() - TrafficStats.getMobileTxBytes()
-        )
 
         var Email by mutableStateOf("")
         var Password by mutableStateOf("")
