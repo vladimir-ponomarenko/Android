@@ -1438,13 +1438,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun getHourlyTrafficData(context: Context, packageName: String): List<Pair<Int, Long>> {
-        val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-        val hourlyTrafficData = MutableList(24) { i -> Pair((i + currentHour) % 24, 0L) } // Заполняем список нулями
+        val calendar = java.util.Calendar.getInstance()
+        val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+
+        // Начинаем с текущего часа предыдущего дня
+        calendar.add(java.util.Calendar.DAY_OF_YEAR, -1)
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, currentHour)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        val startTime = calendar.timeInMillis
+
+        // Заканчиваем текущим временем
+        val endTime = System.currentTimeMillis()
+
+        val hourlyTrafficData = MutableList(24) { 0L }
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
         val packageManager = context.packageManager
-
-        val currentTime = System.currentTimeMillis()
-        val startTime = currentTime - TimeUnit.DAYS.toMillis(1)
 
         val uid = try {
             packageManager.getApplicationInfo(packageName, 0).uid
@@ -1454,62 +1464,53 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         try {
-            // Мобильный трафик
-            val mobileStats = networkStatsManager.queryDetailsForUid(
-                ConnectivityManager.TYPE_MOBILE,
-                null,
-                startTime,
-                currentTime,
-                uid
-            )
-            sumTrafficForHours(mobileStats, hourlyTrafficData, currentHour)
-            mobileStats.close()
+            var previousTotalBytes = 0L
 
-            // Wi-Fi трафик
-            val wifiStats = networkStatsManager.queryDetailsForUid(
-                ConnectivityManager.TYPE_WIFI,
-                null,
-                startTime,
-                currentTime,
-                uid
-            )
-            sumTrafficForHours(wifiStats, hourlyTrafficData, currentHour)
-            wifiStats.close()
+            for (hour in 0 until 24) {
+                // Вычисляем время окончания текущего часа
+                calendar.add(java.util.Calendar.HOUR_OF_DAY, 1)
+                val currentHourEnd = calendar.timeInMillis
+
+                // Получаем суммарный трафик за текущий час
+                var totalBytes = 0L
+                totalBytes += getTrafficForHour(networkStatsManager, uid, startTime, currentHourEnd, ConnectivityManager.TYPE_MOBILE)
+                totalBytes += getTrafficForHour(networkStatsManager, uid, startTime, currentHourEnd, ConnectivityManager.TYPE_WIFI)
+
+                // Трафик за текущий час - это разница между суммарным трафиком за текущий час и предыдущим
+                hourlyTrafficData[hour] = totalBytes - previousTotalBytes
+                previousTotalBytes = totalBytes
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching network stats: ${e.message}", e)
         }
 
-        return hourlyTrafficData
+        // Возвращаем список, начиная с текущего часа
+        return hourlyTrafficData.mapIndexed { index, traffic ->
+            Pair((index + currentHour) % 24, traffic)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun sumTrafficForHours(networkStats: NetworkStats, hourlyTrafficData: MutableList<Pair<Int, Long>>, currentHour: Int) {
-        while (networkStats.hasNextBucket()) {
-            val bucket = NetworkStats.Bucket()
-            networkStats.getNextBucket(bucket)
-
-            val bucketStartHour = java.util.Calendar.getInstance().apply {
-                timeInMillis = bucket.startTimeStamp
-            }.get(java.util.Calendar.HOUR_OF_DAY)
-
-            val bucketEndHour = java.util.Calendar.getInstance().apply {
-                timeInMillis = bucket.endTimeStamp
-            }.get(java.util.Calendar.HOUR_OF_DAY)
-
-            // Определяем, в какие часы попадает bucket
-            val hours = if (bucketStartHour <= bucketEndHour) {
-                bucketStartHour..bucketEndHour
-            } else {
-                (bucketStartHour..23) + (0..bucketEndHour)
+    private fun getTrafficForHour(networkStatsManager: NetworkStatsManager, uid: Int, startTime: Long, endTime: Long, networkType: Int): Long {
+        var totalBytes = 0L
+        try {
+            val networkStats = networkStatsManager.queryDetailsForUid(
+                networkType,
+                null,
+                startTime,
+                endTime,
+                uid
+            )
+            while (networkStats.hasNextBucket()) {
+                val bucket = NetworkStats.Bucket()
+                networkStats.getNextBucket(bucket)
+                totalBytes += bucket.rxBytes + bucket.txBytes
             }
-
-            hours.forEach { hour ->
-                val displayHour = (hour + currentHour) % 24
-                val index = (displayHour - currentHour + 24) % 24
-                val traffic = hourlyTrafficData[index].second
-                hourlyTrafficData[index] = Pair(displayHour, traffic + bucket.rxBytes + bucket.txBytes)
-            }
+            networkStats.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching network stats: ${e.message}", e)
         }
+        return totalBytes
     }
 
 
