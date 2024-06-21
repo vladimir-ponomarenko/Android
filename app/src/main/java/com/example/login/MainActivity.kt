@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         // Intent action для управления сервисом
         const val ACTION_START_SERVICE = "com.example.login.ACTION_START_SERVICE"
         const val ACTION_STOP_SERVICE = "com.example.login.ACTION_STOP_SERVICE"
+
     }
 
     private lateinit var state: MainActivityState
@@ -332,7 +333,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun generateJSON(state: MainActivityState): String {
+    fun generateJSON(state: MainActivityState): String {
         val currentTimestamp = Instant.now().toString()
         val formattedTimestamp = String.format(
             DateTimeFormatter.ISO_INSTANT.format(
@@ -668,7 +669,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     // Функция для получения общей статистики трафика
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun getTotalTrafficData(context: Context, days: Int): TotalTrafficData {
+    internal fun getTotalTrafficData(context: Context, days: Int): TotalTrafficData {
         var mobileBytes = 0L
         var wifiBytes = 0L
         val currentTime = System.currentTimeMillis()
@@ -776,6 +777,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 state.SignalStrength = "N/A"
                 state.BitErrorRate = "N/A"
                 state.TimingAdvance = "N/A"
+                state.Band = "N/A"
+                state.Operator = "N/A"
+                state.Technology = "N/A"
+
 
             } else {
                 for (info in cellInfoList) {
@@ -830,6 +835,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 } else {
                                     "N/A"
                                 }
+                            state.Band = getBandFromEarfcn(info.cellIdentity.earfcn)
+                            state.Operator = telephonyManager.networkOperatorName
+                            state.Technology = "LTE"
                             Log.d(TAG, "RSRP value: ${state.Rsrp}")
                             Log.d(TAG, "Rssi value: ${state.Rssi}")
                             Log.d(TAG, "Rsrq value: ${state.Rsrq}")
@@ -848,6 +856,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             Log.d(TAG, "Signal Strength: ${state.SignalStrength}")
                             Log.d(TAG, "Bit Error Rate: ${state.BitErrorRate}")
                             Log.d(TAG, "Timing Advance: ${state.TimingAdvance}")
+                            Log.d(TAG, "Band: ${state.Band}")
+                            Log.d(TAG, "Operator: ${state.Operator}")
+                            Log.d(TAG, "Technology: ${state.Technology}")
                         }
                         break
                     }
@@ -872,6 +883,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             state.SignalStrength = "No READ_PHONE_STATE permission"
             state.BitErrorRate = "No READ_PHONE_STATE permission"
             state.TimingAdvance = "No READ_PHONE_STATE permission"
+            state.Band = "No READ_PHONE_STATE permission"
+            state.Operator = "No READ_PHONE_STATE permission"
+            state.Technology = "No READ_PHONE_STATE permission"
         }
     }
 
@@ -974,89 +988,39 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @Composable
     fun DataScreen(state: MainActivityState) {
-        Column(
+        val dataItems = listOf(
+            "RSRP value: ${state.Rsrp}",
+            "Rssi value: ${state.Rssi}",
+            "Rsrq value: ${state.Rsrq}",
+            "Rssnr value: ${state.Rssnr}",
+            "Cqi value: ${state.Cqi}",
+            "Bandwidth: ${state.Bandwidth}",
+            "Cell ID: ${state.Cellid}",
+            "LAT: ${state.Latitude}",
+            "LON: ${state.Longtitude}",
+            "MCC: ${state.Mcc}",
+            "MNC: ${state.Mnc}",
+            "LAC: ${state.Lac}",
+            "TAC: ${state.Tac}",
+            "PCI: ${state.Pci}",
+            "EARFCN: ${state.Earfcn}",
+            "CI: ${state.Ci}",
+            "Network Type: ${state.NetworkType}",
+            "Signal Strength: ${state.SignalStrength}",
+            "Bit Error Rate: ${state.BitErrorRate}",
+            "Timing Advance: ${state.TimingAdvance}",
+            "Band: ${state.Band}",
+            "Technology: ${state.Technology}",
+            "Operator: ${state.Operator}"
+        )
+
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "RSRP value: ${state.Rsrp}"
-            )
-            Text(
-                text = "Rssi value: ${state.Rssi}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Rsrq value: ${state.Rsrq}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Rssnr value: ${state.Rssnr}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Cqi value: ${state.Cqi}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Bandwidth: ${state.Bandwidth}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Cell ID: ${state.Cellid}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "LAT: ${state.Latitude}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "LON: ${state.Longtitude}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "MCC: ${state.Mcc}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "MNC: ${state.Mnc}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "LAC: ${state.Lac}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "TAC: ${state.Tac}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "PCI: ${state.Pci}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "EARFCN: ${state.Earfcn}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "CI: ${state.Ci}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Network Type: ${state.NetworkType}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Signal Strength: ${state.SignalStrength}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Bit Error Rate: ${state.BitErrorRate}",
-                modifier = Modifier.padding(16.dp)
-            )
-            Text(
-                text = "Timing Advance: ${state.TimingAdvance}",
-                modifier = Modifier.padding(16.dp)
-            )
+            items(dataItems) { item ->
+                Text(text = item, modifier = Modifier.padding(16.dp))
+            }
         }
     }
 
@@ -1164,13 +1128,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @Composable
     fun MapScreen(state: MainActivityState) {
-        LaunchedEffect(state.Latitude, state.Longtitude, state.Rsrp) {
-            val lat = state.Latitude.toDoubleOrNull()
-            val lng = state.Longtitude.toDoubleOrNull()
-            if (lat != null && lng != null) {
-                val color =
-                    generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
-                state.locations.add(Pair(LatLng(lat, lng), color))
+        val context = LocalContext.current // Получаем контекст
+
+        LaunchedEffect(Unit) { // Запускаем корутину при запуске composable
+            while (true) { // Бесконечный цикл
+                val lat = state.Latitude.toDoubleOrNull()
+                val lng = state.Longtitude.toDoubleOrNull()
+                if (lat != null && lng != null) {
+                    val color =
+                        generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
+                    state.locations.add(Pair(LatLng(lat, lng), color))
+                }
+                delay(UPDATE_INTERVAL) // Задержка, соответствующая интервалу обновления
             }
         }
         val cameraPositionState = rememberCameraPositionState {
@@ -1198,7 +1167,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
-
     data class AppTrafficData(
         val appName: String,
         val totalBytes: Long,
@@ -1476,9 +1444,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 totalBytes += getTrafficForHour(networkStatsManager, uid, startTime, currentHourEnd, ConnectivityManager.TYPE_MOBILE)
                 totalBytes += getTrafficForHour(networkStatsManager, uid, startTime, currentHourEnd, ConnectivityManager.TYPE_WIFI)
 
-                // Трафик за текущий час - это разница между суммарным трафиком за текущий час и предыдущим
+                // Трафик за текущий час - это разница между суммарным трафиком
+                // за период до конца текущего часа и суммарным трафиком до начала текущего часа
                 hourlyTrafficData[hour] = totalBytes - previousTotalBytes
-                previousTotalBytes = totalBytes
+                previousTotalBytes = totalBytes // Обновляем previousTotalBytes для следующей итерации
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching network stats: ${e.message}", e)
@@ -1522,6 +1491,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+    // Добавляем функцию для определения диапазона частот (Band)
+    private fun getBandFromEarfcn(earfcn: Int): String {
+        return when (earfcn) {
+            in 1..600 -> "Band 1 (2100 MHz)"
+            in 1200..1950 -> "Band 3 (1800 MHz)"
+            in 1951..2650 -> "Band 4 (1700/2100 MHz AWS)"
+            in 2750..3450 -> "Band 7 (2600 MHz)"
+            in 3600..4150 -> "Band 8 (900 MHz)"
+            in 6600..7100 -> "Band 20 (800 DD)"
+            in 9210..9660 -> "Band 28 (700 APT)"
+            in 9770..10280 -> "Band 38 (TD 2600)"
+            in 25700..26200 -> "Band 41 (TD 2500)"
+            in 65536..67535 -> "Band 71 (600 MHz)"
+            else -> "Unknown"
+        }
+    }
+
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
@@ -1544,6 +1530,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var SignalStrength by mutableStateOf("")
         var BitErrorRate by mutableStateOf("")
         var TimingAdvance by mutableStateOf("")
+        var Band by mutableStateOf("")
+        var Technology by mutableStateOf("")
+        var Operator by mutableStateOf("")
         var selectedTabIndex by mutableStateOf(0)
 
         //Для тепловой карты (точки)
