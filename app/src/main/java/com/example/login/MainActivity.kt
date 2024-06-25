@@ -2,6 +2,13 @@
 
 package com.example.login
 
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.usage.NetworkStats
@@ -28,7 +35,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -101,8 +107,11 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.IOException
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 
@@ -120,6 +129,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val SERVER_URL1 = "ws://45.90.218.73:8080"
 
         const val WEBSOCKET_ENDPOINT = "/api/sockets/thermalmap"
+        const val TRAFFIC_SERVER_URL = "/api/***" //  для отправки трафика
+
 
         // Имя ключа для SharedPreferences
         private const val SHARED_PREFS_NAME = "login_prefs"
@@ -280,6 +291,77 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+    private fun authenticateForTraffic(email: String, password: String, onComplete: (AuthResponse?) -> Unit) {
+        val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("$SERVER_URL/api/user/auth")
+            .post(requestBody)
+            .build()
+
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "Failed to authenticate for traffic data", e)
+                onComplete(null) // Передаем null в случае ошибки
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "Failed to authenticate for traffic data: ${response.code}")
+                        onComplete(null) // Передаем null в случае ошибки
+                        return
+                    }
+
+                    val responseBody = response.body?.string()
+                    try {
+                        val authResponse = Json.decodeFromString<AuthResponse>(responseBody ?: "")
+                        Log.d(TAG, "Auth response: $authResponse")
+                        onComplete(authResponse) // Передаем authResponse в случае успеха
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse auth response: ${e.message}")
+                        onComplete(null) // Передаем null в случае ошибки парсинга
+                    }
+                }
+            }
+        })
+    }
+
+
+    private fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>) {
+        val dataToSend = mapOf(
+            "jwt" to jwt,  // JWT
+            "uuid" to state.Uuid, // UUID
+            "trafficData" to trafficData
+        )
+        val jsonBody = Json.encodeToString(dataToSend)
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url(TRAFFIC_SERVER_URL)
+            .header("Authorization", "Bearer $jwt") // Заголовок авторизации
+            .post(requestBody)
+            .build()
+
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "Failed to send traffic data to server", e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "Failed to send traffic data to server: ${response.code}")
+                    } else {
+                        Log.d(TAG, "Traffic data sent to server successfully")
+                    }
+                }
+            }
+        })
+    }
+
+
     private fun connectWebSocket(jwt: String) {
         if (webSocket != null) {
             // Проверяем, был ли WebSocket уже создан
@@ -401,7 +483,24 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             } else {
                 getLocation(state, applicationContext)
             }
-        } else { // Android 13 (API 33) и выше
+        }
+        else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S) { // Android 12 (API 31)
+            if (!checkPermissionsForAndroid12(context)) {
+                Log.d(TAG, "Requesting permissions (API == 31)")
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.READ_PHONE_STATE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    ),
+                    REQUEST_CODE_PERMISSIONS
+                )
+            } else {
+                getLocation(state, applicationContext)
+            }
+        }else { // Android 13 (API 33) и выше
             if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     !checkPermissionsForAndroid13(context)
                 } else {
@@ -425,6 +524,27 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 getLocation(state, applicationContext)
             }
         }
+    }
+
+    // Функция для проверки разрешений на Android 12
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun checkPermissionsForAndroid12(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_PHONE_STATE
+                ) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_EXTERNAL_STORAGE // Для доступа к хранилищу на Android 12
+                ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun checkPermissions(context: Context): Boolean { // Для Android 11 (API 30) и ниже
@@ -490,8 +610,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
-        var showChart by remember { mutableStateOf(false) } // Состояние для отображения графика
-        var selectedAppName by remember { mutableStateOf("") } // Состояние для имени выбранного приложения
+
 
         // Запускаем корутину для показа Snackbar
         LaunchedEffect(isWebSocketConnected) {
@@ -592,6 +711,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var showError by remember { mutableStateOf(false) }
         var showChart by remember { mutableStateOf(false) }
         var selectedAppName by remember { mutableStateOf("") }
+        var isSendingTrafficData by remember { mutableStateOf(false) } // Флаг для индикатора отправки трафика
 
         // Получаем общую статистику трафика
         val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
@@ -605,7 +725,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
                     // Обновляем общую статистику
                     totalTrafficData.value = getTotalTrafficData(context, numDays)
-                    delay(5000) // Раз 5 секунд
+                    delay(5000) // Раз в 5 секунд
                 }
             } else {
                 showError = true
@@ -647,6 +767,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 }
             }
 
+            Button(onClick = {
+                isSendingTrafficData = true // Включаем индикатор отправки
+                authenticateForTraffic(state.Email, state.Password) { authResponse ->
+                    if (authResponse != null) {
+                        val top5Apps = appTrafficData.value.take(5) // Берем топ-5 приложений
+                        sendTrafficDataToServer(authResponse.jwt, top5Apps) // Отправляем данные с JWT токеном
+                    } else {
+                        // Обработка ошибки авторизации
+                        Log.e(TAG, "Authentication for traffic data failed")
+                    }
+                    isSendingTrafficData = false // Выключаем индикатор отправки
+                }
+            }) {
+                Text("Send Data to Server")
+            }
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(appTrafficData.value) { appData ->
                     TrafficItem(appData, onShowChart = { appName ->
@@ -665,7 +800,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
-
 
     // Функция для получения общей статистики трафика
     @RequiresApi(Build.VERSION_CODES.M)
@@ -1034,98 +1168,179 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun RSRPGraph(state: MainActivityState) {
+        // Создаем списки для хранения данных графиков
         val rsrpData = remember { mutableStateListOf<Pair<Long, Float>>() }
+        val rssiData = remember { mutableStateListOf<Pair<Long, Float>>() }
+        val rsrqData = remember { mutableStateListOf<Pair<Long, Float>>() }
 
-        // Запускаем корутину для добавления новых данных в список
-        LaunchedEffect(state.Rsrp, state.Cellid) {
-            val timestamp = System.currentTimeMillis()
-            val rsrpValue = state.Rsrp.replace(" dBm", "").toFloatOrNull() ?: 0f
-            rsrpData.add(Pair(timestamp, rsrpValue))
+        // Запускаем корутину для добавления новых данных в списки
+        LaunchedEffect(state.Rsrp, state.Rssi, state.Rsrq, state.Cellid) {
+            while (true) {
+                val timestamp = System.currentTimeMillis()
+
+                addChartData(rsrpData, state.Rsrp, timestamp)
+                addChartData(rssiData, state.Rssi, timestamp)
+                addChartData(rsrqData, state.Rsrq, timestamp)
+
+                delay(UPDATE_INTERVAL)
+            }
         }
 
-        // Используем Box для компоновки Canvas и осей
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            // Оси графика размещаем внизу Canvas
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(top = 16.dp) // Добавлен отступ сверху
-            ) {
-                Text(
-                    "Время", modifier = Modifier
-                        .padding(8.dp).align(Alignment.CenterHorizontally)
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Button(onClick = { state.showRSRPChart = true }, modifier = Modifier.padding(8.dp)) {
+                Text("Show RSRP Chart")
             }
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxHeight()
-                    .padding(end = 16.dp) // Добавлен отступ справа
-            ) {
-                Text(
-                    "RSRP (dBm)", modifier = Modifier
-                        .padding(8.dp)
-                        .align(Alignment.CenterVertically)
-                )
+            Button(onClick = { state.showRSSIChart = true }, modifier = Modifier.padding(8.dp)) {
+                Text("Show RSSI Chart")
             }
+            Button(onClick = { state.showRSRQChart = true }, modifier = Modifier.padding(8.dp)) {
+                Text("Show RSRQ Chart")
+            }
+            // ... добавьте кнопки для остальных параметров
+        }
 
-            // Canvas для отрисовки графика (сверху осей)
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        bottom = 48.dp,
-                        start = 48.dp,
-                        end = 16.dp,
-                        top = 48.dp
-                    ) // Отступы для осей и сверху
-            ) {
-                // Определяем максимальное значение RSRP для масштабирования
-                val maxRSRP = rsrpData.maxOfOrNull { it.second } ?: 0f
+        // Диалоговые окна с графиками
+        if (state.showRSRPChart) {
+            ChartDialog(
+                chartData = rsrpData,
+                chartTitle = "RSRP Chart",
+                onClose = { state.showRSRPChart = false }
+            )
+        }
 
-                // Рисуем график
-                rsrpData.forEachIndexed { index, (timestamp, rsrp) ->
-                    // Вычисляем координаты точки на графике
-                    val x = (index * size.width / (rsrpData.size - 1)).toFloat()
-                    val y = size.height - (rsrp / maxRSRP * size.height)
+        if (state.showRSSIChart) {
+            ChartDialog(
+                chartData = rssiData,
+                chartTitle = "RSSI Chart",
+                onClose = { state.showRSSIChart = false }
+            )
+        }
 
-                    // Рисуем точку
-                    drawCircle(
-                        color = Color.Blue,
-                        center = Offset(x, y),
-                        radius = 5f
+        if (state.showRSRQChart) {
+            ChartDialog(
+                chartData = rsrqData,
+                chartTitle = "RSRQ Chart",
+                onClose = { state.showRSRQChart = false }
+            )
+        }
+
+    }
+
+    // Функция для добавления данных в список графика
+    private fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: String, timestamp: Long) {
+        val chartValue = value.replace(" dBm", "").replace(" dB", "").toFloatOrNull() ?: 0f
+        chartData.add(Pair(timestamp, chartValue))
+        if (chartData.size > 10) {
+            chartData.removeAt(0)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Composable
+    fun ChartDialog(chartData: List<Pair<Long, Float>>, chartTitle: String, onClose: () -> Unit) {
+        Dialog(onDismissRequest = onClose) {
+            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = chartTitle,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
-                    // Соединяем точки линией, если это не первая точка
-                    if (index > 0) {
-                        val previousX = ((index - 1) * size.width / (rsrpData.size - 1)).toFloat()
-                        val previousY =
-                            size.height - (rsrpData[index - 1].second / maxRSRP * size.height)
-                        drawLine(
-                            start = Offset(previousX, previousY),
-                            end = Offset(x, y),
-                            color = Color.Red,
-                            strokeWidth = 2f
-                        )
+                    IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                     }
 
-                    // Отображаем Cell ID под точкой
-                    drawContext.canvas.nativeCanvas.drawText(
-                        state.Cellid,
-                        x,
-                        y + 20.dp.toPx(), // Сдвигаем текст вниз от точки
-                        android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
-                            color = android.graphics.Color.BLACK
-                        }
-                    )
+                    ChartContent(chartData)
                 }
             }
         }
     }
 
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Composable
+    fun ChartContent(chartData: List<Pair<Long, Float>>) {
+        val scrollState = rememberScrollState()
+        val context = LocalContext.current
+
+        // Параметры графика
+        val hourWidth = 50.dp
+        val chartWidth = hourWidth * 24
+        val maxChartValue = chartData.maxOfOrNull { it.second } ?: 1f
+        val maxValue = (maxChartValue / 10).toInt() * 10 + 10 // Округляем до ближайшего большего десятка
+
+        Box(modifier = Modifier.horizontalScroll(scrollState)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                // Вертикальная ось Y
+                Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
+                    val stepSize = maxValue / 5f
+                    for (i in 0..5) {
+                        val y = size.height - i * (size.height / 5)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            String.format("%.0f", i * stepSize),
+                            10f,
+                            y,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.LEFT
+                            }
+                        )
+                    }
+                }
+
+                // График (отображаем, только если данные есть)
+                Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
+                    chartData.forEachIndexed { index, (timestamp, chartValue) ->
+                        val x = index * hourWidth.toPx()
+                        val barHeight = (chartValue / maxValue * size.height).coerceAtLeast(0f)
+
+                        drawRect(
+                            color = Color.Blue,
+                            topLeft = Offset(x, size.height - barHeight),
+                            size = androidx.compose.ui.geometry.Size(
+                                hourWidth.toPx() - 4.dp.toPx(),
+                                barHeight
+                            )
+                        )
+
+                        // Отображение времени
+                        val date = Date(timestamp)
+                        val format = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                        val formattedTime = format.format(date)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            formattedTime,
+                            x + hourWidth.toPx() / 2,
+                            size.height + 15f,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        // Отображение значения и Cell ID
+                        val text = String.format("%.1f (ID: %s)", chartValue, state.Cellid)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            text,
+                            x + hourWidth.toPx() / 2,
+                            size.height - barHeight - 5.dp.toPx(),
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
     @Composable
     fun MapScreen(state: MainActivityState) {
         val context = LocalContext.current // Получаем контекст
@@ -1534,6 +1749,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Technology by mutableStateOf("")
         var Operator by mutableStateOf("")
         var selectedTabIndex by mutableStateOf(0)
+
+        // Переменные состояния для отображения графиков
+        var showRSRPChart by mutableStateOf(false)
+        var showRSSIChart by mutableStateOf(false)
+        var showRSRQChart by mutableStateOf(false)
 
         //Для тепловой карты (точки)
         val locations = mutableStateListOf<Pair<LatLng, Color>>()
