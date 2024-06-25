@@ -333,7 +333,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val dataToSend = mapOf(
             "jwt" to jwt,  // JWT
             "uuid" to state.Uuid, // UUID
-            "trafficData" to trafficData
+            "trafficData" to trafficData.map { appData -> // Преобразуем в килобайты
+                appData.copy(
+                    totalBytes = appData.totalBytes / 1024,
+                    mobileBytes = appData.mobileBytes / 1024,
+                    wifiBytes = appData.wifiBytes / 1024,
+                    rxBytes = appData.rxBytes / 1024,
+                    txBytes = appData.txBytes / 1024
+                )
+            }
         )
         val jsonBody = Json.encodeToString(dataToSend)
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
