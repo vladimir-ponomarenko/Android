@@ -440,6 +440,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val cqi = state.Cqi.toLongOrNull() ?: 0L
         val bandwidth = state.Bandwidth.toLongOrNull() ?: 0L
         val cellid = state.Cellid.toLongOrNull() ?: 0L
+        val physcellid = state.Pci.toLongOrNull() ?: 0L
 
         val messageData = MessageData(
             state.JwtToken,  // JWT
@@ -453,7 +454,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             rssnr,
             cqi,
             bandwidth,
-            cellid
+            cellid,
+            physcellid
         )
 
         return Json.encodeToString(messageData)
@@ -1823,7 +1825,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val rssnr: Long,
         val cqi: Long,
         val bandwidth: Long,
-        val cellID: Long
+        val cellID: Long,
+        val physcellid: Long
     )
 
     @Serializable
