@@ -17,6 +17,7 @@ object PermissionUtils {
 
     const val REQUEST_CODE_PERMISSIONS = 101
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun checkAndRequestPermissions(activity: Activity) {
         val context = activity.applicationContext
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
@@ -33,7 +34,7 @@ object PermissionUtils {
                     REQUEST_CODE_PERMISSIONS
                 )
             } else {
-                (activity as MainActivity).getLocation(MainActivity.state, context)
+                DataManager.getLocation(activity, MainActivity.state)
             }
         } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S) {
             if (!checkPermissionsForAndroid12(context)) {
@@ -49,7 +50,7 @@ object PermissionUtils {
                     REQUEST_CODE_PERMISSIONS
                 )
             } else {
-                (activity as MainActivity).getLocation(MainActivity.state, context)
+                DataManager.getLocation(activity, MainActivity.state)
             }
         } else {
             if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -72,7 +73,7 @@ object PermissionUtils {
                     REQUEST_CODE_PERMISSIONS
                 )
             } else {
-                (activity as MainActivity).getLocation(MainActivity.state, context)
+                DataManager.getLocation(activity, MainActivity.state)
             }
         }
     }
