@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.login.PermissionUtils.checkPermissions
+import com.example.login.PermissionUtils.checkPermissionsForAndroid13
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -68,14 +70,11 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 
-
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 
     companion object {
-        const val REQUEST_CODE_PERMISSIONS = 101
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
-        private const val READ_PHONE_STATE_PERMISSION_REQUEST_CODE = 1002
 
         const val TAG = "com.example.login.MainActivity"
         const val UPDATE_INTERVAL = 2000L
@@ -111,7 +110,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 MainScreen(isSendingData)
             }
         }
-        checkAndRequestPermissions()
+        PermissionUtils.checkAndRequestPermissions(this)
         state.loadLoginData()
     }
 
@@ -283,7 +282,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
 
-    private fun getLocation(state: MainActivityState, context: Context) {
+    internal fun getLocation(state: MainActivityState, context: Context) {
         Log.d(TAG, "getLocation() called")
 
         if (ContextCompat.checkSelfPermission(
@@ -338,7 +337,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     private fun getSignalStrength(state: MainActivityState) {
-        if (checkPhoneStatePermission(state.context)) {
+        if (PermissionUtils.checkPhoneStatePermission(state.context))  {
             val telephonyManager =
                 state.context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
             val cellInfoList = telephonyManager.allCellInfo
@@ -471,139 +470,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-    private fun checkPhoneStatePermission(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-
-    private fun checkAndRequestPermissions() {
-        val context = applicationContext
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
-            if (!checkPermissions(context)) {
-                Log.d(TAG, "Requesting permissions (API <= 30)")
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.READ_PHONE_STATE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ),
-                    REQUEST_CODE_PERMISSIONS
-                )
-            } else {
-                getLocation(state, applicationContext)
-            }
-        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S) {
-            if (!checkPermissionsForAndroid12(context)) {
-                Log.d(TAG, "Requesting permissions (API == 31)")
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.READ_PHONE_STATE,
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    ),
-                    REQUEST_CODE_PERMISSIONS
-                )
-            } else {
-                getLocation(state, applicationContext)
-            }
-        } else {
-            if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    !checkPermissionsForAndroid13(context)
-                } else {
-                    TODO("VERSION.SDK_INT < TIRAMISU")
-                }
-            ) {
-                Log.d(TAG, "Requesting permissions (API >= 33)")
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.READ_PHONE_STATE,
-                        Manifest.permission.READ_MEDIA_IMAGES,
-                        Manifest.permission.READ_MEDIA_VIDEO,
-                        Manifest.permission.READ_MEDIA_AUDIO
-                    ),
-                    REQUEST_CODE_PERMISSIONS
-                )
-            } else {
-                getLocation(state, applicationContext)
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.S)
-    private fun checkPermissionsForAndroid12(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_PHONE_STATE
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun checkPermissions(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_PHONE_STATE
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun checkPermissionsForAndroid13(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_PHONE_STATE
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_MEDIA_IMAGES
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_MEDIA_VIDEO
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_MEDIA_AUDIO
-                ) == PackageManager.PERMISSION_GRANTED
-    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun generateJSON(state: MainActivityState): String {
