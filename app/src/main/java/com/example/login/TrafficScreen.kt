@@ -42,7 +42,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         if (numDays != null) {
             showError = false
             while (true) {
-                appTrafficData.value = MainActivity().getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
+                appTrafficData.value = getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
                 totalTrafficData.value = getTotalTrafficData(context, numDays)
                 delay(5000)
             }

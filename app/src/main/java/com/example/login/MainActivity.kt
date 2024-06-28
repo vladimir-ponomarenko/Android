@@ -11,8 +11,6 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
-import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -54,7 +52,6 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
-import java.util.concurrent.TimeUnit
 
 
 @Suppress("NAME_SHADOWING")
@@ -168,7 +165,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun MainContent(state: MainActivity.MainActivityState, isLoggedIn: Boolean, onLoginSuccess: () -> Unit) {
@@ -268,7 +264,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun connectWebSocket(jwt: String) {
         if (webSocket != null) {
@@ -317,7 +312,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         )
     }
 
-
     @Composable
     fun SendingIndicator(isSendingData: Boolean) {
         Log.d(TAG, "Rendering SendingIndicator, isSendingData: $isSendingData")
@@ -335,82 +329,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 )
             }
         }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
-        val appTrafficDataList = mutableListOf<AppTrafficData>()
-        val packageManager = context.packageManager
-        val networkStatsManager =
-            context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
-
-        val currentTime = System.currentTimeMillis()
-        val startTime = currentTime - TimeUnit.DAYS.toMillis(days.toLong())
-
-        for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
-            val uid = packageInfo.uid
-            val appName = packageManager.getApplicationLabel(packageInfo).toString()
-
-            var mobileBytes = 0L
-            var wifiBytes = 0L
-            var totalDownlinkBytes = 0L
-            var totalUplinkBytes = 0L
-
-            try {
-                val mobileStats = networkStatsManager.queryDetailsForUid(
-                    ConnectivityManager.TYPE_MOBILE,
-                    null,
-                    startTime,
-                    currentTime,
-                    uid
-                )
-                var bucket = android.app.usage.NetworkStats.Bucket()
-                while (mobileStats.hasNextBucket()) {
-                    mobileStats.getNextBucket(bucket)
-                    if (bucket.uid == uid) {
-                        mobileBytes += bucket.rxBytes + bucket.txBytes
-                        totalDownlinkBytes += bucket.rxBytes
-                        totalUplinkBytes += bucket.txBytes
-                    }
-                }
-                mobileStats.close()
-
-                val wifiStats = networkStatsManager.queryDetailsForUid(
-                    ConnectivityManager.TYPE_WIFI,
-                    null,
-                    startTime,
-                    currentTime,
-                    uid
-                )
-                bucket = android.app.usage.NetworkStats.Bucket()
-                while (wifiStats.hasNextBucket()) {
-                    wifiStats.getNextBucket(bucket)
-                    if (bucket.uid == uid) {
-                        wifiBytes += bucket.rxBytes + bucket.txBytes
-                        totalDownlinkBytes += bucket.rxBytes
-                        totalUplinkBytes += bucket.txBytes
-                    }
-                }
-                wifiStats.close()
-
-                val totalBytes = mobileBytes + wifiBytes
-                appTrafficDataList.add(
-                    AppTrafficData(
-                        appName,
-                        totalBytes,
-                        mobileBytes,
-                        wifiBytes,
-                        totalDownlinkBytes,
-                        totalUplinkBytes
-                    )
-                )
-
-            } catch (e: Exception) {
-                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
-            }
-        }
-
-        return appTrafficDataList
     }
 
     @SuppressLint("AutoboxingStateCreation")

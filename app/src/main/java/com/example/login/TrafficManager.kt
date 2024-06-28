@@ -255,7 +255,7 @@ private fun getTrafficForHour(networkStatsManager: android.app.usage.NetworkStat
     return totalBytes
 }
 @RequiresApi(Build.VERSION_CODES.M)
-fun getAppTrafficData(context: Context, days: Int) {
+fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
     val appTrafficDataList = mutableListOf<AppTrafficData>()
     val packageManager = context.packageManager
     val networkStatsManager =
@@ -326,4 +326,6 @@ fun getAppTrafficData(context: Context, days: Int) {
             Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
         }
     }
+
+    return appTrafficDataList
 }
