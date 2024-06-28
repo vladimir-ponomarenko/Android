@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
+
 @Composable
 fun TrafficScreen(state: MainActivity.MainActivityState) {
     val context = LocalContext.current
@@ -73,8 +74,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             )
         }
 
-        if (!hasUsageStatsPermission(context)) {
-            Button(onClick = { requestUsageStatsPermission(context) }) {
+        if (!PermissionUtils.hasUsageStatsPermission(context)) {
+            Button(onClick = { PermissionUtils.requestUsageStatsPermission(context) }) {
                 Text("Grant Usage Stats Permission")
             }
         }
