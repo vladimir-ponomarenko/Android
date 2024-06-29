@@ -44,9 +44,9 @@
  * ***[Utils.kt:](https://github.com/vladimir-ponomarenko/Android/blob/main/app/src/main/java/com/example/login/Utils.kt)*** Класс с вспомогательными функциями для запроса и  проверки разрешений.
  
 
-> [!Требования для сборки проекта]
-> Gradle 8.4
- Android Studio Iguana
- minSdk = 24
- targetSdk = 34
+> Требования для сборки проекта:
+> Gradle 8.4;
+ Android Studio Iguana;
+ minSdk = 24;
+ targetSdk = 34.
 
