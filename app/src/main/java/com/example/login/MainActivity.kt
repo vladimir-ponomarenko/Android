@@ -212,6 +212,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         while (true) {
                             DataManager.getLocation(this@MainActivity, state)
                             DataManager.getSignalStrength(state)
+                            DataManager.getCellInfo(context, state)
                             delay(UPDATE_INTERVAL)
                         }
                     }

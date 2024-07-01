@@ -5,7 +5,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.telephony.CellInfo
+import android.telephony.CellInfoCdma
+import android.telephony.CellInfoGsm
 import android.telephony.CellInfoLte
+import android.telephony.CellInfoNr
+import android.telephony.CellInfoWcdma
+import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
 import android.telephony.gsm.GsmCellLocation
@@ -22,6 +28,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+
 
 object DataManager {
 
@@ -83,6 +90,49 @@ object DataManager {
                 }
             }
         }, null)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(MainActivity.TAG, "No READ_PHONE_STATE permission for cell info")
+            return
+        }
+
+        val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        val phoneStateListener = object : PhoneStateListener() {
+            @RequiresApi(Build.VERSION_CODES.Q)
+            override fun onCellInfoChanged(cellInfo: List<CellInfo>?) {
+                try {
+                    super.onCellInfoChanged(cellInfo)
+                    if (cellInfo != null) {
+                        for (info in cellInfo) {
+                            when (info) {
+                                is CellInfoLte -> logCellInfo(info, "LTE")
+                                is CellInfoGsm -> logCellInfo(info, "GSM")
+                                is CellInfoWcdma -> logCellInfo(info, "WCDMA")
+                                is CellInfoCdma -> logCellInfo(info, "CDMA")
+                                is CellInfoNr -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        logCellInfo(info, "5G NR")
+                                    }
+                                }
+                                else -> logCellInfo(info, "Unknown")
+                            }
+                        }
+                    }
+                } catch (e: SecurityException) {
+                    Log.e(MainActivity.TAG, "SecurityException in onCellInfoChanged: ", e)
+                }
+            }
+        }
+
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CELL_INFO)
+    }
+
+    private fun logCellInfo(info: CellInfo, type: String) {
+        Log.d(MainActivity.TAG, "CellInfo$type: $info")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
