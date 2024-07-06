@@ -147,6 +147,15 @@ object DataManager {
                                     else -> "Unknown"
                                 }
 
+                                // Отправляем данные на сервер:
+//                                MainActivity.networkManager.sendCellInfoToServer(state.JwtToken, Json.decodeFromString(cellInfoJson), cellType) { success ->
+//                                    if (success) {
+//                                        Log.d(TAG, "Cell info ($cellType) sent to server")
+//                                    } else {
+//                                        Log.e(TAG, "Failed to send cell info ($cellType)")
+//                                    }
+//                                }
+
                                 cellInfoJsonByType.getOrPut(cellType) { mutableListOf() }.add(
                                     cellInfoJson.toString()
                                 )

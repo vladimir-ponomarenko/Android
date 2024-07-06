@@ -226,6 +226,55 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         })
     }
 
+    fun sendCellInfoToServer(jwt: String, cellInfoData: CellInfoData, cellType: String, onComplete: ((Boolean) -> Unit)? = null) {
+        val dataToSend = mapOf(
+            "jwt" to MainActivity.state.JwtToken,
+            "uuid" to MainActivity.state.Uuid,
+            "cellInfoData" to cellInfoData
+        )
+        val jsonBody = Json.encodeToString(dataToSend)
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+
+        //JSON check
+//        Log.d(TAG, "JSON to server ($cellType): $jsonBody")
+
+        val endpoint = when (cellType) {
+            "LTE" -> "/api/lte_data" //  для LTE
+            "GSM" -> "/api/gsm_data" //  для GSM
+            "WCDMA" -> "/api/wcdma_data" //  для WCDMA
+            "CDMA" -> "/api/cdma_data" //  для CDMA
+            "NR" -> "/api/nr_data" //  для 5G NR
+            else -> "/api/unknown_data" //  для неизвестных типов
+        }
+
+        val request = Request.Builder()
+            .url("$serverUrl$endpoint")
+            .header("Authorization", "Bearer $jwt")
+            .post(requestBody)
+            .build()
+
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "Failed to send cell info to server: $cellType", e)
+                onComplete?.invoke(false)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "Failed to send cell info to server: $cellType, code: ${response.code}")
+                        onComplete?.invoke(false)
+                    } else {
+                        Log.d(TAG, "Cell info ($cellType) sent to server successfully")
+                        onComplete?.invoke(true)
+                    }
+                }
+            }
+        })
+          //JSON check
+//        onComplete?.invoke(true)
+    }
+
     fun connectWebSocket(
         jwt: String,
         onOpen: (WebSocket, Response) -> Unit = { _, _ -> },
