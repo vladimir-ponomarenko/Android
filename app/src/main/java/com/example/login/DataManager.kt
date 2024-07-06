@@ -1,16 +1,19 @@
 package com.example.login
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.telephony.CellIdentityNr
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
 import android.telephony.CellInfoGsm
 import android.telephony.CellInfoLte
 import android.telephony.CellInfoNr
 import android.telephony.CellInfoWcdma
+import android.telephony.CellSignalStrengthNr
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
@@ -33,6 +36,7 @@ import java.time.format.DateTimeFormatter
 object DataManager {
 
     private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
+    private const val TAG = "DataManager"
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getLocation(activity: Activity, state: MainActivity.MainActivityState) {
@@ -94,7 +98,7 @@ object DataManager {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             Log.d(MainActivity.TAG, "No READ_PHONE_STATE permission for cell info")
             return
         }
@@ -102,28 +106,227 @@ object DataManager {
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
         val phoneStateListener = object : PhoneStateListener() {
+            private val lastUpdateTime = mutableMapOf<String, Long>() // Время последнего обновления JSON
+
             @RequiresApi(Build.VERSION_CODES.Q)
-            override fun onCellInfoChanged(cellInfo: List<CellInfo>?) {
+            @SuppressLint("MissingPermission")
+            override fun onCellInfoChanged(cellInfoList: List<CellInfo>?) {
                 try {
-                    super.onCellInfoChanged(cellInfo)
-                    if (cellInfo != null) {
-                        for (info in cellInfo) {
-                            when (info) {
-                                is CellInfoLte -> logCellInfo(info, "LTE")
-                                is CellInfoGsm -> logCellInfo(info, "GSM")
-                                is CellInfoWcdma -> logCellInfo(info, "WCDMA")
-                                is CellInfoCdma -> logCellInfo(info, "CDMA")
-                                is CellInfoNr -> {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                        logCellInfo(info, "5G NR")
-                                    }
+                    super.onCellInfoChanged(cellInfoList)
+
+                    val cellInfoJsonByType = mutableMapOf<String, MutableList<String>>() // JSON-массивы по типу связи
+
+                    if (cellInfoList != null) {
+                        for (cellInfo in cellInfoList) {
+                            // Выводим информацию о соте в логи:
+                            logCellInfo(cellInfo)
+
+                            val cellInfoJson = when (cellInfo) {
+                                is CellInfoLte -> extractLteCellInfoToJson(cellInfo)
+                                is CellInfoGsm -> extractGsmCellInfoToJson(cellInfo)
+                                is CellInfoWcdma -> extractWcdmaCellInfoToJson(cellInfo)
+                                is CellInfoCdma -> extractCdmaCellInfoToJson(cellInfo)
+                                is CellInfoNr -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    extractNrCellInfoToJson(cellInfo)
+                                } else {
+                                    null
                                 }
-                                else -> logCellInfo(info, "Unknown")
+                                else -> {
+                                    Log.d(TAG, "Unknown cell info type: ${cellInfo.javaClass.simpleName}")
+                                    null
+                                }
+                            }
+
+                            if (cellInfoJson != null) {
+                                val cellType = when (cellInfo) {
+                                    is CellInfoLte -> "LTE"
+                                    is CellInfoGsm -> "GSM"
+                                    is CellInfoWcdma -> "WCDMA"
+                                    is CellInfoCdma -> "CDMA"
+                                    is CellInfoNr -> "NR"
+                                    else -> "Unknown"
+                                }
+
+                                cellInfoJsonByType.getOrPut(cellType) { mutableListOf() }.add(
+                                    cellInfoJson.toString()
+                                )
                             }
                         }
                     }
+
+                    // Формируем JSON-массивы для каждого типа связи раз в 2 секунды:
+                    val currentTime = System.currentTimeMillis()
+                    for ((cellType, jsonList) in cellInfoJsonByType) {
+                        val lastUpdate = lastUpdateTime[cellType] ?: 0L
+                        if (currentTime - lastUpdate >= 2000) {
+                            val jsonArrayResult = "[" + jsonList.joinToString(",") + "]"
+                            Log.d(TAG, "CellInfo JSON Array ($cellType): $jsonArrayResult")
+                            lastUpdateTime[cellType] = currentTime
+                        }
+                    }
+
                 } catch (e: SecurityException) {
                     Log.e(MainActivity.TAG, "SecurityException in onCellInfoChanged: ", e)
+                }
+            }
+            @RequiresApi(Build.VERSION_CODES.Q)
+            private fun logCellInfo(info: CellInfo) {
+                val type = when (info) {
+                    is CellInfoLte -> "LTE"
+                    is CellInfoGsm -> "GSM"
+                    is CellInfoWcdma -> "WCDMA"
+                    is CellInfoCdma -> "CDMA"
+                    is CellInfoNr -> "5G NR"
+                    else -> "Unknown"
+                }
+                Log.d(MainActivity.TAG, "CellInfo$type: $info")
+            }
+
+            private fun extractLteCellInfoToJson(info: CellInfoLte): String? {
+                return try {
+                    val signalStrength = info.cellSignalStrength
+                    val identity = info.cellIdentity
+                    val timestamp = System.currentTimeMillis()
+                    val cellInfoData = CellInfoData(
+                        type = "LTE",
+                        timestamp = timestamp,
+                        registered = info.isRegistered,
+                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
+                            ?: "N/A" else "N/A",
+                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
+                            ?: "N/A" else "N/A",
+                        ci = identity.ci.toString(),
+                        pci = identity.pci.toString(),
+                        tac = identity.tac.toString(),
+                        earfcn = identity.earfcn.toString(),
+                        bandwidth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) identity.bandwidth.toString() else "N/A",
+                        rsrp = signalStrength.rsrp.toString(),
+                        rssi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.rssi.toString() else "N/A",
+                        rsrq = signalStrength.rsrq.toString(),
+                        rssnr = signalStrength.rssnr.toString(),
+                        cqi = signalStrength.cqi.toString(),
+                        timingAdvance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.timingAdvance.toString() else "N/A"
+                    )
+                    Json.encodeToString(cellInfoData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error encoding LTE cell info to JSON: ", e)
+                    null
+                }
+            }
+
+            private fun extractGsmCellInfoToJson(info: CellInfoGsm): String? {
+                return try {
+                    val signalStrength = info.cellSignalStrength
+                    val identity = info.cellIdentity
+                    val timestamp = System.currentTimeMillis()
+                    val cellInfoData = CellInfoData(
+                        type = "GSM",
+                        timestamp = timestamp,
+                        registered = info.isRegistered,
+                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
+                            ?: "N/A" else "N/A",
+                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
+                            ?: "N/A" else "N/A",
+                        lac = identity.lac.toString(),
+                        cid = identity.cid.toString(),
+                        arfcn = identity.arfcn.toString(),
+                        bsic = identity.bsic.toString(),
+                        rssi = signalStrength.dbm.toString(),
+                        bitErrorRate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.bitErrorRate.toString() else "N/A",
+                        timingAdvance = signalStrength.timingAdvance.toString()
+                    )
+                    Json.encodeToString(cellInfoData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error encoding GSM cell info to JSON: ", e)
+                    null
+                }
+            }
+
+            @RequiresApi(Build.VERSION_CODES.P)
+            private fun extractWcdmaCellInfoToJson(info: CellInfoWcdma): String? {
+                return try {
+                    val signalStrength = info.cellSignalStrength
+                    val identity = info.cellIdentity
+                    val timestamp = System.currentTimeMillis()
+
+                    val cellInfoData = CellInfoData(
+                        type = "WCDMA",
+                        timestamp = timestamp,
+                        registered = info.isRegistered,
+                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
+                            ?: "N/A" else "N/A",
+                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
+                            ?: "N/A" else "N/A",
+                        lac = identity.lac.toString(),
+                        cid = identity.cid.toString(),
+                        psc = identity.psc.toString(),
+                        uarfcn = identity.uarfcn.toString(),
+                        rssi = signalStrength.dbm.toString(),
+                        bitErrorRate = signalStrength.asuLevel.toString(),
+                        rscp = signalStrength.dbm.toString(),
+                        ecno = "N/A",
+                        level = signalStrength.level.toString()
+                    )
+                    Json.encodeToString(cellInfoData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error encoding WCDMA cell info to JSON: ", e)
+                    null
+                }
+            }
+
+            private fun extractCdmaCellInfoToJson(info: CellInfoCdma): String? {
+                return try {
+                    val signalStrength = info.cellSignalStrength
+                    val identity = info.cellIdentity
+                    val timestamp = System.currentTimeMillis()
+                    val cellInfoData = CellInfoData(
+                        type = "CDMA",
+                        timestamp = timestamp,
+                        registered = info.isRegistered,
+                        sid = identity.systemId.toString(),
+                        nid = identity.networkId.toString(),
+                        bsid = identity.basestationId.toString(),
+                        rssi = signalStrength.cdmaDbm.toString(),
+                        ecIo = signalStrength.cdmaEcio.toString(),
+                        evdoDbm = signalStrength.evdoDbm.toString(),
+                        evdoEcio = signalStrength.evdoEcio.toString(),
+                        evdoSnr = signalStrength.evdoSnr.toString()
+                    )
+                    Json.encodeToString(cellInfoData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error encoding CDMA cell info to JSON: ", e)
+                    null
+                }
+            }
+
+            @RequiresApi(Build.VERSION_CODES.Q)
+            private fun extractNrCellInfoToJson(info: CellInfoNr): String? {
+                return try {
+                    val signalStrength = info.cellSignalStrength as CellSignalStrengthNr
+                    val identity = info.cellIdentity as CellIdentityNr
+                    val timestamp = System.currentTimeMillis()
+
+                    val cellInfoData = CellInfoData(
+                        type = "5G NR",
+                        timestamp = timestamp,
+                        registered = info.isRegistered,
+                        mcc = identity.mccString ?: "N/A",
+                        mnc = identity.mncString ?: "N/A",
+                        nci = identity.nci.toString(),
+                        pci = identity.pci.toString(),
+                        tac = identity.tac.toString(),
+                        nrarfcn = identity.nrarfcn.toString(),
+                        csiRsrp = signalStrength.csiRsrp.toString(),
+                        csiRsrq = signalStrength.csiRsrq.toString(),
+                        csiSinr = signalStrength.csiSinr.toString(),
+                        ssRsrp = signalStrength.ssRsrp.toString(),
+                        ssRsrq = signalStrength.ssRsrq.toString(),
+                        ssSinr = signalStrength.ssSinr.toString()
+                    )
+                    Json.encodeToString(cellInfoData)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error encoding NR cell info to JSON: ", e)
+                    null
                 }
             }
         }
@@ -131,9 +334,7 @@ object DataManager {
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CELL_INFO)
     }
 
-    private fun logCellInfo(info: CellInfo, type: String) {
-        Log.d(MainActivity.TAG, "CellInfo$type: $info")
-    }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     internal fun getSignalStrength(state: MainActivity.MainActivityState) {
