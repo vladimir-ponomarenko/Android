@@ -200,6 +200,9 @@ object DataManager {
                         type = "LTE",
                         timestamp = timestamp,
                         registered = info.isRegistered,
+                        operator = state.Operator,
+                        latitude = state.Latitude.toDoubleOrNull(),
+                        longitude = state.Longtitude.toDoubleOrNull(),
                         mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
                             ?: "N/A" else "N/A",
                         mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
@@ -232,6 +235,9 @@ object DataManager {
                         type = "GSM",
                         timestamp = timestamp,
                         registered = info.isRegistered,
+                        operator = state.Operator,
+                        latitude = state.Latitude.toDoubleOrNull(),
+                        longitude = state.Longtitude.toDoubleOrNull(),
                         mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
                             ?: "N/A" else "N/A",
                         mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
@@ -262,6 +268,9 @@ object DataManager {
                         type = "WCDMA",
                         timestamp = timestamp,
                         registered = info.isRegistered,
+                        operator = state.Operator,
+                        latitude = state.Latitude.toDoubleOrNull(),
+                        longitude = state.Longtitude.toDoubleOrNull(),
                         mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString
                             ?: "N/A" else "N/A",
                         mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString
@@ -292,6 +301,9 @@ object DataManager {
                         type = "CDMA",
                         timestamp = timestamp,
                         registered = info.isRegistered,
+                        operator = state.Operator,
+                        latitude = state.Latitude.toDoubleOrNull(),
+                        longitude = state.Longtitude.toDoubleOrNull(),
                         sid = identity.systemId.toString(),
                         nid = identity.networkId.toString(),
                         bsid = identity.basestationId.toString(),
@@ -319,6 +331,9 @@ object DataManager {
                         type = "5G NR",
                         timestamp = timestamp,
                         registered = info.isRegistered,
+                        operator = state.Operator,
+                        latitude = state.Latitude.toDoubleOrNull(),
+                        longitude = state.Longtitude.toDoubleOrNull(),
                         mcc = identity.mccString ?: "N/A",
                         mnc = identity.mncString ?: "N/A",
                         nci = identity.nci.toString(),

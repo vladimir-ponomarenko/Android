@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         const val TAG = "com.example.login.MainActivity"
         const val UPDATE_INTERVAL = 2000L
-        private const val SERVER_URL = "http://45.90.218.73:8080"
+        private const val SERVER_URL =  "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
 
         private const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"

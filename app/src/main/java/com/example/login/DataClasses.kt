@@ -107,5 +107,8 @@ data class CellInfoData(
     val level: String? = null,
     val parametersUseForLevel: String? = null,
     val cqiTableIndex: String? = null,
-    val bitErrorRate: String? = null
+    val bitErrorRate: String? = null,
+    val operator: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
