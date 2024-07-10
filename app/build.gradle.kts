@@ -58,6 +58,7 @@ android {
 }
 
 dependencies {
+    implementation ("fr.bmartel:jspeedtest:1.32.1")
     implementation("androidx.test.ext:junit-ktx:1.1.5")
     implementation("com.google.ar:core:1.44.0")
     implementation("androidx.compose.ui:ui-test-junit4-android:1.6.8")

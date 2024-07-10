@@ -119,7 +119,7 @@ object DataManager {
                     if (cellInfoList != null) {
                         for (cellInfo in cellInfoList) {
                             // Выводим информацию о соте в логи:
-                            logCellInfo(cellInfo)
+//                            logCellInfo(cellInfo)
 
                             val cellInfoJson = when (cellInfo) {
                                 is CellInfoLte -> extractLteCellInfoToJson(cellInfo)

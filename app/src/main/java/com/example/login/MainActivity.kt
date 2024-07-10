@@ -249,6 +249,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 onClick = { state.selectedTabIndex = 4 },
                                 text = { Text("Трафик") }
                             )
+                            Tab(
+                                selected = state.selectedTabIndex == 5,
+                                onClick = { state.selectedTabIndex = 5 },
+                                text = { Text("Тест") }
+                            )
                         }
                         when (state.selectedTabIndex) {
                             0 -> LoginScreen(state, onLoginSuccess)
@@ -256,6 +261,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             2 -> RSRPGraph(state)
                             3 -> MapScreen(state)
                             4 -> TrafficScreen(state)
+                            5 -> SpeedTestScreen(state)
                         }
                     }
                 } else {

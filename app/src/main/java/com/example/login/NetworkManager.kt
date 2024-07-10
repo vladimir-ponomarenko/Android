@@ -184,10 +184,12 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>, onComplete: ((Boolean) -> Unit)? = null) {
+        val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10) // Топ-10
+
         val dataToSend = mapOf(
             "jwt" to jwt,
             "uuid" to MainActivity.state.Uuid,
-            "trafficData" to trafficData.map { appData ->
+            "trafficData" to top10TrafficData.map { appData ->
                 appData.copy(
                     totalBytes = appData.totalBytes / 1024,
                     mobileBytes = appData.mobileBytes / 1024,
@@ -198,6 +200,10 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             }
         )
         val jsonBody = Json.encodeToString(dataToSend)
+
+        // JSON в логи
+        Log.d(TAG, "Traffic data JSON: $jsonBody")
+
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
         val request = Request.Builder()
