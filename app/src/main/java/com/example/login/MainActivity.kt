@@ -220,7 +220,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(innerPadding), // Добавляем отступы от Scaffold
+                            .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         TabRow(selectedTabIndex = state.selectedTabIndex) {

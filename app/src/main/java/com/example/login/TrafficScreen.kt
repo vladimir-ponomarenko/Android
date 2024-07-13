@@ -25,14 +25,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
-
 @Composable
 fun TrafficScreen(state: MainActivity.MainActivityState) {
     val context = LocalContext.current
     val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
     var days by remember { mutableStateOf("1") }
     var showError by remember { mutableStateOf(false) }
-    var showChart by remember { mutableStateOf(false) }
+    var showAppChart by remember { mutableStateOf(false) }
+    var showTotalChart by remember { mutableStateOf(false) }
     var selectedAppName by remember { mutableStateOf("") }
     val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
     var isSendingTrafficData by remember { mutableStateOf(false) }
@@ -87,10 +87,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                     val top5Apps = appTrafficData.value.take(5)
                     MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
                         if (success) {
-                            // Обработка успешной отправки данных
                             Log.d(MainActivity.TAG, "Traffic data sent successfully!")
                         } else {
-                            // Обработка ошибки отправки данных
                             Log.e(MainActivity.TAG, "Failed to send traffic data")
                         }
                     }
@@ -103,19 +101,33 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             Text("Send Data to Server")
         }
 
+        Button(
+            onClick = { showTotalChart = true },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Show Total Hourly Traffic")
+        }
+
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(appTrafficData.value) { appData ->
                 TrafficItem(appData) { appName ->
                     selectedAppName = appName
-                    showChart = true
+                    showAppChart = true
                 }
             }
         }
 
-        if (showChart) {
+        if (showAppChart) {
             HourlyTrafficChart(
                 appName = selectedAppName,
-                onClose = { showChart = false },
+                onClose = { showAppChart = false },
+                context = context
+            )
+        }
+
+        if (showTotalChart) {
+            TotalHourlyTrafficChart(
+                onClose = { showTotalChart = false },
                 context = context
             )
         }

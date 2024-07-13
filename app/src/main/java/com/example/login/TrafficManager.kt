@@ -76,6 +76,201 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.M)
+@Composable
+fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
+    val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
+
+    LaunchedEffect(Unit) {
+        hourlyTrafficData.addAll(getTotalHourlyTrafficData(context))
+    }
+
+    Dialog(onDismissRequest = onClose) {
+        Surface(shape = RoundedCornerShape(8.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Total Hourly Traffic",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                }
+
+                TotalHourlyTrafficChartContent(hourlyTrafficData)
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+@Composable
+fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>) {
+    val scrollState = rememberScrollState()
+    val hourWidth = 50.dp
+    val chartWidth = hourWidth * 24
+    val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
+    val maxTrafficKb = (maxTraffic / 1024).toFloat()
+
+    Box(modifier = Modifier.horizontalScroll(scrollState)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
+                val stepSize = maxTrafficKb / 5
+                for (i in 0..5) {
+                    val y = size.height - i * (size.height / 5)
+                    drawContext.canvas.nativeCanvas.drawText(
+                        String.format("%.0f", i * stepSize),
+                        10f,
+                        y,
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.LEFT
+                        }
+                    )
+                }
+            }
+
+            Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
+                hourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
+                    val x = index * hourWidth.toPx()
+                    val trafficKb = (appTrafficData.totalBytes / 1024).toFloat()
+                    val barHeight = (trafficKb / maxTrafficKb * size.height).coerceAtLeast(0f)
+
+                    drawRect(
+                        color = Color.Blue,
+                        topLeft = Offset(x, size.height - barHeight),
+                        size = Size(
+                            hourWidth.toPx() - 4.dp.toPx(),
+                            barHeight
+                        )
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        String.format("%02d:00", hour),
+                        x + hourWidth.toPx() / 2,
+                        size.height + 15f,
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        "${appTrafficData.appName} - %.1f Kb".format(trafficKb),
+                        x + hourWidth.toPx() / 2,
+                        size.height - barHeight - 5.dp.toPx(),
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun getTotalHourlyTrafficData(context: Context): List<Pair<Int, AppTrafficData>> {
+    val hourlyTrafficData = mutableMapOf<Int, MutableList<AppTrafficData>>()
+    val packageManager = context.packageManager
+    val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
+
+    val calendar = Calendar.getInstance()
+    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    calendar.add(Calendar.DAY_OF_YEAR, -1)
+    calendar.set(Calendar.HOUR_OF_DAY, currentHour)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    val startTime = calendar.timeInMillis
+
+    val endTime = System.currentTimeMillis()
+
+    for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
+        val uid = packageInfo.uid
+        val appName = packageManager.getApplicationLabel(packageInfo).toString()
+
+        try {
+            var mobileBytes = 0L
+            var wifiBytes = 0L
+            var totalDownlinkBytes = 0L
+            var totalUplinkBytes = 0L
+
+            val mobileStats = networkStatsManager.queryDetailsForUid(
+                ConnectivityManager.TYPE_MOBILE,
+                null,
+                startTime,
+                endTime,
+                uid
+            )
+            var bucket = android.app.usage.NetworkStats.Bucket()
+            while (mobileStats.hasNextBucket()) {
+                mobileStats.getNextBucket(bucket)
+                if (bucket.uid == uid) {
+                    mobileBytes += bucket.rxBytes + bucket.txBytes
+                    totalDownlinkBytes += bucket.rxBytes
+                    totalUplinkBytes += bucket.txBytes
+                }
+            }
+            mobileStats.close()
+
+            val wifiStats = networkStatsManager.queryDetailsForUid(
+                ConnectivityManager.TYPE_WIFI,
+                null,
+                startTime,
+                endTime,
+                uid
+            )
+            bucket = android.app.usage.NetworkStats.Bucket()
+            while (wifiStats.hasNextBucket()) {
+                wifiStats.getNextBucket(bucket)
+                if (bucket.uid == uid) {
+                    wifiBytes += bucket.rxBytes + bucket.txBytes
+                    totalDownlinkBytes += bucket.rxBytes
+                    totalUplinkBytes += bucket.txBytes
+                }
+            }
+            wifiStats.close()
+
+            val totalBytes = mobileBytes + wifiBytes
+
+            val hour = ((bucket.startTimeStamp / 1000) + TimeUnit.HOURS.toSeconds(1)) / TimeUnit.HOURS.toSeconds(1) % 24
+
+            hourlyTrafficData.getOrPut(hour.toInt()) { mutableListOf() }.add(
+                AppTrafficData(
+                    appName,
+                    totalBytes,
+                    mobileBytes,
+                    wifiBytes,
+                    totalDownlinkBytes,
+                    totalUplinkBytes
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(MainActivity.TAG, "Error fetching network stats: ${e.message}", e)
+        }
+    }
+
+    val result = mutableListOf<Pair<Int, AppTrafficData>>()
+    for (hour in 0 until 24) {
+        val appTrafficData = hourlyTrafficData[hour]?.maxByOrNull { it.totalBytes }
+        if (appTrafficData != null) {
+            result.add(Pair(hour, appTrafficData))
+        }
+    }
+
+    return result
+}
 
 @RequiresApi(Build.VERSION_CODES.M)
 fun getPackageNameForApp(context: Context, appName: String): String? {

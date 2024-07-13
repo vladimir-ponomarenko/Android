@@ -147,15 +147,6 @@ object DataManager {
                                     else -> "Unknown"
                                 }
 
-                                // Отправляем данные на сервер:
-//                                MainActivity.networkManager.sendCellInfoToServer(state.JwtToken, Json.decodeFromString(cellInfoJson), cellType) { success ->
-//                                    if (success) {
-//                                        Log.d(TAG, "Cell info ($cellType) sent to server")
-//                                    } else {
-//                                        Log.e(TAG, "Failed to send cell info ($cellType)")
-//                                    }
-//                                }
-
                                 cellInfoJsonByType.getOrPut(cellType) { mutableListOf() }.add(
                                     cellInfoJson.toString()
                                 )
@@ -171,6 +162,15 @@ object DataManager {
                             val jsonArrayResult = "[" + jsonList.joinToString(",") + "]"
                             Log.d(TAG, "CellInfo JSON Array ($cellType): $jsonArrayResult")
                             lastUpdateTime[cellType] = currentTime
+
+                            // Отправляем данные на сервер:
+//                            MainActivity.networkManager.sendCellInfoToServer(state.JwtToken, Json.decodeFromString(jsonArrayResult), cellType) { success ->
+//                                if (success) {
+//                                    Log.d(TAG, "Cell info ($cellType) sent to server")
+//                                } else {
+//                                    Log.e(TAG, "Failed to send cell info ($cellType)")
+//                                }
+//                            }
                         }
                     }
 
@@ -354,8 +354,8 @@ object DataManager {
                 }
             }
         }
-
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CELL_INFO)
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
     }
 
 
