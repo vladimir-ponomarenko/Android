@@ -96,6 +96,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         PermissionUtils.checkAndRequestPermissions(this)
         state.loadLoginData()
+        lifecycleScope.launch {
+            while (true) {
+                val lat = state.Latitude.toDoubleOrNull()
+                val lng = state.Longtitude.toDoubleOrNull()
+                if (lat != null && lng != null) {
+                    val color = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
+                    state.locations.add(Pair(LatLng(lat, lng), color))
+                }
+                delay(UPDATE_INTERVAL)
+            }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
