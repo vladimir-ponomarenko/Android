@@ -163,6 +163,10 @@ object DataManager {
                             Log.d(TAG, "CellInfo JSON Array ($cellType): $jsonArrayResult")
                             lastUpdateTime[cellType] = currentTime
 
+                            (context as? Activity)?.runOnUiThread {
+                                state.cellInfoJson.value[cellType] = jsonList
+                            }
+
                             // Отправляем данные на сервер:
 //                            MainActivity.networkManager.sendCellInfoToServer(state.JwtToken, Json.decodeFromString(jsonArrayResult), cellType) { success ->
 //                                if (success) {

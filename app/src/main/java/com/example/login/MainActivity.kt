@@ -53,7 +53,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
 
-
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -387,9 +386,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Email by mutableStateOf("")
         var Password by mutableStateOf("")
         var JwtToken by mutableStateOf("")
-        var Uuid by mutableStateOf("") // Добавляем UUID в state
+        var Uuid by mutableStateOf("")
         var RememberMe by mutableStateOf(false)
 
+        val cellInfoJson = mutableStateOf(mutableMapOf<String, List<String>>())
         fun saveLoginData() {
             val sharedPreferences =
                 context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
@@ -409,7 +409,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Email = sharedPreferences.getString(EMAIL_KEY, "") ?: ""
             Password = sharedPreferences.getString(PASSWORD_KEY, "") ?: ""
             JwtToken = sharedPreferences.getString(JWT_TOKEN_KEY, "") ?: ""
-            Uuid = sharedPreferences.getString(UUID_KEY, "") ?: "" // Загружаем UUID
+            Uuid = sharedPreferences.getString(UUID_KEY, "") ?: ""
             RememberMe = sharedPreferences.getBoolean(REMEMBER_ME_KEY, false)
         }
     }
