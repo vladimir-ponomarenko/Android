@@ -32,7 +32,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     state: MainActivity.MainActivityState,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onData1Click: () -> Unit,
+    onCellInfoDataClick: () -> Unit
 ) {
     val context = LocalContext.current
     var email by remember { mutableStateOf(state.Email) }
@@ -82,7 +84,7 @@ fun LoginScreen(
                 onJwtTokenChange = { jwtToken = it },
                 rememberMe = rememberMe,
                 onRememberMeChange = { rememberMe = it },
-                onLoginClick = {
+                onData1Click = {
                     state.Email = email
                     state.Password = password
                     state.JwtToken = jwtToken
@@ -104,6 +106,7 @@ fun LoginScreen(
                         }
                     }
                 },
+                onCellInfoDataClick = onCellInfoDataClick,
                 onShowRegistrationClick = { showRegistration = true }
             )
         }
@@ -126,7 +129,8 @@ fun LoginForm(
     onJwtTokenChange: (String) -> Unit,
     rememberMe: Boolean,
     onRememberMeChange: (Boolean) -> Unit,
-    onLoginClick: () -> Unit,
+    onData1Click: () -> Unit,
+    onCellInfoDataClick: () -> Unit,
     onShowRegistrationClick: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -164,8 +168,12 @@ fun LoginForm(
             Text("Remember me")
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onLoginClick) {
-            Text("Login")
+        Button(onClick = onData1Click) {
+            Text("Data1")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onCellInfoDataClick) {
+            Text("CellInfoData")
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = onShowRegistrationClick) {

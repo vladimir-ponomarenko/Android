@@ -10,6 +10,7 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 //noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +53,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import okhttp3.WebSocket
 
 @Suppress("NAME_SHADOWING")
@@ -125,7 +128,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
         var isLoggedIn by remember { mutableStateOf(false) }
-
         LaunchedEffect(isWebSocketConnected) {
             if (isWebSocketConnected) {
                 showConnectionSnackbar = true
@@ -179,6 +181,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @Composable
     fun MainContent(state: MainActivity.MainActivityState, isLoggedIn: Boolean, onLoginSuccess: () -> Unit) {
         val context = LocalContext.current
+        val coroutineScope = rememberCoroutineScope()
         var permissionsGranted by remember {
             mutableStateOf(
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
@@ -237,7 +240,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             Tab(
                                 selected = state.selectedTabIndex == 0,
                                 onClick = { state.selectedTabIndex = 0 },
-                                text = { Text("Вход") }
+                                text = { Text("Сервер") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 1,
@@ -259,14 +262,49 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 onClick = { state.selectedTabIndex = 4 },
                                 text = { Text("Трафик") }
                             )
-                            Tab(
+/*                            Tab(
                                 selected = state.selectedTabIndex == 5,
                                 onClick = { state.selectedTabIndex = 5 },
                                 text = { Text("Тест") }
-                            )
+                            )*/
                         }
                         when (state.selectedTabIndex) {
-                            0 -> LoginScreen(state, onLoginSuccess)
+                            0 -> LoginScreen(
+                                state,
+                                onLoginSuccess = onLoginSuccess,
+                                onData1Click = {
+                                    coroutineScope.launch {
+                                        MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
+                                            if (authResponse != null) {
+                                                (context as? Activity)?.runOnUiThread {
+                                                    state.JwtToken = authResponse.jwt
+                                                    state.Uuid = authResponse.uuid
+                                                    state.saveLoginData()
+                                                }
+                                                connectWebSocket(authResponse.jwt)
+                                            } else {
+                                                Log.e(MainActivity.TAG, "Authentication failed")
+                                            }
+                                        }
+                                    }
+                                },
+                                onCellInfoDataClick = {
+                                    coroutineScope.launch {
+                                        MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
+                                            if (authResponse != null) {
+                                                (context as? Activity)?.runOnUiThread {
+                                                    state.JwtToken = authResponse.jwt
+                                                    state.Uuid = authResponse.uuid
+                                                    state.saveLoginData()
+                                                }
+                                                startSendingCellInfoData(authResponse.jwt)
+                                            } else {
+                                                Log.e(MainActivity.TAG, "Authentication failed")
+                                            }
+                                        }
+                                    }
+                                }
+                            )
                             1 -> DataScreen(state)
                             2 -> RSRPGraph(state)
                             3 -> MapScreen(state)
@@ -280,6 +318,28 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun startSendingCellInfoData(jwt: String) {
+        lifecycleScope.launch {
+            while (true) {
+                delay(2000)
+                for ((cellType, jsonList) in state.cellInfoJson.value) {
+                    if (jsonList.isNotEmpty()) {
+                        val cellInfoData = jsonList.map { Json.decodeFromString<CellInfoData>(it) }
+                        MainActivity.networkManager.sendCellInfoToServer(jwt, cellInfoData, cellType) { success ->
+                            if (success) {
+                                Log.d(TAG, "Cell info ($cellType) sent to server")
+                            } else {
+                                Log.e(TAG, "Failed to send cell info ($cellType)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun connectWebSocket(jwt: String) {
@@ -397,7 +457,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 putString(EMAIL_KEY, Email)
                 putString(PASSWORD_KEY, Password)
                 putString(JWT_TOKEN_KEY, JwtToken)
-                putString(UUID_KEY, Uuid) // Сохраняем UUID
+                putString(UUID_KEY, Uuid)
                 putBoolean(REMEMBER_ME_KEY, RememberMe)
                 apply()
             }

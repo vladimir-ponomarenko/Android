@@ -52,12 +52,12 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                     try {
                         val registerResponse = Json.decodeFromString<RegisterResponse>(responseBody ?: "")
                         Log.d(TAG, "Register response: $registerResponse")
-                        (context as? Activity)?.runOnUiThread {  // Используем context для runOnUiThread
+                        (context as? Activity)?.runOnUiThread {
                             onComplete(registerResponse)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to parse register response: ${e.message}")
-                        (context as? Activity)?.runOnUiThread {  // Используем context для runOnUiThread
+                        (context as? Activity)?.runOnUiThread {
                             onComplete(null)
                         }
                     }
@@ -232,11 +232,10 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         })
     }
 
-    fun sendCellInfoToServer(jwt: String, cellInfoData: CellInfoData, cellType: String, onComplete: ((Boolean) -> Unit)? = null) {
-        val dataToSend = mapOf(
+    fun sendCellInfoToServer(jwt: String, cellInfoDataList: List<CellInfoData>, cellType: String, onComplete: ((Boolean) -> Unit)? = null) {        val dataToSend = mapOf(
             "jwt" to MainActivity.state.JwtToken,
             "uuid" to MainActivity.state.Uuid,
-            "cellInfoData" to cellInfoData
+            "cellInfoData" to cellInfoDataList
         )
         val jsonBody = Json.encodeToString(dataToSend)
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
@@ -250,7 +249,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             "WCDMA" -> "/api/wcdma_data" //  для WCDMA
             "CDMA" -> "/api/cdma_data" //  для CDMA
             "NR" -> "/api/nr_data" //  для 5G NR
-            else -> "/api/unknown_data" //  для неизвестных типов
+            else -> "/api/unknown_data"
         }
 
         val request = Request.Builder()
