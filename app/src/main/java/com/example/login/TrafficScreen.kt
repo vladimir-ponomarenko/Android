@@ -51,86 +51,96 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "Total Traffic: ${(totalTrafficData.value.totalBytes / 1024)} Kb, " +
-                    "Mobile: ${(totalTrafficData.value.mobileBytes / 1024)} Kb, " +
-                    "Wi-Fi: ${(totalTrafficData.value.wifiBytes / 1024)} Kb",
-            modifier = Modifier.padding(16.dp)
-        )
-
-        OutlinedTextField(
-            value = days,
-            onValueChange = { days = it },
-            label = { Text("Days") },
-            modifier = Modifier.padding(16.dp)
-        )
-
-        if (showError) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        item {
             Text(
-                text = "Invalid number of days",
-                color = Color.Red,
+                text = "Total Traffic: ${(totalTrafficData.value.totalBytes / 1024)} Kb, " +
+                        "Mobile: ${(totalTrafficData.value.mobileBytes / 1024)} Kb, " +
+                        "Wi-Fi: ${(totalTrafficData.value.wifiBytes / 1024)} Kb",
                 modifier = Modifier.padding(16.dp)
             )
         }
 
-        if (!PermissionUtils.hasUsageStatsPermission(context)) {
-            Button(onClick = { PermissionUtils.requestUsageStatsPermission(context) }) {
-                Text("Grant Usage Stats Permission")
+        item {
+            OutlinedTextField(
+                value = days,
+                onValueChange = { days = it },
+                label = { Text("Days") },
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        item {
+            if (showError) {
+                Text(
+                    text = "Invalid number of days",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         }
 
-        Button(onClick = {
-            isSendingTrafficData = true
-            MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
-                if (authResponse != null) {
-                    val top5Apps = appTrafficData.value.take(5)
-                    MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
-                        if (success) {
-                            Log.d(MainActivity.TAG, "Traffic data sent successfully!")
-                        } else {
-                            Log.e(MainActivity.TAG, "Failed to send traffic data")
+        item {
+            if (!PermissionUtils.hasUsageStatsPermission(context)) {
+                Button(onClick = { PermissionUtils.requestUsageStatsPermission(context) }) {
+                    Text("Grant Usage Stats Permission")
+                }
+            }
+        }
+
+        item {
+            Button(onClick = {
+                isSendingTrafficData = true
+                MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
+                    if (authResponse != null) {
+                        val top5Apps = appTrafficData.value.take(5)
+                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
+                            if (success) {
+                                Log.d(MainActivity.TAG, "Traffic data sent successfully!")
+                            } else {
+                                Log.e(MainActivity.TAG, "Failed to send traffic data")
+                            }
                         }
+                    } else {
+                        Log.e(MainActivity.TAG, "Authentication for traffic data failed")
                     }
-                } else {
-                    Log.e(MainActivity.TAG, "Authentication for traffic data failed")
+                    isSendingTrafficData = false
                 }
-                isSendingTrafficData = false
-            }
-        }) {
-            Text("Send Data to Server")
-        }
-
-        Button(
-            onClick = { showTotalChart = true },
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text("Show Total Hourly Traffic")
-        }
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(appTrafficData.value) { appData ->
-                TrafficItem(appData) { appName ->
-                    selectedAppName = appName
-                    showAppChart = true
-                }
+            }) {
+                Text("Send Data to Server")
             }
         }
 
-        if (showAppChart) {
-            HourlyTrafficChart(
-                appName = selectedAppName,
-                onClose = { showAppChart = false },
-                context = context
-            )
+        item {
+            Button(
+                onClick = { showTotalChart = true },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Show Total Hourly Traffic")
+            }
         }
 
-        if (showTotalChart) {
-            TotalHourlyTrafficChart(
-                onClose = { showTotalChart = false },
-                context = context
-            )
+        items(appTrafficData.value) { appData ->
+            TrafficItem(appData) { appName ->
+                selectedAppName = appName
+                showAppChart = true
+            }
         }
+    }
+
+    if (showAppChart) {
+        HourlyTrafficChart(
+            appName = selectedAppName,
+            onClose = { showAppChart = false },
+            context = context
+        )
+    }
+
+    if (showTotalChart) {
+        TotalHourlyTrafficChart(
+            onClose = { showTotalChart = false },
+            context = context
+        )
     }
 }
 
