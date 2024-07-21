@@ -95,7 +95,6 @@ object DataManager {
             }
         }, null)
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
