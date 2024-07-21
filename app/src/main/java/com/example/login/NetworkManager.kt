@@ -232,52 +232,36 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         })
     }
 
-    fun sendCellInfoToServer(jwt: String, cellInfoDataList: List<CellInfoData>, cellType: String, onComplete: ((Boolean) -> Unit)? = null) {        val dataToSend = mapOf(
-            "jwt" to MainActivity.state.JwtToken,
-            "uuid" to MainActivity.state.Uuid,
-            "cellInfoData" to cellInfoDataList
-        )
-        val jsonBody = Json.encodeToString(dataToSend)
+    fun sendMessageToData2ToServer(messageToData2: MessageToData2, onComplete: ((Boolean) -> Unit)? = null) {
+        val jsonBody = Json.encodeToString(messageToData2)
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
-        //JSON check
-//        Log.d(TAG, "JSON to server ($cellType): $jsonBody")
-
-        val endpoint = when (cellType) {
-            "LTE" -> "/api/lte_data" //  для LTE
-            "GSM" -> "/api/gsm_data" //  для GSM
-            "WCDMA" -> "/api/wcdma_data" //  для WCDMA
-            "CDMA" -> "/api/cdma_data" //  для CDMA
-            "NR" -> "/api/nr_data" //  для 5G NR
-            else -> "/api/unknown_data"
-        }
+        val endpoint = "/api/data2"
 
         val request = Request.Builder()
             .url("$serverUrl$endpoint")
-            .header("Authorization", "Bearer $jwt")
+            .header("Authorization", "Bearer ${messageToData2.jwt}")
             .post(requestBody)
             .build()
 
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to send cell info to server: $cellType", e)
+                Log.e(TAG, "Failed to send MessageToData2 to server", e)
                 onComplete?.invoke(false)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to send cell info to server: $cellType, code: ${response.code}")
+                        Log.e(TAG, "Failed to send MessageToData2 to server: ${response.code}",)
                         onComplete?.invoke(false)
                     } else {
-                        Log.d(TAG, "Cell info ($cellType) sent to server successfully")
+                        Log.d(TAG, "MessageToData2 sent to server successfully")
                         onComplete?.invoke(true)
                     }
                 }
             }
         })
-          //JSON check
-//        onComplete?.invoke(true)
     }
 
     fun connectWebSocket(

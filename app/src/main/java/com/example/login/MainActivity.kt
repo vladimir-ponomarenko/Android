@@ -53,7 +53,6 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import okhttp3.WebSocket
 
 @Suppress("NAME_SHADOWING")
@@ -195,17 +194,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
 
-
-        // Запускаем корутину для показа Snackbar
         LaunchedEffect(isWebSocketConnected) {
             if (isWebSocketConnected) {
                 showConnectionSnackbar = true
-                // Отображаем Snackbar
                 scaffoldState.snackbarHostState.showSnackbar(
                     message = "WebSocket connected!",
                     duration = SnackbarDuration.Short
                 )
-                delay(2000) // Прячем Snackbar через 2 секунды
+                delay(2000)
                 showConnectionSnackbar = false
             }
         }
@@ -216,7 +212,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 else checkPermissionsForAndroid13(context)
         }
 
-        Box(modifier = Modifier.fillMaxSize()) { // Используем Box для позиционирования
+        Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 scaffoldState = scaffoldState
             ) { innerPadding ->
@@ -290,17 +286,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 },
                                 onCellInfoDataClick = {
                                     coroutineScope.launch {
-                                        MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
-                                            if (authResponse != null) {
-                                                (context as? Activity)?.runOnUiThread {
-                                                    state.JwtToken = authResponse.jwt
-                                                    state.Uuid = authResponse.uuid
-                                                    state.saveLoginData()
+                                        if (!state.isSendingCellInfoData) {
+                                            state.isSendingCellInfoData = true
+
+                                            MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
+                                                if (authResponse != null) {
+                                                    (context as? Activity)?.runOnUiThread {
+                                                        state.JwtToken = authResponse.jwt
+                                                        state.Uuid = authResponse.uuid
+                                                        state.saveLoginData()
+                                                    }
+                                                } else {
+                                                    Log.e(MainActivity.TAG, "Authentication failed")
+                                                    state.isSendingCellInfoData = false
                                                 }
-                                                startSendingCellInfoData(authResponse.jwt)
-                                            } else {
-                                                Log.e(MainActivity.TAG, "Authentication failed")
                                             }
+                                        } else {
+                                            state.isSendingCellInfoData = false
                                         }
                                     }
                                 }
@@ -319,26 +321,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun startSendingCellInfoData(jwt: String) {
-        lifecycleScope.launch {
-            while (true) {
-                delay(2000)
-                for ((cellType, jsonList) in state.cellInfoJson.value) {
-                    if (jsonList.isNotEmpty()) {
-                        val cellInfoData = jsonList.map { Json.decodeFromString<CellInfoData>(it) }
-                        MainActivity.networkManager.sendCellInfoToServer(jwt, cellInfoData, cellType) { success ->
-                            if (success) {
-                                Log.d(TAG, "Cell info ($cellType) sent to server")
-                            } else {
-                                Log.e(TAG, "Failed to send cell info ($cellType)")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -434,6 +416,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var Technology by mutableStateOf("")
         var Operator by mutableStateOf("")
         var selectedTabIndex by mutableStateOf(0)
+        var messageToData2 by mutableStateOf<MessageToData2?>(null)
 
         // Переменные состояния для отображения графиков
         var showRSRPChart by mutableStateOf(false)
@@ -448,6 +431,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var JwtToken by mutableStateOf("")
         var Uuid by mutableStateOf("")
         var RememberMe by mutableStateOf(false)
+
+        var isSendingCellInfoData by mutableStateOf(false)
 
         val cellInfoJson = mutableStateOf(mutableMapOf<String, List<String>>())
         fun saveLoginData() {

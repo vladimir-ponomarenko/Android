@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlinx.serialization.json.Json
 import kotlin.reflect.full.declaredMemberProperties
 
 
@@ -41,16 +40,21 @@ import kotlin.reflect.full.declaredMemberProperties
 fun DataScreen(state: MainActivity.MainActivityState) {
     val context = LocalContext.current
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val cellInfoJsonByType = remember { mutableStateOf(mutableMapOf<String, List<CellInfoData>>()) }
+
+    val cellInfoDataByType = remember { mutableStateOf(mapOf<String, List<CellInfoData>>()) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            cellInfoJsonByType.value = state.cellInfoJson.value.mapValues { entry ->
-                entry.value.map { jsonString ->
-                    Json.decodeFromString<CellInfoData>(jsonString)
-                }
-            }.toMutableMap()
-            delay(500) // Задержка в 0,5 секунд для обновления экрана
+            state.messageToData2?.let { messageToData2 ->
+                cellInfoDataByType.value = mapOf(
+                    "CDMA" to messageToData2.cdma.cellInfoList,
+                    "GSM" to messageToData2.gsm.cellInfoList,
+                    "LTE" to messageToData2.lte.cellInfoList,
+                    "WCDMA" to messageToData2.wcdma.cellInfoList,
+                    "NR" to messageToData2.nr.cellInfoList
+                )
+            }
+            delay(500)
         }
     }
 
@@ -89,22 +93,22 @@ fun DataScreen(state: MainActivity.MainActivityState) {
             }
 
             LazyColumn(modifier = Modifier.padding(8.dp)) {
-                item { PhoneInfoCard() }
+                item { PhoneInfoCard(state) }
 
                 when (selectedTabIndex) {
-                    0 -> items(cellInfoJsonByType.value["LTE"] ?: emptyList()) { cellInfo ->
+                    0 -> items(cellInfoDataByType.value["LTE"] ?: emptyList()) { cellInfo ->
                         CellInfoCard(cellType = "LTE", cellInfo = cellInfo)
                     }
-                    1 -> items(cellInfoJsonByType.value["GSM"] ?: emptyList()) { cellInfo ->
+                    1 -> items(cellInfoDataByType.value["GSM"] ?: emptyList()) { cellInfo ->
                         CellInfoCard(cellType = "GSM", cellInfo = cellInfo)
                     }
-                    2 -> items(cellInfoJsonByType.value["WCDMA"] ?: emptyList()) { cellInfo ->
+                    2 -> items(cellInfoDataByType.value["WCDMA"] ?: emptyList()) { cellInfo ->
                         CellInfoCard(cellType = "WCDMA", cellInfo = cellInfo)
                     }
-                    3 -> items(cellInfoJsonByType.value["CDMA"] ?: emptyList()) { cellInfo ->
+                    3 -> items(cellInfoDataByType.value["CDMA"] ?: emptyList()) { cellInfo ->
                         CellInfoCard(cellType = "CDMA", cellInfo = cellInfo)
                     }
-                    4 -> items(cellInfoJsonByType.value["NR"] ?: emptyList()) { cellInfo ->
+                    4 -> items(cellInfoDataByType.value["NR"] ?: emptyList()) { cellInfo ->
                         CellInfoCard(cellType = "NR", cellInfo = cellInfo)
                     }
                 }
@@ -141,7 +145,7 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
 }
 
 @Composable
-fun PhoneInfoCard() {
+fun PhoneInfoCard(state: MainActivity.MainActivityState) {
     val context = LocalContext.current
     val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     val cardBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
@@ -178,6 +182,8 @@ fun PhoneInfoCard() {
                 Text("Data Network Type: ${getDataNetworkType(telephonyManager.dataNetworkType)}")
             }
 
+            Text("Latitude: ${state.Latitude}")
+            Text("Longitude: ${state.Longtitude}")
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
