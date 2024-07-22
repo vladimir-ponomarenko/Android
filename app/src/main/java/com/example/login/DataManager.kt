@@ -177,14 +177,14 @@ object DataManager {
                         val maxLogLength = 4000
                         for (i in jsonMessageToData2.indices step maxLogLength) {
                             val chunk = jsonMessageToData2.substring(i, minOf(i + maxLogLength, jsonMessageToData2.length))
-                            Log.d(TAG, "MessageToData2 JSON (part ${i / maxLogLength}): $chunk")
+                            Log.d(TAG, "CellInfo JSON (part ${i / maxLogLength}): $chunk")
                         }
                         if (state.isSendingCellInfoData) {
                             MainActivity.networkManager.sendMessageToData2ToServer(messageToData2) { success ->
                                 if (success) {
-                                    Log.d(TAG, "MessageToData2 sent to server")
+                                    Log.d(TAG, "CellInfo SENT TO SERVER")
                                 } else {
-                                    Log.e(TAG, "Failed to send MessageToData2")
+                                    Log.e(TAG, "FAILED TO SEND CellInfo")
                                 }
                             }
                         }

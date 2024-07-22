@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.login.PermissionUtils.checkPermissions
@@ -51,9 +52,11 @@ import com.example.login.PermissionUtils.checkPermissionsForAndroid13
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
+
 
 @Suppress("NAME_SHADOWING")
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -82,6 +85,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private var isWebSocketConnected by mutableStateOf(false)
     var isSendingData by mutableStateOf(false)
 
+    private var sendingIndicatorJob: Job? = null
+
+    fun showSendingIndicator() {
+        sendingIndicatorJob?.cancel()
+        sendingIndicatorJob = lifecycleScope.launch {
+            isSendingData = true
+            delay(1000)
+            isSendingData = false
+        }
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -167,7 +180,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     Text("Waiting for permissions...")
                 }
                 LaunchedEffect(isSendingData) {
-                    // Небольшая задержка, чтобы индикатор был виден
                     delay(500)
                 }
 
@@ -379,6 +391,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+                    .zIndex(1f)
             ) {
                 Box(
                     modifier = Modifier

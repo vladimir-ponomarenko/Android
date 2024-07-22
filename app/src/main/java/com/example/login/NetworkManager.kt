@@ -4,6 +4,9 @@ import android.app.Activity
 import android.util.Log
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -17,7 +20,8 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class NetworkManager<Context>(private val context: Context, private val serverUrl: String, private val webSocketEndpoint: String) {
-
+    private var webSocket: WebSocket? = null
+    private var isWebSocketConnected = false
     companion object {
         private const val TAG = "NetworkManager"
     }
@@ -50,7 +54,8 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                     }
                     val responseBody = response.body?.string()
                     try {
-                        val registerResponse = Json.decodeFromString<RegisterResponse>(responseBody ?: "")
+                        val json = Json { ignoreUnknownKeys = true }
+                        val registerResponse = json.decodeFromString<RegisterResponse>(responseBody ?: "")
                         Log.d(TAG, "Register response: $registerResponse")
                         (context as? Activity)?.runOnUiThread {
                             onComplete(registerResponse)
@@ -64,7 +69,6 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                 }
             }})
     }
-
     fun verifyToken(token: String, onComplete: (Boolean) -> Unit) {
         val request = Request.Builder()
             .url("$serverUrl/api/jwt/verify")
@@ -125,7 +129,8 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                             }
                             val responseBody = response.body?.string()
                             try {
-                                val authResponse = Json.decodeFromString<AuthResponse>(responseBody ?: "")
+                                val json = Json { ignoreUnknownKeys = true }
+                                val authResponse = json.decodeFromString<AuthResponse>(responseBody ?: "")
                                 Log.d(TAG, "Auth response: $authResponse")
                                 (context as? Activity)?.runOnUiThread {
                                     onComplete(authResponse)
@@ -184,12 +189,12 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>, onComplete: ((Boolean) -> Unit)? = null) {
-        val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10) // Топ-10
+        val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10)
 
-        val dataToSend = mapOf(
-            "jwt" to jwt,
-            "uuid" to MainActivity.state.Uuid,
-            "trafficData" to top10TrafficData.map { appData ->
+        val modifiedJson = buildJsonObject {
+            put("jwt", jwt)
+            put("uuid", MainActivity.state.Uuid)
+            put("trafficData", Json.encodeToJsonElement(top10TrafficData.map { appData ->
                 appData.copy(
                     totalBytes = appData.totalBytes / 1024,
                     mobileBytes = appData.mobileBytes / 1024,
@@ -197,71 +202,130 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                     rxBytes = appData.rxBytes / 1024,
                     txBytes = appData.txBytes / 1024
                 )
-            }
-        )
-        val jsonBody = Json.encodeToString(dataToSend)
+            }))
+        }
+        val jsonBody = modifiedJson.toString()
 
-        // JSON в логи
-        Log.d(TAG, "Traffic data JSON: $jsonBody")
+        val endpoint = "/api/sockets/***"
 
-        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+        if (webSocket == null) {
+            Log.e(TAG, "WebSocket is not initialized, attempting to connect...")
 
-        val request = Request.Builder()
-            .url("$serverUrl/api/***") //  для отправки трафика
-            .header("Authorization", "Bearer $jwt")
-            .post(requestBody)
-            .build()
+            val request = Request.Builder()
+                .url("$serverUrl$endpoint")
+                .header("Authorization", "Bearer $jwt")
+                .build()
 
-        httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to send traffic data to server", e)
-                onComplete?.invoke(false)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to send traffic data to server: ${response.code}")
-                        onComplete?.invoke(false)
-                    } else {
-                        Log.d(TAG, "Traffic data sent to server successfully")
-                        onComplete?.invoke(true)
-                    }
+            this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    Log.d(TAG, "WebSocket connected successfully for Traffic Data")
+                    webSocket.send(jsonBody)
+                    Log.d(TAG, "Sent Traffic Data: $jsonBody")
+                    onComplete?.invoke(true)
+                    (context as? MainActivity)?.showSendingIndicator()
                 }
-            }
-        })
+
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    Log.d(TAG, "Received message from server (Traffic Data): $text")
+                }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closing (Traffic Data): $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closed (Traffic Data): $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    Log.e(TAG, "Failed to connect WebSocket for Traffic Data", t)
+                    onComplete?.invoke(false)
+                }
+            })
+            this.isWebSocketConnected = this.webSocket != null
+        } else if (this.isWebSocketConnected) {
+            Log.d(TAG, "Sending Traffic Data through existing WebSocket connection")
+            this.webSocket?.send(jsonBody)
+            Log.d(TAG, "Sent Traffic Data: $jsonBody")
+            onComplete?.invoke(true)
+            (context as? MainActivity)?.showSendingIndicator()
+        } else {
+            Log.e(TAG, "WebSocket is not connected, cannot send Traffic Data")
+            onComplete?.invoke(false)
+        }
     }
 
     fun sendMessageToData2ToServer(messageToData2: MessageToData2, onComplete: ((Boolean) -> Unit)? = null) {
-        val jsonBody = Json.encodeToString(messageToData2)
-        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+        val endpoint = "/api/sockets/thermalmap"
 
-        val endpoint = "/api/data2"
+        // Изменение структуры JSON перед отправкой
+        val modifiedJson = buildJsonObject {
+            put("jwt", messageToData2.jwt)
+            put("UUID", messageToData2.UUID)
+            put("time", messageToData2.time)
+            put("latitude", messageToData2.latitude)
+            put("longitude", messageToData2.longitude)
+            put("operator", messageToData2.operator)
+            put("wcdma", Json.encodeToJsonElement(messageToData2.wcdma.cellInfoList))
+            put("gsm", Json.encodeToJsonElement(messageToData2.gsm.cellInfoList))
+            put("lte", Json.encodeToJsonElement(messageToData2.lte.cellInfoList))
+        }
 
-        val request = Request.Builder()
-            .url("$serverUrl$endpoint")
-            .header("Authorization", "Bearer ${messageToData2.jwt}")
-            .post(requestBody)
-            .build()
+        val jsonBody = modifiedJson.toString()
 
-        httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to send MessageToData2 to server", e)
-                onComplete?.invoke(false)
-            }
+        if (webSocket == null) {
+            Log.e(TAG, "WebSocket is not initialized, attempting to connect...")
 
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to send MessageToData2 to server: ${response.code}",)
-                        onComplete?.invoke(false)
-                    } else {
-                        Log.d(TAG, "MessageToData2 sent to server successfully")
-                        onComplete?.invoke(true)
-                    }
+            val request = Request.Builder()
+                .url("$serverUrl$endpoint")
+                .header("Authorization", "Bearer ${messageToData2.jwt}")
+                .build()
+
+            this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    Log.d(TAG, "WebSocket connected successfully for CellInfo")
+                    this@NetworkManager.webSocket?.send(jsonBody)
+                    Log.d(TAG, "Sent MessageToData2: $jsonBody")
+                    onComplete?.invoke(true)
+                    (context as? MainActivity)?.showSendingIndicator()
                 }
-            }
-        })
+
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    Log.d(TAG, "Received message from server CellInfo: $text")
+                }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closing CellInfo: $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closed (CellInfo): $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    Log.e(TAG, "Failed to connect WebSocket for CellInfo", t)
+                    onComplete?.invoke(false)
+                }
+            })
+            this.isWebSocketConnected = this.webSocket != null
+        } else if (this.isWebSocketConnected) {
+            Log.d(TAG, "Sending CellInfo through existing WebSocket connection")
+            this.webSocket?.send(jsonBody)
+            Log.d(TAG, "Sent CellInfo: $jsonBody")
+            onComplete?.invoke(true)
+            (context as? MainActivity)?.showSendingIndicator()
+        } else {
+            Log.e(TAG, "WebSocket is not connected, cannot send CellInfo")
+            onComplete?.invoke(false)
+        }
     }
 
     fun connectWebSocket(
