@@ -93,7 +93,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 isSendingTrafficData = true
                 MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
                     if (authResponse != null) {
-                        val top5Apps = appTrafficData.value.take(5)
+                        val top5Apps = appTrafficData.value.take(10)
                         MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
                             if (success) {
                                 Log.d(MainActivity.TAG, "Traffic data sent successfully!")

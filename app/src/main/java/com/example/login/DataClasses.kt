@@ -47,7 +47,7 @@ data class AuthResponse(
     val jwt: String,
     val uuid: String
 )
-
+@Serializable
 data class AppTrafficData(
     val appName: String,
     val totalBytes: Long,

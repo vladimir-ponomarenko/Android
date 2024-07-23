@@ -37,7 +37,10 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         val request = Request.Builder()
             .url("$serverUrl/api/user/register")
             .post(requestBody)
+            .addHeader("Accept", "application/json")
             .build()
+
+        Log.d(TAG, "Sending register request: ${request.body?.toString()}")
 
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -47,27 +50,31 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
-                    if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to register user: ${response.code}")
-                        onComplete(null)
-                        return@use
-                    }
-                    val responseBody = response.body?.string()
-                    try {
-                        val json = Json { ignoreUnknownKeys = true }
-                        val registerResponse = json.decodeFromString<RegisterResponse>(responseBody ?: "")
-                        Log.d(TAG, "Register response: $registerResponse")
-                        (context as? Activity)?.runOnUiThread {
-                            onComplete(registerResponse)
+                    if (response.isSuccessful) {
+                        try {
+                            val responseBody = response.body?.string() ?: ""
+                            val json = Json { ignoreUnknownKeys = true }
+                            val registerResponse = json.decodeFromString<RegisterResponse>(responseBody)
+                            Log.d(TAG, "Register response: $registerResponse")
+                            (context as? Activity)?.runOnUiThread {
+                                onComplete(registerResponse)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to parse register response: ${e.message}", e)
+                            (context as? Activity)?.runOnUiThread {
+                                onComplete(null)
+                            }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse register response: ${e.message}")
+                    } else {
+                        val errorBody = response.body?.string()
+                        Log.e(TAG, "Failed to register user: ${response.code} - $errorBody")
                         (context as? Activity)?.runOnUiThread {
                             onComplete(null)
                         }
                     }
                 }
-            }})
+            }
+        })
     }
     fun verifyToken(token: String, onComplete: (Boolean) -> Unit) {
         val request = Request.Builder()
@@ -176,7 +183,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
                     val responseBody = response.body?.string()
                     try {
-                        val authResponse = Json.decodeFromString<AuthResponse>(responseBody ?: "")
+                        val authResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AuthResponse>(responseBody ?: "")
                         Log.d(TAG, "Auth response: $authResponse")
                         onComplete(authResponse)
                     } catch (e: Exception) {
@@ -206,7 +213,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
         val jsonBody = modifiedJson.toString()
 
-        val endpoint = "/api/sockets/***"
+        val endpoint = "/api/sockets/postapptrafic"
 
         if (webSocket == null) {
             Log.e(TAG, "WebSocket is not initialized, attempting to connect...")
