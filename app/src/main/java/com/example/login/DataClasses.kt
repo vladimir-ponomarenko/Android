@@ -50,6 +50,7 @@ data class AuthResponse(
 @Serializable
 data class AppTrafficData(
     val appName: String,
+    val packageName: String,
     val totalBytes: Long,
     val mobileBytes: Long,
     val wifiBytes: Long,

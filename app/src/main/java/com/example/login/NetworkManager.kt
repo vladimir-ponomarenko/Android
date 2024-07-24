@@ -202,13 +202,14 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             put("jwt", jwt)
             put("uuid", MainActivity.state.Uuid)
             put("trafficData", Json.encodeToJsonElement(top10TrafficData.map { appData ->
-                appData.copy(
-                    totalBytes = appData.totalBytes / 1024,
-                    mobileBytes = appData.mobileBytes / 1024,
-                    wifiBytes = appData.wifiBytes / 1024,
-                    rxBytes = appData.rxBytes / 1024,
-                    txBytes = appData.txBytes / 1024
-                )
+                buildJsonObject {
+                    put("appName", appData.appName)
+                    put("totalBytes", appData.totalBytes / 1024)
+                    put("mobileBytes", appData.mobileBytes / 1024)
+                    put("wifiBytes", appData.wifiBytes / 1024)
+                    put("rxBytes", appData.rxBytes / 1024)
+                    put("txBytes", appData.txBytes / 1024)
+                }
             }))
         }
         val jsonBody = modifiedJson.toString()
@@ -269,7 +270,6 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     fun sendMessageToData2ToServer(messageToData2: MessageToData2, onComplete: ((Boolean) -> Unit)? = null) {
         val endpoint = "/api/sockets/thermalmap"
 
-        // Изменение структуры JSON перед отправкой
         val modifiedJson = buildJsonObject {
             put("jwt", messageToData2.jwt)
             put("UUID", messageToData2.UUID)

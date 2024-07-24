@@ -260,7 +260,15 @@
 
                 if (currentHourTraffic[dataPoint.appName]!! > maxTraffic) {
                     maxTraffic = currentHourTraffic[dataPoint.appName]!!
-                    maxTrafficApp = AppTrafficData(dataPoint.appName, maxTraffic, 0, 0, 0, 0)
+                    maxTrafficApp = AppTrafficData(
+                        dataPoint.appName,
+                        getPackageNameForApp(context, dataPoint.appName) ?: "",
+                        maxTraffic,
+                        0L,
+                        0L,
+                        0L,
+                        0L
+                    )
                 }
             }
 
@@ -520,6 +528,7 @@
                 appTrafficDataList.add(
                     AppTrafficData(
                         appName,
+                        packageInfo.packageName,
                         totalBytes,
                         mobileBytes,
                         wifiBytes,
