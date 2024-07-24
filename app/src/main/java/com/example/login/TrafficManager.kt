@@ -138,6 +138,12 @@
                     val stepSize = maxTrafficKb / 5
                     for (i in 0..5) {
                         val y = size.height - i * (size.height / 5)
+                        drawLine(
+                            color = Color.LightGray,
+                            start = Offset(0f, y),
+                            end = Offset(chartWidth.toPx(), y),
+                            strokeWidth = 1f
+                        )
                         drawContext.canvas.nativeCanvas.drawText(
                             String.format("%.0f", i * stepSize),
                             10f,
@@ -155,7 +161,7 @@
             Box(modifier = Modifier.horizontalScroll(scrollState)) {
                 Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
                     hourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
-                        val x = index * hourWidth.toPx()
+                        val x = index * hourWidth.toPx() + 40.dp.toPx()
                         val trafficKb = (appTrafficData.totalBytes / 1024).toFloat()
                         val barHeight = (trafficKb / maxTrafficKb * size.height).coerceAtLeast(0f)
 

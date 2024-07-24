@@ -280,22 +280,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             0 -> LoginScreen(
                                 state,
                                 onLoginSuccess = onLoginSuccess,
-                                onData1Click = {
-                                    coroutineScope.launch {
-                                        MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
-                                            if (authResponse != null) {
-                                                (context as? Activity)?.runOnUiThread {
-                                                    state.JwtToken = authResponse.jwt
-                                                    state.Uuid = authResponse.uuid
-                                                    state.saveLoginData()
-                                                }
-                                                connectWebSocket(authResponse.jwt)
-                                            } else {
-                                                Log.e(MainActivity.TAG, "Authentication failed")
-                                            }
-                                        }
-                                    }
-                                },
                                 onCellInfoDataClick = {
                                     coroutineScope.launch {
                                         if (!state.isSendingCellInfoData) {

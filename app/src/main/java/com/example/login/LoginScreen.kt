@@ -1,8 +1,6 @@
 package com.example.login
 
-import android.app.Activity
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,13 +31,13 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     state: MainActivity.MainActivityState,
     onLoginSuccess: () -> Unit,
-    onData1Click: () -> Unit,
     onCellInfoDataClick: () -> Unit
 ) {
     val context = LocalContext.current
     var email by remember { mutableStateOf(state.Email) }
     var password by remember { mutableStateOf(state.Password) }
     var jwtToken by remember { mutableStateOf(state.JwtToken) }
+    var uuid by remember { mutableStateOf(state.Uuid) }
     var rememberMe by remember { mutableStateOf(state.RememberMe) }
     var showRegistration by remember { mutableStateOf(false) }
     var showSuccessMessage by remember { mutableStateOf(false) }
@@ -82,30 +80,10 @@ fun LoginScreen(
                 onPasswordChange = { password = it },
                 jwtToken = jwtToken,
                 onJwtTokenChange = { jwtToken = it },
+                uuid = uuid,
+                onUuidChange = { uuid = it },
                 rememberMe = rememberMe,
                 onRememberMeChange = { rememberMe = it },
-                onData1Click = {
-                    state.Email = email
-                    state.Password = password
-                    state.JwtToken = jwtToken
-                    state.RememberMe = rememberMe
-                    state.saveLoginData()
-                    coroutineScope.launch {
-                        MainActivity.networkManager.authenticateUser(email, password, jwtToken) { authResponse ->
-                            if (authResponse != null) {
-                                (context as? Activity)?.runOnUiThread {
-                                    state.JwtToken = authResponse.jwt
-                                    state.Uuid = authResponse.uuid
-                                    state.saveLoginData()
-                                    onLoginSuccess()
-                                }
-                                MainActivity().connectWebSocket(authResponse.jwt)
-                            } else {
-                                Log.e(MainActivity.TAG, "Authentication failed")
-                            }
-                        }
-                    }
-                },
                 onCellInfoDataClick = onCellInfoDataClick,
                 onShowRegistrationClick = { showRegistration = true }
             )
@@ -127,9 +105,10 @@ fun LoginForm(
     onPasswordChange: (String) -> Unit,
     jwtToken: String,
     onJwtTokenChange: (String) -> Unit,
+    uuid: String,
+    onUuidChange: (String) -> Unit,
     rememberMe: Boolean,
     onRememberMeChange: (Boolean) -> Unit,
-    onData1Click: () -> Unit,
     onCellInfoDataClick: () -> Unit,
     onShowRegistrationClick: () -> Unit
 ) {
@@ -153,6 +132,15 @@ fun LoginForm(
         Spacer(modifier = Modifier.height(8.dp))
         Column(modifier = Modifier.fillMaxWidth(0.8f)) {
             OutlinedTextField(
+                value = uuid,
+                onValueChange = onUuidChange,
+                label = { Text("UUID") },
+                enabled = true
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Column(modifier = Modifier.fillMaxWidth(0.8f)) {
+            OutlinedTextField(
                 value = jwtToken,
                 onValueChange = onJwtTokenChange,
                 label = { Text("JWT Token") },
@@ -168,10 +156,6 @@ fun LoginForm(
             Text("Remember me")
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onData1Click) {
-            Text("Data1")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = onCellInfoDataClick) {
             Text("CellInfoData")
         }
