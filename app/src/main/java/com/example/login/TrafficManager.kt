@@ -2,55 +2,57 @@
 
     package com.example.login
 
+    //noinspection UsingMaterialAndMaterial3Libraries
+    //noinspection UsingMaterialAndMaterial3Libraries
+    //noinspection UsingMaterialAndMaterial3Libraries
+    //noinspection UsingMaterialAndMaterial3Libraries
     import android.annotation.SuppressLint
-    import android.app.Activity
-    import android.content.Context
-    import android.content.pm.PackageManager
-    import android.net.ConnectivityManager
-    import android.os.Build
-    import android.util.Log
-    import androidx.annotation.RequiresApi
-    import androidx.compose.foundation.Canvas
-    import androidx.compose.foundation.horizontalScroll
-    import androidx.compose.foundation.layout.Box
-    import androidx.compose.foundation.layout.Column
-    import androidx.compose.foundation.layout.Row
-    import androidx.compose.foundation.layout.fillMaxSize
-    import androidx.compose.foundation.layout.fillMaxWidth
-    import androidx.compose.foundation.layout.height
-    import androidx.compose.foundation.layout.padding
-    import androidx.compose.foundation.layout.width
-    import androidx.compose.foundation.rememberScrollState
-    import androidx.compose.foundation.shape.RoundedCornerShape
-    //noinspection UsingMaterialAndMaterial3Libraries
-    import androidx.compose.material.Icon
-    //noinspection UsingMaterialAndMaterial3Libraries
-    import androidx.compose.material.IconButton
-    //noinspection UsingMaterialAndMaterial3Libraries
-    import androidx.compose.material.Surface
-    //noinspection UsingMaterialAndMaterial3Libraries
-    import androidx.compose.material.Text
-    import androidx.compose.material.icons.Icons
-    import androidx.compose.material.icons.filled.Close
-    import androidx.compose.runtime.Composable
-    import androidx.compose.runtime.LaunchedEffect
-    import androidx.compose.runtime.mutableStateListOf
-    import androidx.compose.runtime.remember
-    import androidx.compose.ui.Alignment
-    import androidx.compose.ui.Modifier
-    import androidx.compose.ui.geometry.Offset
-    import androidx.compose.ui.geometry.Size
-    import androidx.compose.ui.graphics.Color
-    import androidx.compose.ui.graphics.nativeCanvas
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.nativeCanvas
+    import androidx.compose.ui.graphics.toArgb
     import androidx.compose.ui.text.font.FontWeight
-    import androidx.compose.ui.unit.dp
-    import androidx.compose.ui.unit.sp
-    import androidx.compose.ui.window.Dialog
-    import kotlinx.coroutines.Dispatchers
-    import kotlinx.coroutines.launch
-    import kotlinx.coroutines.withContext
-    import java.util.Calendar
-    import java.util.concurrent.TimeUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
     @Composable
     fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
@@ -208,6 +210,207 @@
                         )
                     }
                 }
+            }
+        }
+    }
+    @RequiresApi(Build.VERSION_CODES.M)
+    @Composable
+    fun TotalHourlyTrafficLineChart(onClose: () -> Unit, context: Context) {
+        val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
+
+        LaunchedEffect(Unit) {
+            launch(Dispatchers.IO) {
+                val data = getTotalHourlyTrafficData(context)
+                withContext(Dispatchers.Main) {
+                    hourlyTrafficData.addAll(data)
+                }
+            }
+        }
+
+        Dialog(onDismissRequest = onClose) {
+            Surface(shape = RoundedCornerShape(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Total Hourly Traffic (Line Chart)",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    }
+                    TotalHourlyTrafficLineChartContent(hourlyTrafficData)
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    @Composable
+    fun TotalHourlyTrafficLineChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>) {
+        val scrollState = rememberScrollState()
+        val hourWidth = 60.dp
+        val chartWidth = hourWidth * 24
+        val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
+        val maxTrafficKb = (maxTraffic / 1024).toFloat()
+
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+        val totalTrafficData = (0 until 24).map { hour ->
+            Pair(hour, hourlyTrafficData.filter { it.first == (hour + currentHour) % 24 }.sumOf { it.second.totalBytes })
+        }
+
+        Box(modifier = Modifier.horizontalScroll(scrollState)) {
+            Canvas(modifier = Modifier.width(chartWidth + 150.dp).height(200.dp)) {
+
+                val stepSize = maxTrafficKb / 5
+                for (i in 0..5) {
+                    val y = size.height - i * (size.height / 5)
+                    drawLine(
+                        color = Color.LightGray,
+                        start = Offset(0f, y),
+                        end = Offset(chartWidth.toPx(), y),
+                        strokeWidth = 1f
+                    )
+                    drawContext.canvas.nativeCanvas.drawText(
+                        String.format("%.0f Kb", i * stepSize),
+                        10f,
+                        y,
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.LEFT
+                        }
+                    )
+                }
+
+                drawTrafficLine(totalTrafficData, maxTrafficKb, Color.Black, "Total")
+
+                val topAppNames = hourlyTrafficData
+                    .groupBy { it.second.appName }
+                    .mapValues { it.value.sumOf { it.second.totalBytes } }
+                    .entries
+                    .sortedByDescending { it.value }
+                    .take(10)
+                    .map { it.key }
+
+                val lineColors = topAppNames.mapIndexed { index, _ ->
+                    when (index) {
+                        0 -> Color.Red
+                        1 -> Color.Green
+                        2 -> Color.Blue
+                        else -> Color(
+                            (0..255).random(),
+                            (0..255).random(),
+                            (0..255).random()
+                        )
+                    }
+                }
+
+                topAppNames.forEachIndexed { index, appName ->
+                    val appTrafficData = hourlyTrafficData.filter { it.second.appName == appName }
+
+                    val appTrafficByHour = (0 until 24).map { hour ->
+                        val dataForHour = appTrafficData.find { it.first == (hour + currentHour) % 24 }
+                        dataForHour?.let { Pair(it.first, it.second.totalBytes) } ?: Pair(hour, 0L)
+                    }
+
+                    drawTrafficLine(appTrafficByHour, maxTrafficKb, lineColors[index], appName)
+                }
+
+                val legendSpacing = 15.dp
+                var legendY = 10.dp
+                drawContext.canvas.nativeCanvas.drawText(
+                    "Apps:",
+                    chartWidth.toPx() + 10.dp.toPx(),
+                    legendY.toPx(),
+                    android.graphics.Paint().apply {
+                        textSize = 10.sp.toPx()
+                        color = android.graphics.Color.BLACK
+                        textAlign = android.graphics.Paint.Align.LEFT
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    }
+                )
+                legendY += legendSpacing * 2
+
+                topAppNames.forEachIndexed { index, appName ->
+                    drawRect(
+                        color = lineColors[index],
+                        topLeft = Offset(chartWidth.toPx() + 10.dp.toPx(), legendY.toPx()),
+                        size = Size(20.dp.toPx(), 10.dp.toPx())
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        appName,
+                        chartWidth.toPx() + 40.dp.toPx(),
+                        legendY.toPx() + 8.dp.toPx(),
+                        android.graphics.Paint().apply {
+                            textSize = 8.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.LEFT
+                        }
+                    )
+                    legendY += legendSpacing
+                }
+
+                for (hour in 0 until 24) {
+                    val adjustedHour = (hour + currentHour) % 24
+                    val x = hour * hourWidth.toPx()
+                    drawContext.canvas.nativeCanvas.drawText(
+                        String.format("%02d:00", adjustedHour),
+                        x + hourWidth.toPx() / 2,
+                        size.height + 15f,
+                        android.graphics.Paint().apply {
+                            textSize = 10.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun DrawScope.drawTrafficLine(
+        trafficData: List<Pair<Int, Long>>,
+        maxTrafficKb: Float,
+        lineColor: Color,
+        lineLabel: String = ""
+    ) {
+        var previousPoint: Offset? = null
+        trafficData.forEachIndexed { index, (hour, traffic) ->
+            val x = index * 60.dp.toPx() + 40.dp.toPx()
+            val trafficKb = (traffic / 1024).toFloat()
+            val y = size.height - (trafficKb / maxTrafficKb * size.height).coerceAtLeast(0f)
+            val currentPoint = Offset(x, y)
+
+            if (previousPoint != null) {
+                drawLine(
+                    color = lineColor,
+                    start = previousPoint!!,
+                    end = currentPoint,
+                    strokeWidth = 2f
+                )
+            }
+            previousPoint = currentPoint
+        }
+
+        if (lineLabel.isNotBlank()) {
+            val lastHourData = trafficData.lastOrNull()
+            if (lastHourData != null) {
+                val lastHourIndex = lastHourData.first
+                val lastX = lastHourIndex * 60.dp.toPx() + 40.dp.toPx()
+                drawContext.canvas.nativeCanvas.drawText(
+                    lineLabel,
+                    lastX + 10.dp.toPx(),
+                    size.height - (lastHourData.second / 1024f / maxTrafficKb * size.height).coerceAtLeast(0f),
+                    android.graphics.Paint().apply {
+                        textSize = 8.sp.toPx()
+                        color = lineColor.toArgb()
+                        textAlign = android.graphics.Paint.Align.LEFT
+                    }
+                )
             }
         }
     }
