@@ -48,6 +48,8 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
+
 @SuppressLint("AutoboxingStateCreation")
 @Composable
 fun RSRPGraph(state: MainActivity.MainActivityState) {
@@ -143,8 +145,10 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, state: MainActivity.MainAct
 
     val hourWidth = 50.dp
     val chartWidth = hourWidth * 24
-    val maxChartValue = chartData.maxOfOrNull { it.second } ?: 1f
-    val maxValue = (maxChartValue / 10).toInt() * 10 + 10
+
+    val maxAbsChartValue = chartData.maxOfOrNull { kotlin.math.abs(it.second) } ?: 0f
+
+    val maxValue = -ceil(maxAbsChartValue / 10) * 10
 
     Box(modifier = Modifier.horizontalScroll(scrollState)) {
         Row(
@@ -172,6 +176,7 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, state: MainActivity.MainAct
             Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
                 chartData.forEachIndexed { index, (timestamp, chartValue) ->
                     val x = index * hourWidth.toPx()
+
                     val barHeight = (chartValue / maxValue * size.height).coerceAtLeast(0f)
 
                     drawRect(
@@ -197,13 +202,25 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, state: MainActivity.MainAct
                         }
                     )
 
-                    val text = String.format("%.1f (ID: %s)", chartValue, state.Cellid)
+                    val textValue = String.format("%.1f", chartValue)
                     drawContext.canvas.nativeCanvas.drawText(
-                        text,
+                        textValue,
                         x + hourWidth.toPx() / 2,
-                        size.height - barHeight - 5.dp.toPx(),
+                        size.height - barHeight - 10.dp.toPx(),
                         android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
+                            textSize = 11.sp.toPx()
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                    )
+
+                    val textId = "ID: ${state.Cellid}"
+                    drawContext.canvas.nativeCanvas.drawText(
+                        textId,
+                        x + hourWidth.toPx() / 2,
+                        size.height - barHeight - 2.dp.toPx(),
+                        android.graphics.Paint().apply {
+                            textSize = 7.sp.toPx()
                             color = android.graphics.Color.BLACK
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
