@@ -21,19 +21,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Surface
+import androidx.compose.material.Tab
+import androidx.compose.material.TabRow
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -43,8 +39,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,93 +47,173 @@ import kotlin.math.ceil
 @SuppressLint("AutoboxingStateCreation")
 @Composable
 fun RSRPGraph(state: MainActivity.MainActivityState) {
-    val rsrpData = remember { mutableStateListOf<Pair<Long, Float>>() }
-    val rssiData = remember { mutableStateListOf<Pair<Long, Float>>() }
-    val rsrqData = remember { mutableStateListOf<Pair<Long, Float>>() }
+    var selectedTabIndex by remember { mutableStateOf(0) }
 
-    LaunchedEffect(state.Rsrp, state.Rssi, state.Rsrq, state.Cellid) {
-        while (true) {
-            val timestamp = System.currentTimeMillis()
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            Tab(
+                text = { Text("LTE") },
+                selected = selectedTabIndex == 0,
+                onClick = { selectedTabIndex = 0 }
+            )
+            Tab(
+                text = { Text("GSM") },
+                selected = selectedTabIndex == 1,
+                onClick = { selectedTabIndex = 1 }
+            )
+            Tab(
+                text = { Text("WCDMA") },
+                selected = selectedTabIndex == 2,
+                onClick = { selectedTabIndex = 2 }
+            )
+            Tab(
+                text = { Text("CDMA") },
+                selected = selectedTabIndex == 3,
+                onClick = { selectedTabIndex = 3 }
+            )
+            Tab(
+                text = { Text("NR") },
+                selected = selectedTabIndex == 4,
+                onClick = { selectedTabIndex = 4 }
+            )
+        }
 
-            addChartData(rsrpData, state.Rsrp, timestamp)
-            addChartData(rssiData, state.Rssi, timestamp)
-            addChartData(rsrqData, state.Rsrq, timestamp)
+        when (selectedTabIndex) {
+            0 -> LteChartsContent(state)
+            1 -> GsmChartsContent(state)
+            2 -> WcdmaChartsContent(state)
+            3 -> CdmaChartsContent(state)
+            4 -> NrChartsContent(state)
+        }
+    }
+}
+@Composable
+fun LteChartsContent(state: MainActivity.MainActivityState) {
+    var lastTimestamp by remember { mutableStateOf(0L) }
 
-            delay(MainActivity.UPDATE_INTERVAL)
+    LaunchedEffect(state.messageToData2) {
+        state.messageToData2?.let { messageToData2 ->
+            val currentTimestamp = System.currentTimeMillis()
+            if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
+                lastTimestamp = currentTimestamp
+
+                val cellInfo = messageToData2.lte.cellInfoList.firstOrNull()
+                cellInfo?.let {
+                    addChartData(state.rsrpData, it.rsrp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rssiData, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rsrqData, it.rsrq?.toString() ?: "0", currentTimestamp)
+                }
+            }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = { state.showRSRPChart = true }, modifier = Modifier.padding(8.dp)) {
-            Text("Show RSRP Chart")
-        }
-        Button(onClick = { state.showRSSIChart = true }, modifier = Modifier.padding(8.dp)) {
-            Text("Show RSSI Chart")
-        }
-        Button(onClick = { state.showRSRQChart = true }, modifier = Modifier.padding(8.dp)) {
-            Text("Show RSRQ Chart")
+        ChartContent(state.rsrpData, "RSRP", state)
+        ChartContent(state.rssiData, "RSSI", state)
+        ChartContent(state.rsrqData, "RSRQ", state)
+    }
+}
+
+@Composable
+fun GsmChartsContent(state: MainActivity.MainActivityState) {
+    var lastTimestamp by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(state.messageToData2) {
+        state.messageToData2?.let { messageToData2 ->
+            val currentTimestamp = System.currentTimeMillis()
+            if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
+                lastTimestamp = currentTimestamp
+
+                val cellInfo = messageToData2.gsm.cellInfoList.firstOrNull()
+                cellInfo?.let {
+                    addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
+                }
+            }
         }
     }
-
-    if (state.showRSRPChart) {
-        ChartDialog(
-            chartData = rsrpData,
-            chartTitle = "RSRP Chart",
-            onClose = { state.showRSRPChart = false },
-            state = state
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        ChartContent(state.rssiDataGsm, "RSSI", state)
     }
+}
 
-    if (state.showRSSIChart) {
-        ChartDialog(
-            chartData = rssiData,
-            chartTitle = "RSSI Chart",
-            onClose = { state.showRSSIChart = false },
-            state = state
-        )
+@Composable
+fun WcdmaChartsContent(state: MainActivity.MainActivityState) {
+    var lastTimestamp by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(state.messageToData2) {
+        state.messageToData2?.let { messageToData2 ->
+            val currentTimestamp = System.currentTimeMillis()
+            if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
+                lastTimestamp = currentTimestamp
+
+                val cellInfo = messageToData2.wcdma.cellInfoList.firstOrNull()
+                cellInfo?.let {
+                    addChartData(state.rssiDataWcdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
+                }
+            }
+        }
     }
+    Column(modifier = Modifier.fillMaxSize()) {
+        ChartContent(state.rssiDataWcdma, "RSSI", state)
+        ChartContent(state.rscpDataWcdma, "RSCP", state)
+    }
+}
 
-    if (state.showRSRQChart) {
-        ChartDialog(
-            chartData = rsrqData,
-            chartTitle = "RSRQ Chart",
-            onClose = { state.showRSRQChart = false },
-            state = state
-        )
+@Composable
+fun CdmaChartsContent(state: MainActivity.MainActivityState) {
+    var lastTimestamp by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(state.messageToData2) {
+        state.messageToData2?.let { messageToData2 ->
+            val currentTimestamp = System.currentTimeMillis()
+            if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
+                lastTimestamp = currentTimestamp
+
+                val cellInfo = messageToData2.cdma.cellInfoList.firstOrNull()
+                cellInfo?.let {
+                    addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                }
+            }
+        }
+    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        ChartContent(state.rssiDataCdma, "RSSI", state)
+    }
+}
+
+@Composable
+fun NrChartsContent(state: MainActivity.MainActivityState) {
+    var lastTimestamp by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(state.messageToData2) {
+        state.messageToData2?.let { messageToData2 ->
+            val currentTimestamp = System.currentTimeMillis()
+            if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
+                lastTimestamp = currentTimestamp
+
+                val cellInfo = messageToData2.nr.cellInfoList.firstOrNull()
+                cellInfo?.let {
+                    addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
+                }
+            }
+        }
+    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        ChartContent(state.rssiDataNr, "RSSI", state)
     }
 }
 
 private fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: String, timestamp: Long) {
     val chartValue = value.replace(" dBm", "").replace(" dB", "").toFloatOrNull() ?: 0f
     chartData.add(Pair(timestamp, chartValue))
-    if (chartData.size > 10) {
+    if (chartData.size > 6) {
         chartData.removeAt(0)
     }
 }
 
 @Composable
-fun ChartDialog(chartData: List<Pair<Long, Float>>, chartTitle: String, onClose: () -> Unit, state: MainActivity.MainActivityState) {
-    Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = chartTitle,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
-                }
-
-                ChartContent(chartData, state)
-            }
-        }
-    }
-}
-
-@Composable
-fun ChartContent(chartData: List<Pair<Long, Float>>, state: MainActivity.MainActivityState) {
+fun ChartContent(chartData: List<Pair<Long, Float>>, chartTitle: String, state: MainActivity.MainActivityState) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
@@ -150,81 +224,89 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, state: MainActivity.MainAct
 
     val maxValue = -ceil(maxAbsChartValue / 10) * 10
 
-    Box(modifier = Modifier.horizontalScroll(scrollState)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        ) {
-            Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
-                val stepSize = maxValue / 5f
-                for (i in 0..5) {
-                    val y = size.height - i * (size.height / 5)
-                    drawContext.canvas.nativeCanvas.drawText(
-                        String.format("%.0f", i * stepSize),
-                        10f,
-                        y,
-                        android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
-                            color = android.graphics.Color.BLACK
-                            textAlign = android.graphics.Paint.Align.LEFT
-                        }
-                    )
-                }
-            }
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = chartTitle,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-            Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
-                chartData.forEachIndexed { index, (timestamp, chartValue) ->
-                    val x = index * hourWidth.toPx()
-
-                    val barHeight = (chartValue / maxValue * size.height).coerceAtLeast(0f)
-
-                    drawRect(
-                        color = Color.Blue,
-                        topLeft = Offset(x, size.height - barHeight),
-                        size = Size(
-                            hourWidth.toPx() - 4.dp.toPx(),
-                            barHeight
+        Box(modifier = Modifier.horizontalScroll(scrollState)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
+                    val stepSize = maxValue / 5f
+                    for (i in 0..5) {
+                        val y = size.height - i * (size.height / 5)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            String.format("%.0f", i * stepSize),
+                            10f,
+                            y,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.LEFT
+                            }
                         )
-                    )
+                    }
+                }
 
-                    val date = Date(timestamp)
-                    val format = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                    val formattedTime = format.format(date)
-                    drawContext.canvas.nativeCanvas.drawText(
-                        formattedTime,
-                        x + hourWidth.toPx() / 2,
-                        size.height + 15f,
-                        android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
-                            color = android.graphics.Color.BLACK
-                            textAlign = android.graphics.Paint.Align.CENTER
-                        }
-                    )
+                Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
+                    chartData.forEachIndexed { index, (timestamp, chartValue) ->
+                        val x = index * hourWidth.toPx()
 
-                    val textValue = String.format("%.1f", chartValue)
-                    drawContext.canvas.nativeCanvas.drawText(
-                        textValue,
-                        x + hourWidth.toPx() / 2,
-                        size.height - barHeight - 10.dp.toPx(),
-                        android.graphics.Paint().apply {
-                            textSize = 11.sp.toPx()
-                            color = android.graphics.Color.BLACK
-                            textAlign = android.graphics.Paint.Align.CENTER
-                        }
-                    )
+                        val barHeight = (chartValue / maxValue * size.height).coerceAtLeast(0f)
 
-                    val textId = "ID: ${state.Cellid}"
-                    drawContext.canvas.nativeCanvas.drawText(
-                        textId,
-                        x + hourWidth.toPx() / 2,
-                        size.height - barHeight - 2.dp.toPx(),
-                        android.graphics.Paint().apply {
-                            textSize = 7.sp.toPx()
-                            color = android.graphics.Color.BLACK
-                            textAlign = android.graphics.Paint.Align.CENTER
-                        }
-                    )
+                        drawRect(
+                            color = Color.Blue,
+                            topLeft = Offset(x, size.height - barHeight),
+                            size = Size(
+                                hourWidth.toPx() - 4.dp.toPx(),
+                                barHeight
+                            )
+                        )
+
+                        val date = Date(timestamp)
+                        val format = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                        val formattedTime = format.format(date)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            formattedTime,
+                            x + hourWidth.toPx() / 2,
+                            size.height + 15f,
+                            android.graphics.Paint().apply {
+                                textSize = 10.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        val textValue = String.format("%.1f", chartValue)
+                        drawContext.canvas.nativeCanvas.drawText(
+                            textValue,
+                            x + hourWidth.toPx() / 2,
+                            size.height - barHeight - 10.dp.toPx(),
+                            android.graphics.Paint().apply {
+                                textSize = 11.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+
+                        val textId = "ID: ${state.Cellid}"
+                        drawContext.canvas.nativeCanvas.drawText(
+                            textId,
+                            x + hourWidth.toPx() / 2,
+                            size.height - barHeight - 2.dp.toPx(),
+                            android.graphics.Paint().apply {
+                                textSize = 7.sp.toPx()
+                                color = android.graphics.Color.BLACK
+                                textAlign = android.graphics.Paint.Align.CENTER
+                            }
+                        )
+                    }
                 }
             }
         }

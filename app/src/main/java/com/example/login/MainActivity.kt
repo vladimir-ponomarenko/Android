@@ -420,6 +420,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var showRSSIChart by mutableStateOf(false)
         var showRSRQChart by mutableStateOf(false)
 
+        // Списки для хранения данных графиков
+        val rsrpData = mutableStateListOf<Pair<Long, Float>>()
+        val rssiData = mutableStateListOf<Pair<Long, Float>>()
+        val rsrqData = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataGsm = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataWcdma = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataCdma = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataNr = mutableStateListOf<Pair<Long, Float>>()
+        var rscpDataWcdma = mutableStateListOf<Pair<Long, Float>>()
+
         //Для тепловой карты (точки)
         val locations = mutableStateListOf<Pair<LatLng, Color>>()
 
