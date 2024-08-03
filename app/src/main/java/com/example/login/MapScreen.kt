@@ -29,11 +29,22 @@ fun MapScreen(state: MainActivity.MainActivityState) {
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState
     ) {
-        Polyline(
-            points = state.locations.map { it.first },
-            color = Color.Red,
-            width = 5f
-        )
+        for (i in 0 until state.locations.size - 1) {
+            val (location1, color1) = state.locations[i]
+            val (location2, color2) = state.locations[i + 1]
+
+            Polyline(
+                points = listOf(location1, LatLng((location1.latitude + location2.latitude) / 2, (location1.longitude + location2.longitude) / 2)),
+                color = color1,
+                width = 5f
+            )
+            Polyline(
+                points = listOf(LatLng((location1.latitude + location2.latitude) / 2, (location1.longitude + location2.longitude) / 2), location2),
+                color = color2,
+                width = 5f
+            )
+        }
+
         state.locations.forEach { (location, color) ->
             Circle(
                 center = location,
