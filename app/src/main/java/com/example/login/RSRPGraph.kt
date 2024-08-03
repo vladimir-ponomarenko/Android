@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -91,19 +92,20 @@ fun RSRPGraph(state: MainActivity.MainActivityState) {
 fun LteChartsContent(state: MainActivity.MainActivityState) {
     var lastTimestamp by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(state.messageToData2) {
-        state.messageToData2?.let { messageToData2 ->
+    LaunchedEffect(Unit) {
+        while (true) {
             val currentTimestamp = System.currentTimeMillis()
             if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
                 lastTimestamp = currentTimestamp
 
-                val cellInfo = messageToData2.lte.cellInfoList.firstOrNull()
+                val cellInfo = state.messageToData2?.lte?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rsrpData, it.rsrp?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rssiData, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rsrqData, it.rsrq?.toString() ?: "0", currentTimestamp)
                 }
             }
+            delay(MainActivity.UPDATE_INTERVAL)
         }
     }
 
@@ -118,17 +120,18 @@ fun LteChartsContent(state: MainActivity.MainActivityState) {
 fun GsmChartsContent(state: MainActivity.MainActivityState) {
     var lastTimestamp by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(state.messageToData2) {
-        state.messageToData2?.let { messageToData2 ->
+    LaunchedEffect(Unit) {
+        while (true) {
             val currentTimestamp = System.currentTimeMillis()
             if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
                 lastTimestamp = currentTimestamp
 
-                val cellInfo = messageToData2.gsm.cellInfoList.firstOrNull()
+                val cellInfo = state.messageToData2?.gsm?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
                 }
             }
+            delay(MainActivity.UPDATE_INTERVAL)
         }
     }
     Column(modifier = Modifier.fillMaxSize()) {
@@ -140,18 +143,19 @@ fun GsmChartsContent(state: MainActivity.MainActivityState) {
 fun WcdmaChartsContent(state: MainActivity.MainActivityState) {
     var lastTimestamp by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(state.messageToData2) {
-        state.messageToData2?.let { messageToData2 ->
+    LaunchedEffect(Unit) {
+        while (true) {
             val currentTimestamp = System.currentTimeMillis()
             if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
                 lastTimestamp = currentTimestamp
 
-                val cellInfo = messageToData2.wcdma.cellInfoList.firstOrNull()
+                val cellInfo = state.messageToData2?.wcdma?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataWcdma, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
                 }
             }
+            delay(MainActivity.UPDATE_INTERVAL)
         }
     }
     Column(modifier = Modifier.fillMaxSize()) {
@@ -164,17 +168,18 @@ fun WcdmaChartsContent(state: MainActivity.MainActivityState) {
 fun CdmaChartsContent(state: MainActivity.MainActivityState) {
     var lastTimestamp by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(state.messageToData2) {
-        state.messageToData2?.let { messageToData2 ->
+    LaunchedEffect(Unit) {
+        while (true) {
             val currentTimestamp = System.currentTimeMillis()
             if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
                 lastTimestamp = currentTimestamp
 
-                val cellInfo = messageToData2.cdma.cellInfoList.firstOrNull()
+                val cellInfo = state.messageToData2?.cdma?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
                 }
             }
+            delay(MainActivity.UPDATE_INTERVAL)
         }
     }
     Column(modifier = Modifier.fillMaxSize()) {
@@ -186,17 +191,18 @@ fun CdmaChartsContent(state: MainActivity.MainActivityState) {
 fun NrChartsContent(state: MainActivity.MainActivityState) {
     var lastTimestamp by remember { mutableStateOf(0L) }
 
-    LaunchedEffect(state.messageToData2) {
-        state.messageToData2?.let { messageToData2 ->
+    LaunchedEffect(Unit) {
+        while (true) {
             val currentTimestamp = System.currentTimeMillis()
             if (currentTimestamp - lastTimestamp >= MainActivity.UPDATE_INTERVAL) {
                 lastTimestamp = currentTimestamp
 
-                val cellInfo = messageToData2.nr.cellInfoList.firstOrNull()
+                val cellInfo = state.messageToData2?.nr?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
                 }
             }
+            delay(MainActivity.UPDATE_INTERVAL)
         }
     }
     Column(modifier = Modifier.fillMaxSize()) {
@@ -206,8 +212,25 @@ fun NrChartsContent(state: MainActivity.MainActivityState) {
 
 private fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: String, timestamp: Long) {
     val chartValue = value.replace(" dBm", "").replace(" dB", "").toFloatOrNull() ?: 0f
+
+    val lastIndex = chartData.indexOfLast { it.first < timestamp }
+
+    if (lastIndex != -1) {
+        val lastTimestamp = chartData[lastIndex].first
+        val timeDifference = timestamp - lastTimestamp
+
+        if (timeDifference > MainActivity.UPDATE_INTERVAL) {
+            val missedUpdatesCount = (timeDifference / MainActivity.UPDATE_INTERVAL).toInt() - 1
+            for (i in 1..missedUpdatesCount) {
+                val missedTimestamp = lastTimestamp + i * MainActivity.UPDATE_INTERVAL
+                chartData.add(lastIndex + i, Pair(missedTimestamp, chartValue))
+            }
+        }
+    }
+
     chartData.add(Pair(timestamp, chartValue))
-    if (chartData.size > 6) {
+
+    while (chartData.size > 6) {
         chartData.removeAt(0)
     }
 }
