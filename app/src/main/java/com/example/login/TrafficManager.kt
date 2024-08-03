@@ -250,26 +250,34 @@ import java.util.concurrent.TimeUnit
     fun TotalHourlyTrafficLineChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>) {
         val scrollState = rememberScrollState()
         val hourWidth = 60.dp
-        val chartWidth = hourWidth * 24
-        val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
-        val maxTrafficKb = (maxTraffic / 1024).toFloat()
 
         val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-        val totalTrafficData = (0 until 24).map { hour ->
-            Pair(hour, hourlyTrafficData.filter { it.first == (hour + currentHour) % 24 }.sumOf { it.second.totalBytes })
+        val filteredHourlyTrafficData = hourlyTrafficData.filter { (_, appTrafficData) -> appTrafficData.totalBytes > 0 }
+
+        val totalTrafficByHour = MutableList(filteredHourlyTrafficData.size) { 0L }
+
+        filteredHourlyTrafficData.forEach { (hour, appTrafficData) ->
+            val adjustedHour = (hour + currentHour) % filteredHourlyTrafficData.size
+            totalTrafficByHour[adjustedHour] += appTrafficData.totalBytes
+        }
+
+        val maxTraffic = maxOf(totalTrafficByHour.maxOrNull() ?: 1L, 1L)
+        val maxTrafficKb = (maxTraffic / 1024).toFloat()
+
+        val totalTrafficData = totalTrafficByHour.mapIndexed { index, traffic ->
+            Pair(filteredHourlyTrafficData[index].first, traffic)
         }
 
         Box(modifier = Modifier.horizontalScroll(scrollState)) {
-            Canvas(modifier = Modifier.width(chartWidth + 150.dp).height(200.dp)) {
-
+            Canvas(modifier = Modifier.width(hourWidth * totalTrafficData.size + 150.dp).height(200.dp)) {
                 val stepSize = maxTrafficKb / 5
                 for (i in 0..5) {
                     val y = size.height - i * (size.height / 5)
                     drawLine(
                         color = Color.LightGray,
                         start = Offset(0f, y),
-                        end = Offset(chartWidth.toPx(), y),
+                        end = Offset((hourWidth * totalTrafficData.size).toPx(), y),
                         strokeWidth = 1f
                     )
                     drawContext.canvas.nativeCanvas.drawText(
@@ -308,11 +316,12 @@ import java.util.concurrent.TimeUnit
                 }
 
                 topAppNames.forEachIndexed { index, appName ->
-                    val appTrafficData = hourlyTrafficData.filter { it.second.appName == appName }
-
-                    val appTrafficByHour = (0 until 24).map { hour ->
-                        val dataForHour = appTrafficData.find { it.first == (hour + currentHour) % 24 }
-                        dataForHour?.let { Pair(it.first, it.second.totalBytes) } ?: Pair(hour, 0L)
+                    val appTrafficByHour = totalTrafficByHour.mapIndexed { hourIndex, totalTraffic ->
+                        val currentHour = filteredHourlyTrafficData[hourIndex].first
+                        val appTraffic = filteredHourlyTrafficData.find { (dataHour, appData) ->
+                            dataHour == currentHour && appData.appName == appName
+                        }?.second?.totalBytes ?: 0L
+                        Pair(currentHour, appTraffic)
                     }
 
                     drawTrafficLine(appTrafficByHour, maxTrafficKb, lineColors[index], appName)
@@ -322,7 +331,7 @@ import java.util.concurrent.TimeUnit
                 var legendY = 10.dp
                 drawContext.canvas.nativeCanvas.drawText(
                     "Apps:",
-                    chartWidth.toPx() + 10.dp.toPx(),
+                    (hourWidth * totalTrafficData.size + 10.dp).toPx(),
                     legendY.toPx(),
                     android.graphics.Paint().apply {
                         textSize = 10.sp.toPx()
@@ -336,13 +345,13 @@ import java.util.concurrent.TimeUnit
                 topAppNames.forEachIndexed { index, appName ->
                     drawRect(
                         color = lineColors[index],
-                        topLeft = Offset(chartWidth.toPx() + 10.dp.toPx(), legendY.toPx()),
+                        topLeft = Offset((hourWidth * totalTrafficData.size + 10.dp).toPx(), legendY.toPx()),
                         size = Size(20.dp.toPx(), 10.dp.toPx())
                     )
 
                     drawContext.canvas.nativeCanvas.drawText(
                         appName,
-                        chartWidth.toPx() + 40.dp.toPx(),
+                        (hourWidth * totalTrafficData.size + 40.dp).toPx(),
                         legendY.toPx() + 8.dp.toPx(),
                         android.graphics.Paint().apply {
                             textSize = 8.sp.toPx()
@@ -353,11 +362,10 @@ import java.util.concurrent.TimeUnit
                     legendY += legendSpacing
                 }
 
-                for (hour in 0 until 24) {
-                    val adjustedHour = (hour + currentHour) % 24
-                    val x = hour * hourWidth.toPx()
+                for ((index, hour) in totalTrafficData.map { it.first }.withIndex()) {
+                    val x = index * hourWidth.toPx()
                     drawContext.canvas.nativeCanvas.drawText(
-                        String.format("%02d:00", adjustedHour),
+                        String.format("%02d:00", hour),
                         x + hourWidth.toPx() / 2,
                         size.height + 15f,
                         android.graphics.Paint().apply {
