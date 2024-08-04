@@ -33,12 +33,10 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
-            } else {
-                DataManager.getLocation(activity, MainActivity.state)
             }
-        } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S) {
+        } else if (Build.VERSION.SDK_INT in Build.VERSION_CODES.S..Build.VERSION_CODES.S_V2) {
             if (!checkPermissionsForAndroid12(context)) {
-                Log.d(MainActivity.TAG, "Requesting permissions (API == 31)")
+                Log.d(MainActivity.TAG, "Requesting permissions (API 31..32)")
                 ActivityCompat.requestPermissions(
                     activity,
                     arrayOf(
@@ -49,16 +47,9 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
-            } else {
-                DataManager.getLocation(activity, MainActivity.state)
             }
-        } else {
-            if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    !checkPermissionsForAndroid13(context)
-                } else {
-                    TODO("VERSION.SDK_INT < TIRAMISU")
-                }
-            ) {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!checkPermissionsForAndroid13(context)) {
                 Log.d(MainActivity.TAG, "Requesting permissions (API >= 33)")
                 ActivityCompat.requestPermissions(
                     activity,
@@ -72,8 +63,6 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
-            } else {
-                DataManager.getLocation(activity, MainActivity.state)
             }
         }
     }
@@ -96,6 +85,7 @@ object PermissionUtils {
                     Manifest.permission.READ_EXTERNAL_STORAGE
                 ) == PackageManager.PERMISSION_GRANTED
     }
+
 
     fun checkPermissions(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(

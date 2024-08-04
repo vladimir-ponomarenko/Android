@@ -9,9 +9,16 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 //noinspection UsingMaterialAndMaterial3Libraries
 //noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
+//noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -25,17 +32,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Scaffold
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.SnackbarDuration
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Tab
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRow
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.login.PermissionUtils.checkPermissions
+import com.example.login.PermissionUtils.checkPermissionsForAndroid12
 import com.example.login.PermissionUtils.checkPermissionsForAndroid13
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -129,23 +131,26 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+    private var permissionsGranted by mutableStateOf(false)
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun MainScreen(isSendingData: Boolean) {
         val context = LocalContext.current
-        var permissionsGranted by remember {
-            mutableStateOf(
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    checkPermissionsForAndroid13(context)
-                } else {
-                    TODO("VERSION.SDK_INT < TIRAMISU")
-                }
-            )
-        }
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
         var isLoggedIn by remember { mutableStateOf(false) }
+
+        permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            checkPermissionsForAndroid13(context)
+        } else {
+            checkPermissionsForAndroid12(context)
+        }
+
+        if (!permissionsGranted) {
+            PermissionUtils.checkAndRequestPermissions(this@MainActivity)
+        }
+
         LaunchedEffect(isWebSocketConnected) {
             if (isWebSocketConnected) {
                 showConnectionSnackbar = true
@@ -158,12 +163,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
 
-        LaunchedEffect(context) {
-            permissionsGranted =
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-                else checkPermissionsForAndroid13(context)
-        }
-
         Scaffold(
             scaffoldState = scaffoldState
         ) { innerPadding ->
@@ -173,24 +172,35 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .padding(innerPadding)
             ) {
                 if (permissionsGranted) {
-                    LaunchedEffect(Unit) {
+                    LaunchedEffect(permissionsGranted) {
                         while (true) {
                             DataManager.getLocation(this@MainActivity, state)
                             DataManager.getSignalStrength(state)
                             delay(UPDATE_INTERVAL)
                         }
                     }
-
                     MainContent(state, isLoggedIn) { isLoggedIn = true }
                 } else {
                     Text("Waiting for permissions...")
                 }
+
                 LaunchedEffect(isSendingData) {
                     delay(500)
                 }
-
                 SendingIndicator(isSendingData)
             }
+        }
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PermissionUtils.REQUEST_CODE_PERMISSIONS) {
+            permissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
         }
     }
 
