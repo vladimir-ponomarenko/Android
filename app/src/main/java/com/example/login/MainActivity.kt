@@ -118,14 +118,51 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         PermissionUtils.checkAndRequestPermissions(this)
         state.loadLoginData()
+
         lifecycleScope.launch {
             while (true) {
+                val currentTimestamp = System.currentTimeMillis()
+
                 val lat = state.Latitude.toDoubleOrNull()
                 val lng = state.Longtitude.toDoubleOrNull()
                 if (lat != null && lng != null) {
                     val color = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
                     state.locations.add(Pair(LatLng(lat, lng), color))
                 }
+
+                // LTE data
+                val lteCellInfo = state.messageToData2?.lte?.cellInfoList?.firstOrNull()
+                lteCellInfo?.let {
+                    addChartData(state.rsrpData, it.rsrp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rssiData, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rsrqData, it.rsrq?.toString() ?: "0", currentTimestamp)
+                }
+
+                // GSM data
+                val gsmCellInfo = state.messageToData2?.gsm?.cellInfoList?.firstOrNull()
+                gsmCellInfo?.let {
+                    addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
+                }
+
+                // WCDMA data
+                val wcdmaCellInfo = state.messageToData2?.wcdma?.cellInfoList?.firstOrNull()
+                wcdmaCellInfo?.let {
+                    addChartData(state.rssiDataWcdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
+                }
+
+                // CDMA data
+                val cdmaCellInfo = state.messageToData2?.cdma?.cellInfoList?.firstOrNull()
+                cdmaCellInfo?.let {
+                    addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                }
+
+                // NR data
+                val nrCellInfo = state.messageToData2?.nr?.cellInfoList?.firstOrNull()
+                nrCellInfo?.let {
+                    addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
+                }
+
                 delay(UPDATE_INTERVAL)
             }
         }
@@ -171,14 +208,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                if (permissionsGranted) {
-                    LaunchedEffect(permissionsGranted) {
+                LaunchedEffect(key1 = permissionsGranted) {
+                    if (permissionsGranted) {
                         while (true) {
                             DataManager.getLocation(this@MainActivity, state)
                             DataManager.getSignalStrength(state)
                             delay(UPDATE_INTERVAL)
                         }
                     }
+                }
+
+                if (permissionsGranted) {
                     MainContent(state, isLoggedIn) { isLoggedIn = true }
                 } else {
                     Text("Waiting for permissions...")
@@ -193,6 +233,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -200,7 +241,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PermissionUtils.REQUEST_CODE_PERMISSIONS) {
-            permissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            permissionsGranted = allPermissionsGranted
+
+            if (allPermissionsGranted) {
+                lifecycleScope.launch {
+                    delay(100)
+                    setContent {
+                        MainScreen(isSendingData)
+                    }
+                }
+            }
         }
     }
 

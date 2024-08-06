@@ -210,7 +210,7 @@ fun NrChartsContent(state: MainActivity.MainActivityState) {
     }
 }
 
-private fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: String, timestamp: Long) {
+internal fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: String, timestamp: Long) {
     val chartValue = value.replace(" dBm", "").replace(" dB", "").toFloatOrNull() ?: 0f
 
     val lastIndex = chartData.indexOfLast { it.first < timestamp }
@@ -225,10 +225,12 @@ private fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: Strin
                 val missedTimestamp = lastTimestamp + i * MainActivity.UPDATE_INTERVAL
                 chartData.add(lastIndex + i, Pair(missedTimestamp, chartValue))
             }
+        } else {
+            chartData.add(Pair(timestamp, chartValue))
         }
+    } else {
+        chartData.add(Pair(timestamp, chartValue))
     }
-
-    chartData.add(Pair(timestamp, chartValue))
 
     while (chartData.size > 6) {
         chartData.removeAt(0)
