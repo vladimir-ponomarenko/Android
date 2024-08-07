@@ -157,7 +157,7 @@ fun LoginForm(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onCellInfoDataClick) {
-            Text("CellInfoData")
+            Text("Send CellInfoData")
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = onShowRegistrationClick) {

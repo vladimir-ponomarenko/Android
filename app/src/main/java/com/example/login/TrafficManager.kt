@@ -130,7 +130,7 @@ import java.util.concurrent.TimeUnit
     fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>) {
         val scrollState = rememberScrollState()
         val hourWidth = 50.dp
-        val chartWidth = hourWidth * 24
+        val chartWidth = hourWidth * 12
         val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
         val maxTrafficKb = (maxTraffic / 1024).toFloat()
 
@@ -160,10 +160,14 @@ import java.util.concurrent.TimeUnit
                 }
             }
 
-            Box(modifier = Modifier.horizontalScroll(scrollState)) {
+            Box(
+                modifier = Modifier
+                    .horizontalScroll(scrollState)
+                    .width(chartWidth)
+            ) {
                 Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
                     hourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
-                        val x = index * hourWidth.toPx() + 40.dp.toPx()
+                        val x = index * hourWidth.toPx()
                         val trafficKb = (appTrafficData.totalBytes / 1024).toFloat()
                         val barHeight = (trafficKb / maxTrafficKb * size.height).coerceAtLeast(0f)
 
@@ -251,22 +255,29 @@ import java.util.concurrent.TimeUnit
         val scrollState = rememberScrollState()
         val hourWidth = 60.dp
 
-        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
         val filteredHourlyTrafficData = hourlyTrafficData.filter { (_, appTrafficData) -> appTrafficData.totalBytes > 0 }
 
-        val totalTrafficByHour = MutableList(filteredHourlyTrafficData.size) { 0L }
+        val totalTrafficByHour = MutableList(filteredHourlyTrafficData.size) { TotalTrafficData(0, 0, 0) }
 
-        filteredHourlyTrafficData.forEach { (hour, appTrafficData) ->
-            val adjustedHour = (hour + currentHour) % filteredHourlyTrafficData.size
-            totalTrafficByHour[adjustedHour] += appTrafficData.totalBytes
+        val currentTotalTraffic = mutableMapOf<Int, Long>()
+
+        filteredHourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
+            val currentHourIndex = index
+
+            currentTotalTraffic[currentHourIndex] = (currentTotalTraffic[currentHourIndex] ?: 0) + appTrafficData.totalBytes
+
+            totalTrafficByHour[currentHourIndex] = TotalTrafficData(
+                currentTotalTraffic[currentHourIndex]!!,
+                totalTrafficByHour[currentHourIndex].mobileBytes + appTrafficData.mobileBytes,
+                totalTrafficByHour[currentHourIndex].wifiBytes + appTrafficData.wifiBytes
+            )
         }
 
-        val maxTraffic = maxOf(totalTrafficByHour.maxOrNull() ?: 1L, 1L)
+        val maxTraffic = maxOf(totalTrafficByHour.maxOfOrNull { it.totalBytes } ?: 1L, 1L)
         val maxTrafficKb = (maxTraffic / 1024).toFloat()
 
-        val totalTrafficData = totalTrafficByHour.mapIndexed { index, traffic ->
-            Pair(filteredHourlyTrafficData[index].first, traffic)
+        val totalTrafficData = filteredHourlyTrafficData.mapIndexed { index, (hour, _) ->
+            Pair(hour, totalTrafficByHour[index].totalBytes)
         }
 
         Box(modifier = Modifier.horizontalScroll(scrollState)) {
@@ -292,7 +303,9 @@ import java.util.concurrent.TimeUnit
                     )
                 }
 
+
                 drawTrafficLine(totalTrafficData, maxTrafficKb, Color.Black, "Total")
+
 
                 val topAppNames = hourlyTrafficData
                     .groupBy { it.second.appName }
@@ -394,11 +407,12 @@ import java.util.concurrent.TimeUnit
             val currentPoint = Offset(x, y)
 
             if (previousPoint != null) {
+                val strokeWidth = if (lineColor == Color.Black) 4f else 2f
                 drawLine(
                     color = lineColor,
                     start = previousPoint!!,
                     end = currentPoint,
-                    strokeWidth = 2f
+                    strokeWidth = strokeWidth
                 )
             }
             previousPoint = currentPoint
