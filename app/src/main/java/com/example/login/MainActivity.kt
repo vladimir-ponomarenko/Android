@@ -123,6 +123,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             while (true) {
                 val currentTimestamp = System.currentTimeMillis()
 
+                val lat = state.Latitude.toDoubleOrNull()
+                val lng = state.Longtitude.toDoubleOrNull()
+                if (lat != null && lng != null) {
+                    val color = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
+                    state.locations.add(Pair(LatLng(lat, lng), color))
+                }
+
                 // LTE data
                 val lteCellInfo = state.messageToData2?.lte?.cellInfoList?.firstOrNull()
                 lteCellInfo?.let {

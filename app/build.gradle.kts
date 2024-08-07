@@ -51,7 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
-        dataBinding = true // Добавлено для поддержки Android Data Binding
+        dataBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -69,21 +69,15 @@ dependencies {
     implementation ("fr.bmartel:jspeedtest:1.32.1")
     implementation("androidx.test.ext:junit-ktx:1.1.5")
     implementation("com.google.ar:core:1.44.0")
-    implementation("androidx.compose.ui:ui-test-junit4-android:1.6.8")
     implementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.8")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.8")
     implementation("androidx.palette:palette-ktx:1.0.0")
-    implementation("org.osmdroid:osmdroid-android:6.1.13") //open street map
-    implementation("com.google.maps.android:maps-compose:2.11.4") //Google карта
+    implementation("org.osmdroid:osmdroid-android:6.1.13")
+    implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.compose.material:material:1.6.7")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.activity:activity-compose:1.9.0")
@@ -93,7 +87,6 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.6.7")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
-    implementation("androidx.activity:activity-compose:1.9.0")
     implementation(platform("androidx.compose:compose-bom:2024.05.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -105,11 +98,10 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.robolectric:robolectric:4.13")
 
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.4.3")
+    androidTestImplementation (platform("androidx.compose:compose-bom:2024.05.00"))
+    androidTestImplementation ("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation ("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.4.3")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.4.3")
+    debugImplementation ("androidx.compose.ui:ui-test-manifest")
 
     testImplementation("org.robolectric:robolectric:4.9")
 }
