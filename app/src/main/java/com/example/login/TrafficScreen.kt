@@ -142,7 +142,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             }
         }
 
-        items(appTrafficData.value) { appData ->
+        items(appTrafficData.value, key = { appData -> appData.packageName }) { appData ->
             TrafficItem(appData) { appName ->
                 selectedAppName = appName
                 showAppChart = true
@@ -181,7 +181,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
     var icon by remember { mutableStateOf<Drawable?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(appData.packageName) {
+    LaunchedEffect(appData) {
         coroutineScope.launch(Dispatchers.IO) {
             icon = try {
                 context.packageManager.getApplicationIcon(appData.packageName)
