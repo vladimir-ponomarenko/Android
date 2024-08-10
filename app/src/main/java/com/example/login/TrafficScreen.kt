@@ -167,7 +167,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     if (showLineChart) {
         TotalHourlyTrafficLineChart(
             onClose = { showLineChart = false },
-            context = context
+            context = context,
+            days = 1
         )
     }
 }
