@@ -34,9 +34,11 @@ import java.time.format.DateTimeFormatter
 
 
 object DataManager {
-
     private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
     private const val TAG = "DataManager"
+    private var locationCallback: LocationCallback? = null
+    private var locationUpdatesCount = 0
+    private const val MAX_LOCATION_UPDATES = 1
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getLocation(activity: Activity, state: MainActivity.MainActivityState) {
@@ -67,9 +69,11 @@ object DataManager {
         }
 
         val locationRequest = LocationRequest.create().apply {
-            interval = MainActivity.UPDATE_INTERVAL
-            fastestInterval = MainActivity.UPDATE_INTERVAL
+            interval = 0
+            fastestInterval = 0
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            smallestDisplacement = 0f
+            numUpdates = Int.MAX_VALUE
         }
 
         val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
@@ -84,16 +88,21 @@ object DataManager {
             Log.e(MainActivity.TAG, "Failed to get last known location", e)
         }
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-                locationResult.lastLocation?.let { location ->
-                    state.Latitude = location.latitude.toString()
-                    state.Longtitude = location.longitude.toString()
-                    Log.d(MainActivity.TAG, "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}")
+        if (locationUpdatesCount < MAX_LOCATION_UPDATES) {
+            locationUpdatesCount++
+            fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    super.onLocationResult(locationResult)
+                    locationResult.lastLocation?.let { location ->
+                        state.Latitude = location.latitude.toString()
+                        state.Longtitude = location.longitude.toString()
+                        Log.d(MainActivity.TAG, "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}")
+                    }
                 }
-            }
-        }, null)
+            }, null)
+        } else {
+            Log.w(TAG, "Maximum number of location updates reached.")
+        }
     }
     @RequiresApi(Build.VERSION_CODES.O)
     fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
