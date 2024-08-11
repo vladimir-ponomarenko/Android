@@ -5,6 +5,11 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.location.Location
 import android.os.Build
 import android.telephony.CellIdentityNr
 import android.telephony.CellInfo
@@ -39,6 +44,19 @@ object DataManager {
     private var locationCallback: LocationCallback? = null
     private var locationUpdatesCount = 0
     private const val MAX_LOCATION_UPDATES = 1
+
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var magnetometer: Sensor? = null
+    private var rotationVector: Sensor? = null
+
+    private var lastAccelerometerReading: FloatArray? = null
+    private var lastMagnetometerReading: FloatArray? = null
+    private var lastRotationVectorReading: FloatArray? = null
+
+    private var isOrientationReady = false
+    private val rotationMatrix = FloatArray(9)
+    private val orientationAngles = FloatArray(3)
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getLocation(activity: Activity, state: MainActivity.MainActivityState) {
@@ -80,9 +98,7 @@ object DataManager {
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
-                state.Latitude = location.latitude.toString()
-                state.Longtitude = location.longitude.toString()
-                Log.d(MainActivity.TAG, "Location received: Lat=${state.Latitude}, Lon=${state.Longtitude}")
+                Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}")
             }
         }.addOnFailureListener { e ->
             Log.e(MainActivity.TAG, "Failed to get last known location", e)
@@ -94,15 +110,96 @@ object DataManager {
                 override fun onLocationResult(locationResult: LocationResult) {
                     super.onLocationResult(locationResult)
                     locationResult.lastLocation?.let { location ->
-                        state.Latitude = location.latitude.toString()
-                        state.Longtitude = location.longitude.toString()
-                        Log.d(MainActivity.TAG, "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}")
+                        if (isOrientationReady) {
+                            val adjustedLocation = adjustLocationWithOrientation(location)
+                            state.Latitude = adjustedLocation.latitude.toString()
+                            state.Longtitude = adjustedLocation.longitude.toString()
+                            Log.d(
+                                MainActivity.TAG,
+                                "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}"
+                            )
+                        } else {
+                            // если ориентация еще не доступна
+                            state.Latitude = location.latitude.toString()
+                            state.Longtitude = location.longitude.toString()
+                            Log.d(
+                                MainActivity.TAG,
+                                "Location updated (no orientation): Lat=${state.Latitude}, Lon=${state.Longtitude}"
+                            )
+                        }
                     }
                 }
             }, null)
         } else {
             Log.w(TAG, "Maximum number of location updates reached.")
         }
+
+        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        rotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+
+        sensorManager.registerListener(
+            sensorListener,
+            accelerometer,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+        sensorManager.registerListener(
+            sensorListener,
+            magnetometer,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+        sensorManager.registerListener(
+            sensorListener,
+            rotationVector,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+    }
+
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            when (event.sensor.type) {
+                Sensor.TYPE_ACCELEROMETER -> {
+                    lastAccelerometerReading = event.values.clone()
+                }
+                Sensor.TYPE_MAGNETIC_FIELD -> {
+                    lastMagnetometerReading = event.values.clone()
+                }
+                Sensor.TYPE_ROTATION_VECTOR -> {
+                    lastRotationVectorReading = event.values.clone()
+                }
+            }
+
+            if (lastAccelerometerReading != null && lastMagnetometerReading != null) {
+                SensorManager.getRotationMatrix(
+                    rotationMatrix,
+                    null,
+                    lastAccelerometerReading,
+                    lastMagnetometerReading
+                )
+                isOrientationReady = true
+            } else if (lastRotationVectorReading != null) {
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, lastRotationVectorReading)
+                isOrientationReady = true
+            }
+        }
+
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+            }
+        }
+
+    private fun adjustLocationWithOrientation(location: Location): Location {
+        SensorManager.getOrientation(rotationMatrix, orientationAngles)
+        val azimuth = Math.toRadians(orientationAngles[0].toDouble()) // Угол поворота вокруг оси Z (азимут)
+
+        val adjustedLatitude = location.latitude + Math.sin(azimuth) * 0.00001 //смещение на 1 метр
+        val adjustedLongitude = location.longitude + Math.cos(azimuth) * 0.00001 //смещение на 1 метр
+
+        val adjustedLocation = Location(location)
+        adjustedLocation.latitude = adjustedLatitude
+        adjustedLocation.longitude = adjustedLongitude
+
+        return adjustedLocation
     }
     @RequiresApi(Build.VERSION_CODES.O)
     fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
