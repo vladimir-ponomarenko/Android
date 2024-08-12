@@ -184,6 +184,8 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
 
             Text("Latitude: ${state.Latitude}")
             Text("Longitude: ${state.Longtitude}")
+            Text("Altitude: ${state.Altitude}")
+
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager

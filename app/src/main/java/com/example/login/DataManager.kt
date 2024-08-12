@@ -98,7 +98,8 @@ object DataManager {
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
-                Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}")
+                Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}, Alt=${location.altitude}")
+                state.Altitude = location.altitude.toString()
             }
         }.addOnFailureListener { e ->
             Log.e(MainActivity.TAG, "Failed to get last known location", e)
@@ -114,17 +115,19 @@ object DataManager {
                             val adjustedLocation = adjustLocationWithOrientation(location)
                             state.Latitude = adjustedLocation.latitude.toString()
                             state.Longtitude = adjustedLocation.longitude.toString()
+                            state. Altitude = adjustedLocation.altitude.toString()
                             Log.d(
                                 MainActivity.TAG,
-                                "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}"
+                                "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}, Alt=${state.Altitude}"
                             )
                         } else {
                             // если ориентация еще не доступна
                             state.Latitude = location.latitude.toString()
                             state.Longtitude = location.longitude.toString()
+                            state.Altitude = location.altitude.toString()
                             Log.d(
                                 MainActivity.TAG,
-                                "Location updated (no orientation): Lat=${state.Latitude}, Lon=${state.Longtitude}"
+                                "Location updated (no orientation): Lat=${state.Latitude}, Lon=${state.Longtitude}, Alt=${state.Altitude}"
                             )
                         }
                     }
@@ -133,6 +136,7 @@ object DataManager {
         } else {
             Log.w(TAG, "Maximum number of location updates reached.")
         }
+
 
         sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)

@@ -458,6 +458,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
         var Longtitude by mutableStateOf("")
+        var Altitude by mutableStateOf("")
         var Rsrp by mutableStateOf("")
         var Rssi by mutableStateOf("")
         var Rsrq by mutableStateOf("")
