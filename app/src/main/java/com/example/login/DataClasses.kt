@@ -111,7 +111,17 @@ data class CellInfoData(
     val bitErrorRate: Long? = null,
     val operator: String? = null,
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val altitude: Double? = null,
+    val asuLevel: Int? = null,
+    val ecNo: Long? = null,
+    val cdmaLevel: Int? = null,
+    val cdmaAsuLevel: Int? = null,
+    val evdoLevel: Int? = null,
+    val csiCqiTableIndex: Long? = null,
+    val ssRsrpDbm: Long? = null,
+    val timingAdvanceMicros: Long? = null,
+    val csiCqiReport: List<Long?>? = null
 )
 
 @Serializable
@@ -135,6 +145,7 @@ data class MessageToData2(
     val time: String,
     val latitude: Double,
     val longitude: Double,
+    val altitude: Double,
     val operator: String? = null,
     val cdma: CdmaData = CdmaData(),
     val wcdma: WcdmaData = WcdmaData(),

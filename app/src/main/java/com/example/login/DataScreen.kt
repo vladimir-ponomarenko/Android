@@ -136,7 +136,55 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                     fieldValue != null &&
                     fieldValue != "N/A"
                 ) {
-                    Text("${field.name.capitalize()}: $fieldValue")
+                    when (cellType) {
+                        "LTE" -> {
+                            if (field.name in listOf(
+                                    "mcc", "mnc", "ci", "pci", "tac", "earfcn", "bandwidth", "rsrp",
+                                    "rssi", "rsrq", "rssnr", "cqi", "timingAdvance", "level",
+                                    "asuLevel"
+                                )
+                            ) {
+                                Text("${field.name.capitalize()}: $fieldValue")
+                            }
+                        }
+                        "GSM" -> {
+                            if (field.name in listOf(
+                                    "mcc", "mnc", "lac", "cid", "arfcn", "bsic", "rssi", "bitErrorRate",
+                                    "timingAdvance", "level", "asuLevel"
+                                )
+                            ) {
+                                Text("${field.name.capitalize()}: $fieldValue")
+                            }
+                        }
+                        "WCDMA" -> {
+                            if (field.name in listOf(
+                                    "mcc", "mnc", "lac", "cid", "psc", "uarfcn", "rssi", "level",
+                                    "asuLevel", "ecNo"
+                                )
+                            ) {
+                                Text("${field.name.capitalize()}: $fieldValue")
+                            }
+                        }
+                        "CDMA" -> {
+                            if (field.name in listOf(
+                                    "sid", "nid", "bsid", "rssi", "ecIo", "evdoDbm", "evdoEcio",
+                                    "evdoSnr", "cdmaLevel", "cdmaAsuLevel", "evdoLevel"
+                                )
+                            ) {
+                                Text("${field.name.capitalize()}: $fieldValue")
+                            }
+                        }
+                        "NR" -> {
+                            if (field.name in listOf(
+                                    "mcc", "mnc", "nci", "pci", "tac", "nrarfcn", "csiRsrp",
+                                    "csiRsrq", "csiSinr", "ssRsrp", "ssRsrq", "ssSinr", "asuLevel",
+                                    "csiCqiTableIndex", "ssRsrpDbm", "timingAdvanceMicros", "csiCqiReport"
+                                )
+                            ) {
+                                Text("${field.name.capitalize()}: $fieldValue")
+                            }
+                        }
+                    }
                 }
             }
             Divider(Modifier.padding(vertical = 8.dp))

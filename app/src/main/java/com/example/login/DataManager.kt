@@ -271,6 +271,7 @@ object DataManager {
                             time = DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
                             latitude = state.Latitude.toDoubleOrNull() ?: 0.0,
                             longitude = state.Longtitude.toDoubleOrNull() ?: 0.0,
+                            altitude = state.Altitude.toDoubleOrNull() ?: 0.0,
                             operator = state.Operator,
                             cdma = CdmaData(cellInfoDataByType["CDMA"] ?: emptyList()),
                             gsm = GsmData(cellInfoDataByType["GSM"] ?: emptyList()),
@@ -325,8 +326,8 @@ object DataManager {
                         type = "LTE",
                         timestamp = timestamp,
                         registered = info.isRegistered,
-                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString?.toLongOrNull() else null,
-                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString?.toLongOrNull() else null,
+                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString?.toLongOrNull()?.takeIf { it != 2147483647L } else null,
+                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString?.toLongOrNull()?.takeIf { it != 2147483647L }  else null,
                         ci = identity.ci.toLong().takeIf { it != 2147483647L },
                         pci = identity.pci.toLong().takeIf { it != 2147483647L },
                         tac = identity.tac.toLong().takeIf { it != 2147483647L },
@@ -337,7 +338,10 @@ object DataManager {
                         rsrq = signalStrength.rsrq.toLong().takeIf { it != 2147483647L },
                         rssnr = signalStrength.rssnr.toLong().takeIf { it != 2147483647L },
                         cqi = signalStrength.cqi.toLong().takeIf { it != 2147483647L },
-                        timingAdvance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.timingAdvance.toLong().takeIf { it != 2147483647L } else null
+                        timingAdvance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.timingAdvance.toLong().takeIf { it != 2147483647L } else null,
+
+                        level = signalStrength.level.toLong().takeIf { it != 2147483647L },
+                        asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0
                     )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error encoding LTE cell info to JSON: ", e)
@@ -354,15 +358,18 @@ object DataManager {
                         type = "GSM",
                         timestamp = timestamp,
                         registered = info.isRegistered,
-                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString?.toLongOrNull() else null,
-                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString?.toLongOrNull() else null,
+                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString?.toLongOrNull()?.takeIf { it != 2147483647L } else null,
+                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString?.toLongOrNull()?.takeIf { it != 2147483647L }  else null,
                         lac = identity.lac.toLong().takeIf { it != 2147483647L },
                         cid = identity.cid.toLong().takeIf { it != 2147483647L },
                         arfcn = identity.arfcn.toLong().takeIf { it != 2147483647L },
                         bsic = identity.bsic.toLong().takeIf { it != 2147483647L },
                         rssi = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
                         bitErrorRate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) signalStrength.bitErrorRate.toLong().takeIf { it != 2147483647L } else null,
-                        timingAdvance = signalStrength.timingAdvance.toLong().takeIf { it != 2147483647L }
+                        timingAdvance = signalStrength.timingAdvance.toLong().takeIf { it != 2147483647L },
+
+                        level = signalStrength.level.toLong().takeIf { it != 2147483647L },
+                        asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0
                     )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error encoding GSM cell info to JSON: ", e)
@@ -381,16 +388,21 @@ object DataManager {
                         type = "WCDMA",
                         timestamp = timestamp,
                         registered = info.isRegistered,
-                        mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mccString?.toLongOrNull() else null,
-                        mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) identity.mncString?.toLongOrNull() else null,
+                        mcc = identity.mccString?.toLongOrNull()?.takeIf { it != 2147483647L },
+                        mnc = identity.mncString?.toLongOrNull()?.takeIf { it != 2147483647L },
                         lac = identity.lac.toLong().takeIf { it != 2147483647L },
                         cid = identity.cid.toLong().takeIf { it != 2147483647L },
                         psc = identity.psc.toLong().takeIf { it != 2147483647L },
                         uarfcn = identity.uarfcn.toLong().takeIf { it != 2147483647L },
                         rssi = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
-                        bitErrorRate = signalStrength.asuLevel.toLong().takeIf { it != 2147483647L },
-                        rscp = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
-                        level = signalStrength.level.toLong().takeIf { it != 2147483647L }
+                        level = signalStrength.level.toLong().takeIf { it != 2147483647L },
+
+                        asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
+                        ecNo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            signalStrength.ecNo.toLong().takeIf { it != 2147483647L }
+                        } else {
+                            null
+                        }
                     )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error encoding WCDMA cell info to JSON: ", e)
@@ -414,7 +426,11 @@ object DataManager {
                         ecIo = signalStrength.cdmaEcio.toLong().takeIf { it != 2147483647L },
                         evdoDbm = signalStrength.evdoDbm.toLong().takeIf { it != 2147483647L },
                         evdoEcio = signalStrength.evdoEcio.toLong().takeIf { it != 2147483647L },
-                        evdoSnr = signalStrength.evdoSnr.toLong().takeIf { it != 2147483647L }
+                        evdoSnr = signalStrength.evdoSnr.toLong().takeIf { it != 2147483647L },
+
+                        cdmaLevel = signalStrength.cdmaLevel.takeIf { it != 2147483647 } ?: 0,
+                        cdmaAsuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
+                        evdoLevel = signalStrength.evdoLevel.takeIf { it != 2147483647 } ?: 0
                     )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error encoding CDMA cell info to JSON: ", e)
@@ -433,8 +449,8 @@ object DataManager {
                         type = "5G NR",
                         timestamp = timestamp,
                         registered = info.isRegistered,
-                        mcc = identity.mccString?.toLongOrNull(),
-                        mnc = identity.mncString?.toLongOrNull(),
+                        mcc = identity.mccString?.toLongOrNull()?.takeIf { it != 2147483647L },
+                        mnc = identity.mncString?.toLongOrNull()?.takeIf { it != 2147483647L },
                         nci = identity.nci.toLong().takeIf { it != 2147483647L },
                         pci = identity.pci.toLong().takeIf { it != 2147483647L },
                         tac = identity.tac.toLong().takeIf { it != 2147483647L },
@@ -444,7 +460,19 @@ object DataManager {
                         csiSinr = signalStrength.csiSinr.toLong().takeIf { it != 2147483647L },
                         ssRsrp = signalStrength.ssRsrp.toLong().takeIf { it != 2147483647L },
                         ssRsrq = signalStrength.ssRsrq.toLong().takeIf { it != 2147483647L },
-                        ssSinr = signalStrength.ssSinr.toLong().takeIf { it != 2147483647L }
+                        ssSinr = signalStrength.ssSinr.toLong().takeIf { it != 2147483647L },
+
+                        asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
+                        csiCqiTableIndex = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            signalStrength.csiCqiTableIndex.toLong().takeIf { it != 2147483647L }
+                        } else null,
+                        ssRsrpDbm = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
+                        timingAdvanceMicros = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            signalStrength.timingAdvanceMicros.toLong().takeIf { it != 2147483647L }
+                        } else null,
+                        csiCqiReport = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            signalStrength.csiCqiReport?.map { it.toLong().takeIf { it != 2147483647L } ?: 0 }
+                        } else null
                     )
                 } catch (e: Exception) {
                     Log.e(TAG, "Error encoding NR cell info to JSON: ", e)
