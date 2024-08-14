@@ -115,8 +115,6 @@ data class CellInfoData(
     val altitude: Double? = null,
     val asuLevel: Int? = null,
     val ecNo: Long? = null,
-    val cdmaLevel: Int? = null,
-    val cdmaAsuLevel: Int? = null,
     val evdoLevel: Int? = null,
     val csiCqiTableIndex: Long? = null,
     val ssRsrpDbm: Long? = null,

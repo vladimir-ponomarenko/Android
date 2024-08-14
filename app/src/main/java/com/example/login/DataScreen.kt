@@ -158,7 +158,7 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                         }
                         "WCDMA" -> {
                             if (field.name in listOf(
-                                    "mcc", "mnc", "lac", "cid", "psc", "uarfcn", "rssi", "level",
+                                    "mcc", "mnc", "lac", "cid", "psc", "uarfcn", "rscp", "level",
                                     "asuLevel", "ecNo"
                                 )
                             ) {
@@ -168,7 +168,7 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                         "CDMA" -> {
                             if (field.name in listOf(
                                     "sid", "nid", "bsid", "rssi", "ecIo", "evdoDbm", "evdoEcio",
-                                    "evdoSnr", "cdmaLevel", "cdmaAsuLevel", "evdoLevel"
+                                    "evdoSnr", "cdmaLevel", "asuLevel", "level"
                                 )
                             ) {
                                 Text("${field.name.capitalize()}: $fieldValue")

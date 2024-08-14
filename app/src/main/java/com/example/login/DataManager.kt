@@ -394,7 +394,7 @@ object DataManager {
                         cid = identity.cid.toLong().takeIf { it != 2147483647L },
                         psc = identity.psc.toLong().takeIf { it != 2147483647L },
                         uarfcn = identity.uarfcn.toLong().takeIf { it != 2147483647L },
-                        rssi = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
+                        rscp = signalStrength.dbm.toLong().takeIf { it != 2147483647L },
                         level = signalStrength.level.toLong().takeIf { it != 2147483647L },
 
                         asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
@@ -428,8 +428,8 @@ object DataManager {
                         evdoEcio = signalStrength.evdoEcio.toLong().takeIf { it != 2147483647L },
                         evdoSnr = signalStrength.evdoSnr.toLong().takeIf { it != 2147483647L },
 
-                        cdmaLevel = signalStrength.cdmaLevel.takeIf { it != 2147483647 } ?: 0,
-                        cdmaAsuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
+                        level = signalStrength.cdmaLevel.toLong().takeIf { it != 2147483647L },
+                        asuLevel = signalStrength.asuLevel.takeIf { it != 2147483647 } ?: 0,
                         evdoLevel = signalStrength.evdoLevel.takeIf { it != 2147483647 } ?: 0
                     )
                 } catch (e: Exception) {
