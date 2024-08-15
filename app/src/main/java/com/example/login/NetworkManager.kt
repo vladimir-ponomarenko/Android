@@ -214,7 +214,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
         val jsonBody = modifiedJson.toString()
 
-        val endpoint = "/api/sockets/postapptrafic"
+        val endpoint = "/api/user/postapptrafic"
 
         if (webSocket == null) {
             Log.e(TAG, "WebSocket is not initialized, attempting to connect...")
