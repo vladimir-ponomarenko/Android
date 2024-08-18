@@ -54,9 +54,9 @@ object DataManager {
     private var lastMagnetometerReading: FloatArray? = null
     private var lastRotationVectorReading: FloatArray? = null
 
-    private var isOrientationReady = false
-    private val rotationMatrix = FloatArray(9)
-    private val orientationAngles = FloatArray(3)
+    var isOrientationReady = false
+    val rotationMatrix = FloatArray(9)
+    val orientationAngles = FloatArray(3)
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getLocation(activity: Activity, state: MainActivity.MainActivityState) {
@@ -160,7 +160,7 @@ object DataManager {
         )
     }
 
-    private val sensorListener = object : SensorEventListener {
+    internal val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when (event.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> {
@@ -192,7 +192,7 @@ object DataManager {
             }
         }
 
-    private fun adjustLocationWithOrientation(location: Location): Location {
+    internal fun adjustLocationWithOrientation(location: Location): Location {
         SensorManager.getOrientation(rotationMatrix, orientationAngles)
         val azimuth = Math.toRadians(orientationAngles[0].toDouble()) // Угол поворота вокруг оси Z (азимут)
 
