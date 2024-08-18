@@ -32,12 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun TrafficScreen(state: MainActivity.MainActivityState) {
     val context = LocalContext.current
@@ -46,7 +48,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     var showError by remember { mutableStateOf(false) }
     var showAppChart by remember { mutableStateOf(false) }
     var showTotalChart by remember { mutableStateOf(false) }
-    var showLineChart by remember { mutableStateOf(false) }
     var selectedAppName by remember { mutableStateOf("") }
     val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
     var isSendingTrafficData by remember { mutableStateOf(false) }
@@ -133,14 +134,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 Text("Show Total Hourly Traffic")
             }
         }
-        item {
-            Button(
-                onClick = { showLineChart = true },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Show Total Hourly Traffic (Line Chart)")
-            }
-        }
 
         items(appTrafficData.value, key = { appData -> appData.packageName }) { appData ->
             TrafficItem(appData) { appName ->
@@ -162,13 +155,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         TotalHourlyTrafficChart(
             onClose = { showTotalChart = false },
             context = context
-        )
-    }
-    if (showLineChart) {
-        TotalHourlyTrafficLineChart(
-            onClose = { showLineChart = false },
-            context = context,
-            days = 1
         )
     }
 }
@@ -214,7 +200,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
             }
             Column {
-                Text(text = appData.appName)
+                Text(text = appData.appName, fontWeight = FontWeight.SemiBold)
                 Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
                 Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
                 Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")

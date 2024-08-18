@@ -10,15 +10,18 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,10 +35,14 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -96,6 +103,7 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
 @Composable
 fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
     val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
+    var showChart by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) {
@@ -118,7 +126,26 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
-                TotalHourlyTrafficChartContent(hourlyTrafficData)
+
+                if (showChart) {
+                    TotalHourlyTrafficLineChartContent(hourlyTrafficData, getAppTrafficData(context, 1).sortedByDescending { it.totalBytes }.take(10).map { it.appName })
+                } else {
+                    TotalHourlyTrafficChartContent(hourlyTrafficData)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = { showChart = !showChart },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Black
+                    ),
+                    border = BorderStroke(1.dp, Color.Black)
+                ) {
+                    Text(if (showChart) "Show Diagram" else "Show Chart")
+                }
             }
         }
     }
@@ -182,20 +209,21 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
                     drawContext.canvas.nativeCanvas.drawText(
                         appTrafficData.appName,
                         x + hourWidth.toPx() / 2,
-                        size.height - barHeight - 25.dp.toPx(),
+                        size.height - barHeight - 15.dp.toPx(),
                         android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
+                            textSize = 9.sp.toPx()
                             color = android.graphics.Color.BLACK
                             textAlign = android.graphics.Paint.Align.CENTER
+                            typeface = Typeface.DEFAULT_BOLD
                         }
                     )
 
                     drawContext.canvas.nativeCanvas.drawText(
                         "%.1f Kb".format(trafficKb),
                         x + hourWidth.toPx() / 2,
-                        size.height - barHeight - 10.dp.toPx(),
+                        size.height - barHeight - 3.dp.toPx(),
                         android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
+                            textSize = 8.sp.toPx()
                             color = android.graphics.Color.BLACK
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
@@ -216,43 +244,7 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
         }
     }
 }
-@RequiresApi(Build.VERSION_CODES.M)
-@Composable
-fun TotalHourlyTrafficLineChart(onClose: () -> Unit, context: Context, days: Int) {
-    val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
 
-    val topAppNames = getAppTrafficData(context, days)
-        .sortedByDescending { it.totalBytes }
-        .take(10)
-        .map { it.appName }
-
-    LaunchedEffect(Unit) {
-        launch(Dispatchers.IO) {
-            val data = getTotalHourlyTrafficData(context)
-            withContext(Dispatchers.Main) {
-                hourlyTrafficData.addAll(data)
-            }
-        }
-    }
-
-    Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Total Hourly Traffic (Line Chart)",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
-                }
-
-                TotalHourlyTrafficLineChartContent(hourlyTrafficData, topAppNames)
-            }
-        }
-    }
-}
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
@@ -565,18 +557,20 @@ fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
     val maxTraffic = filteredData.maxOfOrNull { it.second } ?: 1L
     val maxTrafficKb = (maxTraffic / 1024).toFloat()
 
-    Box(modifier = Modifier.horizontalScroll(scrollState)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        ) {
-            Canvas(modifier = Modifier.height(200.dp).width(40.dp)) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.height(200.dp).width(40.dp)) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 val stepSize = maxTrafficKb / 5
                 for (i in 0..5) {
                     val y = size.height - i * (size.height / 5)
+                    drawLine(
+                        color = Color.LightGray,
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1f
+                    )
                     drawContext.canvas.nativeCanvas.drawText(
-                        String.format("%.0f", i * stepSize),
+                        String.format("%.0f Kb", i * stepSize),
                         10f,
                         y,
                         android.graphics.Paint().apply {
@@ -587,8 +581,24 @@ fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
                     )
                 }
             }
+        }
 
+        Box(
+            modifier = Modifier
+                .horizontalScroll(scrollState)
+                .weight(1f)
+        ) {
             Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
+                for (i in 0..5) {
+                    val y = size.height - i * (size.height / 5)
+                    drawLine(
+                        color = Color.LightGray,
+                        start = Offset(0f, y),
+                        end = Offset(chartWidth.toPx(), y),
+                        strokeWidth = 1f
+                    )
+                }
+
                 filteredData.forEachIndexed { index, (hour, traffic) ->
                     val x = index * hourWidth.toPx()
                     val trafficKb = (traffic / 1024).toFloat()
@@ -619,7 +629,7 @@ fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
                         x + hourWidth.toPx() / 2,
                         size.height - barHeight - 5.dp.toPx(),
                         android.graphics.Paint().apply {
-                            textSize = 10.sp.toPx()
+                            textSize = 8.sp.toPx()
                             color = android.graphics.Color.BLACK
                             textAlign = android.graphics.Paint.Align.CENTER
                         }
