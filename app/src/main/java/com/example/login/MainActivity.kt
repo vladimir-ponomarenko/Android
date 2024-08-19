@@ -29,6 +29,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -76,12 +77,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val UPDATE_INTERVAL = 2000L
         private const val SERVER_URL =  "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
 
-        private const val SHARED_PREFS_NAME = "login_prefs"
+        internal const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"
         private const val PASSWORD_KEY = "password"
         private const val JWT_TOKEN_KEY = "jwt_token"
         private const val UUID_KEY = "uuid"
-        private const val REMEMBER_ME_KEY = "remember_me"
+        internal const val REMEMBER_ME_KEY = "remember_me"
 
         lateinit var state: MainActivityState
         lateinit var networkManager: NetworkManager<Any?>
@@ -311,31 +312,34 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        TabRow(selectedTabIndex = state.selectedTabIndex) {
+                        TabRow(
+                            selectedTabIndex = state.selectedTabIndex,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Tab(
                                 selected = state.selectedTabIndex == 0,
                                 onClick = { state.selectedTabIndex = 0 },
-                                text = { Text("Сервер") }
+                                text = { Text("Сервер", modifier = Modifier.weight(1f)) }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 1,
                                 onClick = { state.selectedTabIndex = 1 },
-                                text = { Text("Данные") }
+                                text = { Text("Данные", modifier = Modifier.weight(1f)) }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 2,
                                 onClick = { state.selectedTabIndex = 2 },
-                                text = { Text("Графики") }
+                                text = { Text("Графики", modifier = Modifier.weight(1f)) }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 3,
                                 onClick = { state.selectedTabIndex = 3 },
-                                text = { Text("Карта") }
+                                text = { Text("Карта", modifier = Modifier.weight(1f)) }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 4,
                                 onClick = { state.selectedTabIndex = 4 },
-                                text = { Text("Трафик") }
+                                text = { Text("Трафик", modifier = Modifier.weight(1f)) }
                             )
 /*                            Tab(
                                 selected = state.selectedTabIndex == 5,

@@ -1,5 +1,6 @@
 package com.example.login
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +40,12 @@ fun LoginScreen(
     var password by remember { mutableStateOf(state.Password) }
     var jwtToken by remember { mutableStateOf(state.JwtToken) }
     var uuid by remember { mutableStateOf(state.Uuid) }
-    var rememberMe by remember { mutableStateOf(state.RememberMe) }
+
+    val sharedPreferences = LocalContext.current.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+    val savedRememberMe = sharedPreferences.getBoolean(MainActivity.REMEMBER_ME_KEY, false)
+
+    var rememberMe by rememberSaveable { mutableStateOf(savedRememberMe) }
+
     var showRegistration by remember { mutableStateOf(false) }
     var showSuccessMessage by remember { mutableStateOf(false) }
     var showErrorMessage by remember { mutableStateOf(false) }
@@ -60,8 +67,12 @@ fun LoginScreen(
                         MainActivity.networkManager.registerUser(email, password) { response ->
                             if (response != null) {
                                 jwtToken = response.jwt
+                                uuid = response.uuid
                                 state.JwtToken = response.jwt
                                 state.Uuid = response.uuid
+                                state.Email = email
+                                state.Password = password
+                                state.RememberMe = rememberMe
                                 state.saveLoginData()
                                 showSuccessMessage = true
                                 showRegistration = false
@@ -83,7 +94,13 @@ fun LoginScreen(
                 uuid = uuid,
                 onUuidChange = { uuid = it },
                 rememberMe = rememberMe,
-                onRememberMeChange = { rememberMe = it },
+                onRememberMeChange = {
+                    rememberMe = it
+                    with(sharedPreferences.edit()) {
+                        putBoolean(MainActivity.REMEMBER_ME_KEY, it)
+                        apply()
+                    }
+                },
                 onCellInfoDataClick = onCellInfoDataClick,
                 onShowRegistrationClick = { showRegistration = true }
             )

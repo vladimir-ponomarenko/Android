@@ -68,12 +68,25 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
 
     LazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         item {
-            Text(
-                text = "Total Traffic: ${(totalTrafficData.value.totalBytes / 1024)} Kb, " +
-                        "Mobile: ${(totalTrafficData.value.mobileBytes / 1024)} Kb, " +
-                        "Wi-Fi: ${(totalTrafficData.value.wifiBytes / 1024)} Kb",
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Total Traffic:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Mobile:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Wi-Fi:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
+                }
+            }
         }
 
         item {
