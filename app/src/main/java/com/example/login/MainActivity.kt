@@ -127,8 +127,50 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 val lat = state.Latitude.toDoubleOrNull()
                 val lng = state.Longtitude.toDoubleOrNull()
                 if (lat != null && lng != null) {
-                    val color = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
-                    state.locations.add(Pair(LatLng(lat, lng), color))
+                    val location = LatLng(lat, lng)
+
+                    val colorForLocations = generateColorFromRSRP(state.Rsrp.replace(" dBm", "").toIntOrNull() ?: -140)
+                    state.locations.add(Pair(LatLng(lat, lng), colorForLocations))
+
+                    // LTE data
+                    val lteCellInfo = state.messageToData2?.lte?.cellInfoList?.firstOrNull()
+                    val rsrp = lteCellInfo?.rsrp?.toString()?.toIntOrNull()
+                    if (rsrp != null && rsrp != 0 && rsrp != 2147483647) {
+                        val color = generateColorFromRSRP(rsrp)
+                        state.lteLocations.add(Pair(location, color))
+                    }
+
+                    // GSM data
+                    val gsmCellInfo = state.messageToData2?.gsm?.cellInfoList?.firstOrNull()
+                    val rssiGsm = gsmCellInfo?.rssi?.toString()?.toIntOrNull()
+                    if (rssiGsm != null && rssiGsm != 0 && rssiGsm != 2147483647) {
+                        val color = generateColorFromRSSIGsm(rssiGsm)
+                        state.gsmLocations.add(Pair(location, color))
+                    }
+
+                    // WCDMA data
+                    val wcdmaCellInfo = state.messageToData2?.wcdma?.cellInfoList?.firstOrNull()
+                    val rscpWcdma = wcdmaCellInfo?.rscp?.toString()?.toIntOrNull()
+                    if (rscpWcdma != null && rscpWcdma != 0 && rscpWcdma != 2147483647) {
+                        val color = generateColorFromRSCPWcdma(rscpWcdma)
+                        state.wcdmaLocations.add(Pair(location, color))
+                    }
+
+                    // CDMA data
+                    val cdmaCellInfo = state.messageToData2?.cdma?.cellInfoList?.firstOrNull()
+                    val rssiCdma = cdmaCellInfo?.rssi?.toString()?.toIntOrNull()
+                    if (rssiCdma != null && rssiCdma != 0 && rssiCdma != 2147483647) {
+                        val color = generateColorFromRSSICdma(rssiCdma)
+                        state.cdmaLocations.add(Pair(location, color))
+                    }
+
+                    // NR data
+                    val nrCellInfo = state.messageToData2?.nr?.cellInfoList?.firstOrNull()
+                    val csiRsrpNr = nrCellInfo?.csiRsrp?.toString()?.toIntOrNull()
+                    if (csiRsrpNr != null && csiRsrpNr != 0 && csiRsrpNr != 2147483647) {
+                        val color = generateColorFromCSIRsrpNr(csiRsrpNr)
+                        state.nrLocations.add(Pair(location, color))
+                    }
                 }
 
                 // LTE data
@@ -510,6 +552,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var JwtToken by mutableStateOf("")
         var Uuid by mutableStateOf("")
         var RememberMe by mutableStateOf(false)
+
+        // Выбранный тип сети для тепловой карты
+        var selectedNetworkType by mutableStateOf("LTE")
+
+        // Списки для хранения данных для каждого типа сети
+        val lteLocations = mutableStateListOf<Pair<LatLng, Color>>()
+        val gsmLocations = mutableStateListOf<Pair<LatLng, Color>>()
+        val wcdmaLocations = mutableStateListOf<Pair<LatLng, Color>>()
+        val cdmaLocations = mutableStateListOf<Pair<LatLng, Color>>()
+        val nrLocations = mutableStateListOf<Pair<LatLng, Color>>()
 
         var isSendingCellInfoData by mutableStateOf(false)
 
