@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -59,29 +58,13 @@ fun MapScreen(state: MainActivity.MainActivityState) {
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            for (i in 0 until locations.size - 1) {
-                val (location1, color1) = locations[i]
-                val (location2, color2) = locations[i + 1]
-
+            for (i in 1 until locations.size) {
+                val (location1, color1) = locations[i - 1]
+                val (location2, color2) = locations[i]
                 Polyline(
-                    points = listOf(location1, LatLng((location1.latitude + location2.latitude) / 2, (location1.longitude + location2.longitude) / 2)),
+                    points = listOf(location1, location2),
                     color = color1,
-                    width = 5f
-                )
-                Polyline(
-                    points = listOf(LatLng((location1.latitude + location2.latitude) / 2, (location1.longitude + location2.longitude) / 2), location2),
-                    color = color2,
-                    width = 5f
-                )
-            }
-
-            locations.forEach { (location, color) ->
-                Circle(
-                    center = location,
-                    radius = 10.0,
-                    fillColor = color,
-                    strokeColor = color,
-                    strokeWidth = 3f
+                    width = 15f
                 )
             }
         }
