@@ -11,7 +11,6 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.Text
@@ -103,16 +103,22 @@ fun LteChartsContent(state: MainActivity.MainActivityState) {
                     addChartData(state.rsrpData, it.rsrp?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rssiData, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rsrqData, it.rsrq?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.asuLevelLTE, it.asuLevel?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelLTE, it.level?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.earfcnLTE, it.earfcn?.toString() ?: "0", currentTimestamp)
                 }
             }
             delay(MainActivity.UPDATE_INTERVAL)
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ChartContent(state.rsrpData, "RSRP", state)
         ChartContent(state.rssiData, "RSSI", state)
         ChartContent(state.rsrqData, "RSRQ", state)
+        ChartContent(state.asuLevelLTE, "AsuLevel", state)
+        ChartContent(state.levelLTE, "Level", state)
+        ChartContent(state.earfcnLTE, "Earfcn", state)
     }
 }
 
@@ -129,13 +135,15 @@ fun GsmChartsContent(state: MainActivity.MainActivityState) {
                 val cellInfo = state.messageToData2?.gsm?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.arfcnGsm, it.arfcn?.toString() ?: "0", currentTimestamp)
                 }
             }
             delay(MainActivity.UPDATE_INTERVAL)
         }
     }
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ChartContent(state.rssiDataGsm, "RSSI", state)
+        ChartContent(state.arfcnGsm, "ARFCN", state)
     }
 }
 
@@ -151,16 +159,16 @@ fun WcdmaChartsContent(state: MainActivity.MainActivityState) {
 
                 val cellInfo = state.messageToData2?.wcdma?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
-                    addChartData(state.rssiDataWcdma, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelWcdma, it.level?.toString() ?: "0", currentTimestamp)
                 }
             }
             delay(MainActivity.UPDATE_INTERVAL)
         }
     }
-    Column(modifier = Modifier.fillMaxSize()) {
-        ChartContent(state.rssiDataWcdma, "RSSI", state)
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ChartContent(state.rscpDataWcdma, "RSCP", state)
+        ChartContent(state.levelWcdma, "Level", state)
     }
 }
 
@@ -177,13 +185,16 @@ fun CdmaChartsContent(state: MainActivity.MainActivityState) {
                 val cellInfo = state.messageToData2?.cdma?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelCdma, it.level?.toString() ?: "0", currentTimestamp)
+
                 }
             }
             delay(MainActivity.UPDATE_INTERVAL)
         }
     }
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ChartContent(state.rssiDataCdma, "RSSI", state)
+        ChartContent(state.levelCdma, "Level", state)
     }
 }
 
@@ -200,13 +211,15 @@ fun NrChartsContent(state: MainActivity.MainActivityState) {
                 val cellInfo = state.messageToData2?.nr?.cellInfoList?.firstOrNull()
                 cellInfo?.let {
                     addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.asuLevelNr, it.asuLevel?.toString() ?: "0", currentTimestamp)
                 }
             }
             delay(MainActivity.UPDATE_INTERVAL)
         }
     }
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ChartContent(state.rssiDataNr, "RSSI", state)
+        ChartContent(state.asuLevelNr, "AsuLevel", state)
     }
 }
 
@@ -247,7 +260,11 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, chartTitle: String, state: 
 
     val maxAbsChartValue = chartData.maxOfOrNull { kotlin.math.abs(it.second) } ?: 0f
 
-    val maxValue = -ceil(maxAbsChartValue / 10) * 10
+    val maxValue = if (chartData.any { it.second > 0 }) {
+        ceil(maxAbsChartValue / 10) * 10 // Для положительных значений
+    } else {
+        -ceil(maxAbsChartValue / 10) * 10 // Для отрицательных значений
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
@@ -256,7 +273,7 @@ fun ChartContent(chartData: List<Pair<Long, Float>>, chartTitle: String, state: 
             fontWeight = FontWeight.Bold
         )
 
-        Box(modifier = Modifier.horizontalScroll(scrollState)) {
+        Box/*(modifier = Modifier.horizontalScroll(scrollState))*/ {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -34,9 +34,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Scaffold
+import androidx.compose.material.ScrollableTabRow
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -179,31 +179,37 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.rsrpData, it.rsrp?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rssiData, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rsrqData, it.rsrq?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.asuLevelLTE, it.asuLevel?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelLTE, it.level?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.earfcnLTE, it.earfcn?.toString() ?: "0", currentTimestamp)
                 }
 
                 // GSM data
                 val gsmCellInfo = state.messageToData2?.gsm?.cellInfoList?.firstOrNull()
                 gsmCellInfo?.let {
                     addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.arfcnGsm, it.arfcn?.toString() ?: "0", currentTimestamp)
                 }
 
                 // WCDMA data
                 val wcdmaCellInfo = state.messageToData2?.wcdma?.cellInfoList?.firstOrNull()
                 wcdmaCellInfo?.let {
-                    addChartData(state.rssiDataWcdma, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelWcdma, it.level?.toString() ?: "0", currentTimestamp)
                 }
 
                 // CDMA data
                 val cdmaCellInfo = state.messageToData2?.cdma?.cellInfoList?.firstOrNull()
                 cdmaCellInfo?.let {
                     addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.levelCdma, it.level?.toString() ?: "0", currentTimestamp)
                 }
 
                 // NR data
                 val nrCellInfo = state.messageToData2?.nr?.cellInfoList?.firstOrNull()
                 nrCellInfo?.let {
                     addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
+                    addChartData(state.asuLevelNr, it.asuLevel?.toString() ?: "0", currentTimestamp)
                 }
 
                 delay(UPDATE_INTERVAL)
@@ -354,40 +360,36 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        TabRow(
+                        ScrollableTabRow(
                             selectedTabIndex = state.selectedTabIndex,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            edgePadding = 0.dp
                         ) {
                             Tab(
                                 selected = state.selectedTabIndex == 0,
                                 onClick = { state.selectedTabIndex = 0 },
-                                text = { Text("Сервер", modifier = Modifier.weight(1f)) }
+                                text = { Text("Сервер") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 1,
                                 onClick = { state.selectedTabIndex = 1 },
-                                text = { Text("Данные", modifier = Modifier.weight(1f)) }
+                                text = { Text("Данные") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 2,
                                 onClick = { state.selectedTabIndex = 2 },
-                                text = { Text("Графики", modifier = Modifier.weight(1f)) }
+                                text = { Text("Графики") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 3,
                                 onClick = { state.selectedTabIndex = 3 },
-                                text = { Text("Карта", modifier = Modifier.weight(1f)) }
+                                text = { Text("Карта") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 4,
                                 onClick = { state.selectedTabIndex = 4 },
-                                text = { Text("Трафик", modifier = Modifier.weight(1f)) }
+                                text = { Text("Трафик") }
                             )
-/*                            Tab(
-                                selected = state.selectedTabIndex == 5,
-                                onClick = { state.selectedTabIndex = 5 },
-                                text = { Text("Тест") }
-                            )*/
                         }
                         when (state.selectedTabIndex) {
                             0 -> LoginScreen(
@@ -420,7 +422,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             2 -> RSRPGraph(state)
                             3 -> MapScreen(state)
                             4 -> TrafficScreen(state)
-                            5 -> SpeedTestScreen(state)
                         }
                     }
                 } else {
@@ -538,11 +539,22 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val rsrpData = mutableStateListOf<Pair<Long, Float>>()
         val rssiData = mutableStateListOf<Pair<Long, Float>>()
         val rsrqData = mutableStateListOf<Pair<Long, Float>>()
+        val asuLevelLTE = mutableStateListOf<Pair<Long, Float>>()
+        val levelLTE = mutableStateListOf<Pair<Long, Float>>()
+        val earfcnLTE = mutableStateListOf<Pair<Long, Float>>()
+
         var rssiDataGsm = mutableStateListOf<Pair<Long, Float>>()
-        var rssiDataWcdma = mutableStateListOf<Pair<Long, Float>>()
+        var arfcnGsm = mutableStateListOf<Pair<Long, Float>>()
+
         var rssiDataCdma = mutableStateListOf<Pair<Long, Float>>()
+        var levelCdma = mutableStateListOf<Pair<Long, Float>>()
+
         var rssiDataNr = mutableStateListOf<Pair<Long, Float>>()
+        var asuLevelNr = mutableStateListOf<Pair<Long, Float>>()
+
         var rscpDataWcdma = mutableStateListOf<Pair<Long, Float>>()
+        var levelWcdma = mutableStateListOf<Pair<Long, Float>>()
+
 
         //Для тепловой карты (точки)
         val locations = mutableStateListOf<Pair<LatLng, Color>>()
