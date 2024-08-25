@@ -61,14 +61,14 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
+fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
     val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, Long>>() }
     val packageName = getPackageNameForApp(context, appName)
 
-    LaunchedEffect(packageName) {
+    LaunchedEffect(packageName, selectedDate) {
         launch(Dispatchers.IO) {
             if (packageName != null) {
-                val data = getHourlyTrafficData(context, packageName)
+                val data = getHourlyTrafficData(context, packageName, selectedDate)
                 withContext(Dispatchers.Main) {
                     hourlyTrafficData.addAll(data)
                 }
@@ -101,13 +101,13 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context) {
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
+fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
     val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
     var showChart by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(Unit, selectedDate) {
         launch(Dispatchers.IO) {
-            val data = getTotalHourlyTrafficData(context)
+            val data = getTotalHourlyTrafficData(context, selectedDate)
             withContext(Dispatchers.Main) {
                 hourlyTrafficData.addAll(data)
             }
@@ -128,7 +128,11 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
                 }
 
                 if (showChart) {
-                    TotalHourlyTrafficLineChartContent(hourlyTrafficData, getAppTrafficData(context, 1).sortedByDescending { it.totalBytes }.take(10).map { it.appName })
+                    TotalHourlyTrafficLineChartContent(
+                        hourlyTrafficData,
+                        getAppTrafficData(context, 1).sortedByDescending { it.totalBytes }
+                            .take(10).map { it.appName }, selectedDate
+                    )
                 } else {
                     TotalHourlyTrafficChartContent(hourlyTrafficData)
                 }
@@ -153,11 +157,21 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context) {
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>) {
+fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>, selectedDate: Calendar? = null) {
     val scrollState = rememberScrollState()
     val hourWidth = 50.dp
+
+    val filteredHourlyTrafficData = if (selectedDate != null) {
+        (0..23).map { hour ->
+            val appTrafficData = hourlyTrafficData.find { it.first == hour }?.second ?: AppTrafficData("", "", 0, 0, 0, 0, 0)
+            Pair(hour, appTrafficData)
+        }
+    } else {
+        hourlyTrafficData
+    }
+
     val chartWidth = hourWidth * 12
-    val maxTraffic = hourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
+    val maxTraffic = filteredHourlyTrafficData.maxOfOrNull { it.second.totalBytes } ?: 1L
     val maxTrafficKb = (maxTraffic / 1024).toFloat()
 
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -192,7 +206,7 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
                 .width(chartWidth)
         ) {
             Canvas(modifier = Modifier.width(chartWidth).height(200.dp)) {
-                hourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
+                filteredHourlyTrafficData.forEachIndexed { index, (hour, appTrafficData) ->
                     val x = index * hourWidth.toPx()
                     val trafficKb = (appTrafficData.totalBytes / 1024).toFloat()
                     val barHeight = (trafficKb / maxTrafficKb * size.height).coerceAtLeast(0f)
@@ -248,11 +262,18 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun TotalHourlyTrafficLineChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>, topAppNames: List<String>) {
+fun TotalHourlyTrafficLineChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficData>>, topAppNames: List<String>, selectedDate: Calendar? = null) {
     val scrollState = rememberScrollState()
     val hourWidth = 60.dp
 
-    val filteredHourlyTrafficData = hourlyTrafficData.filter { (_, appTrafficData) -> appTrafficData.totalBytes > 0 }
+    val filteredHourlyTrafficData = if (selectedDate != null) {
+        (0..23).map { hour ->
+            val appTrafficData = hourlyTrafficData.find { it.first == hour }?.second ?: AppTrafficData("", "", 0, 0, 0, 0, 0)
+            Pair(hour, appTrafficData)
+        }
+    } else {
+        hourlyTrafficData
+    }.filter { (_, appTrafficData) -> appTrafficData.totalBytes > 0 }
 
     val totalTrafficByHour = MutableList(filteredHourlyTrafficData.size) { TotalTrafficData(0, 0, 0) }
 
@@ -451,17 +472,29 @@ private fun DrawScope.drawTrafficLine(
 
 }
 @RequiresApi(Build.VERSION_CODES.M)
-fun getTotalHourlyTrafficData(context: Context): List<Pair<Int, AppTrafficData>> {
+fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null): List<Pair<Int, AppTrafficData>> {
     val result = mutableListOf<Pair<Int, AppTrafficData>>()
     val packageManager = context.packageManager
     val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
 
     val calendarStart = Calendar.getInstance()
     calendarStart.add(Calendar.DAY_OF_YEAR, -1)
+
+    if (selectedDate != null) {
+        calendarStart.timeInMillis = selectedDate.timeInMillis
+    }
+
     val startTime = calendarStart.timeInMillis
 
+    val endTime = if (selectedDate != null) {
+        calendarStart.apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+        }.timeInMillis
+    } else {
+        startTime + TimeUnit.DAYS.toMillis(1)
+    }
+
     val trafficData = mutableListOf<TrafficDataPoint>()
-    val endTime = startTime + TimeUnit.DAYS.toMillis(1)
 
     for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
         val uid = packageInfo.uid
@@ -547,11 +580,18 @@ fun getPackageNameForApp(context: Context, appName: String): String? {
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
+fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>, selectedDate: Calendar? = null) {
     val scrollState = rememberScrollState()
     val hourWidth = 50.dp
 
-    val filteredData = hourlyTrafficData.filter { it.second > 0 }
+    val filteredData = if (selectedDate != null) {
+        (0..23).map { hour ->
+            val traffic = hourlyTrafficData.find { it.first == hour }?.second ?: 0L
+            Pair(hour, traffic)
+        }
+    } else {
+        hourlyTrafficData
+    }.filter { it.second > 0 }
 
     val chartWidth = hourWidth * filteredData.size
     val maxTraffic = filteredData.maxOfOrNull { it.second } ?: 1L
@@ -639,19 +679,34 @@ fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>) {
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.M)
-fun getHourlyTrafficData(context: Context, packageName: String): List<Pair<Int, Long>> {
+fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Calendar? = null): List<Pair<Int, Long>> {
     val calendar = Calendar.getInstance()
     val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
 
-    calendar.add(Calendar.DAY_OF_YEAR, -1)
+    if (selectedDate != null) {
+        calendar.timeInMillis = selectedDate.timeInMillis
+    } else {
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+    }
+
     calendar.set(Calendar.HOUR_OF_DAY, currentHour)
     calendar.set(Calendar.MINUTE, 0)
     calendar.set(Calendar.SECOND, 0)
     calendar.set(Calendar.MILLISECOND, 0)
     val startTime = calendar.timeInMillis
 
-    val endTime = System.currentTimeMillis()
+    val endTime = if (selectedDate != null) {
+        calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+    } else {
+        System.currentTimeMillis()
+    }
 
     val hourlyTrafficData = MutableList(24) { 0L }
     val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
@@ -806,4 +861,130 @@ fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
     }
 
     return appTrafficDataList
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun getAppTrafficDataForDays(context: Context, daysList: List<Int>): List<AppTrafficData> {
+    val appTrafficDataList = mutableListOf<AppTrafficData>()
+    val packageManager = context.packageManager
+    val networkStatsManager =
+        context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
+
+    for (daysAgo in daysList) {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+        val startTime = calendar.timeInMillis
+
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+        val endTime = calendar.timeInMillis
+
+        for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
+            val uid = packageInfo.uid
+            val appName = packageManager.getApplicationLabel(packageInfo).toString()
+
+            var mobileBytes = 0L
+            var wifiBytes = 0L
+            var totalDownlinkBytes = 0L
+            var totalUplinkBytes = 0L
+
+            try {
+                val mobileStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_MOBILE,
+                    null,
+                    startTime,
+                    endTime,
+                    uid
+                )
+                var bucket = android.app.usage.NetworkStats.Bucket()
+                while (mobileStats.hasNextBucket()) {
+                    mobileStats.getNextBucket(bucket)
+                    if (bucket.uid == uid) {
+                        mobileBytes += bucket.rxBytes + bucket.txBytes
+                        totalDownlinkBytes += bucket.rxBytes
+                        totalUplinkBytes += bucket.txBytes
+                    }
+                }
+                mobileStats.close()
+
+                val wifiStats = networkStatsManager.queryDetailsForUid(
+                    ConnectivityManager.TYPE_WIFI,
+                    null,
+                    startTime,
+                    endTime,
+                    uid
+                )
+                bucket = android.app.usage.NetworkStats.Bucket()
+                while (wifiStats.hasNextBucket()) {
+                    wifiStats.getNextBucket(bucket)
+                    if (bucket.uid == uid) {
+                        wifiBytes += bucket.rxBytes + bucket.txBytes
+                        totalDownlinkBytes += bucket.rxBytes
+                        totalUplinkBytes += bucket.txBytes
+                    }
+                }
+                wifiStats.close()
+
+                val totalBytes = mobileBytes + wifiBytes
+                appTrafficDataList.add(
+                    AppTrafficData(
+                        appName,
+                        packageInfo.packageName,
+                        totalBytes,
+                        mobileBytes,
+                        wifiBytes,
+                        totalDownlinkBytes,
+                        totalUplinkBytes
+                    )
+                )
+
+            } catch (e: Exception) {
+                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
+            }
+        }
+    }
+    return appTrafficDataList
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun getTotalTrafficDataForDays(context: Context, daysList: List<Int>): TotalTrafficData {
+    var totalMobileBytes = 0L
+    var totalWifiBytes = 0L
+
+    for (daysAgo in daysList) {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+        val startTime = calendar.timeInMillis
+
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+        val endTime = calendar.timeInMillis
+
+        val networkStatsManager =
+            context.getSystemService(Activity.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
+
+        try {
+            val mobileStats = networkStatsManager.querySummaryForDevice(
+                ConnectivityManager.TYPE_MOBILE,
+                null,
+                startTime,
+                endTime
+            )
+            totalMobileBytes += mobileStats.rxBytes + mobileStats.txBytes
+
+            val wifiStats = networkStatsManager.querySummaryForDevice(
+                ConnectivityManager.TYPE_WIFI,
+                null,
+                startTime,
+                endTime
+            )
+            totalWifiBytes += wifiStats.rxBytes + wifiStats.txBytes
+        } catch (e: Exception) {
+            Log.e(MainActivity.TAG, "Error fetching network stats", e)
+        }
+    }
+
+    return TotalTrafficData(
+        totalMobileBytes + totalWifiBytes,
+        totalMobileBytes,
+        totalWifiBytes
+    )
 }

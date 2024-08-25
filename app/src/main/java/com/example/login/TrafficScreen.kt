@@ -1,9 +1,11 @@
 package com.example.login
 
+import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.util.Log
+import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +40,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
@@ -52,21 +57,51 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
     var isSendingTrafficData by remember { mutableStateOf(false) }
 
-    LaunchedEffect(appTrafficData.value, days) {
-        val numDays = days.toIntOrNull()
-        if (numDays != null) {
-            showError = false
-            while (true) {
-                appTrafficData.value = getAppTrafficData(context, numDays).sortedByDescending { it.totalBytes }
-                totalTrafficData.value = getTotalTrafficData(context, numDays)
-                delay(5000)
+    var selectedCalendar by remember { mutableStateOf<Calendar?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    var activeMode by remember { mutableStateOf("days") }
+
+    fun onDateSelected(selectedDate: Calendar) {
+        selectedCalendar = selectedDate
+        activeMode = "calendar"
+    }
+
+    fun onDaysChanged(newDays: String) {
+        days = newDays
+        activeMode = "days"
+    }
+
+    LaunchedEffect(appTrafficData.value, days, selectedCalendar, activeMode) {
+        if (activeMode == "calendar" && selectedCalendar != null) {
+            val daysList = listOf(
+                TimeUnit.MILLISECONDS.toDays(
+                    Calendar.getInstance().timeInMillis - selectedCalendar!!.timeInMillis
+                ).toInt()
+            )
+            appTrafficData.value =
+                getAppTrafficDataForDays(context, daysList).sortedByDescending { it.totalBytes }
+            totalTrafficData.value = getTotalTrafficDataForDays(context, daysList)
+        } else if (activeMode == "days") {
+            val daysList = days.split(",").mapNotNull { it.toIntOrNull() }
+            if (daysList.isNotEmpty()) {
+                showError = false
+                while (true) {
+                    appTrafficData.value =
+                        getAppTrafficData(context, daysList.sum()).sortedByDescending { it.totalBytes }
+                    totalTrafficData.value = getTotalTrafficData(context, daysList.sum())
+                    delay(5000)
+                }
+            } else {
+                showError = true
             }
-        } else {
-            showError = true
         }
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         item {
             Row(
                 modifier = Modifier
@@ -92,7 +127,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         item {
             OutlinedTextField(
                 value = days,
-                onValueChange = { days = it },
+                onValueChange = { onDaysChanged(it) },
                 label = { Text("Days") },
                 modifier = Modifier.padding(16.dp)
             )
@@ -148,7 +183,16 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             }
         }
 
-        items(appTrafficData.value, key = { appData -> appData.packageName }) { appData ->
+        item {
+            Button(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Choose Date")
+            }
+        }
+
+        items(appTrafficData.value, key = { it.appName }) { appData ->
             TrafficItem(appData) { appName ->
                 selectedAppName = appName
                 showAppChart = true
@@ -160,18 +204,40 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         HourlyTrafficChart(
             appName = selectedAppName,
             onClose = { showAppChart = false },
-            context = context
+            context = context,
+            selectedDate = if (activeMode == "calendar") selectedCalendar else null
         )
     }
 
     if (showTotalChart) {
         TotalHourlyTrafficChart(
             onClose = { showTotalChart = false },
-            context = context
+            context = context,
+            selectedDate = if (activeMode == "calendar") selectedCalendar else null
         )
     }
-}
 
+    if (showDatePicker) {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(
+            context,
+            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                val selectedCalendar = Calendar.getInstance()
+                selectedCalendar.set(year, month, dayOfMonth)
+                onDateSelected(selectedCalendar)
+                showDatePicker = false
+            },
+            year,
+            month,
+            day
+        )
+        datePickerDialog.show()
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
