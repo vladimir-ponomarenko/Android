@@ -276,10 +276,13 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             put("time", messageToData2.time)
             put("latitude", messageToData2.latitude)
             put("longitude", messageToData2.longitude)
+            put("altitude", messageToData2.altitude)
             put("operator", messageToData2.operator)
+            put("cdma", Json.encodeToJsonElement(messageToData2.cdma.cellInfoList))
             put("wcdma", Json.encodeToJsonElement(messageToData2.wcdma.cellInfoList))
             put("gsm", Json.encodeToJsonElement(messageToData2.gsm.cellInfoList))
             put("lte", Json.encodeToJsonElement(messageToData2.lte.cellInfoList))
+            put("nr", Json.encodeToJsonElement(messageToData2.nr.cellInfoList))
         }
 
         val jsonBody = modifiedJson.toString()

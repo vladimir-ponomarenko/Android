@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
 import androidx.compose.material.OutlinedTextField
@@ -24,6 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -41,7 +46,10 @@ fun LoginScreen(
     var jwtToken by remember { mutableStateOf(state.JwtToken) }
     var uuid by remember { mutableStateOf(state.Uuid) }
 
-    val sharedPreferences = LocalContext.current.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+    val sharedPreferences = LocalContext.current.getSharedPreferences(
+        MainActivity.SHARED_PREFS_NAME,
+        Context.MODE_PRIVATE
+    )
     val savedRememberMe = sharedPreferences.getBoolean(MainActivity.REMEMBER_ME_KEY, false)
 
     var rememberMe by rememberSaveable { mutableStateOf(savedRememberMe) }
@@ -59,9 +67,9 @@ fun LoginScreen(
         if (showRegistration) {
             RegistrationForm(
                 email = email,
-                onEmailChange = { email = it },
+                onEmailChange = { email = it.replace(" ", "") },
                 password = password,
-                onPasswordChange = { password = it },
+                onPasswordChange = { password = it.replace(" ", "") },
                 onRegisterClick = {
                     coroutineScope.launch {
                         MainActivity.networkManager.registerUser(email, password) { response ->
@@ -86,13 +94,13 @@ fun LoginScreen(
         } else {
             LoginForm(
                 email = email,
-                onEmailChange = { email = it },
+                onEmailChange = { email = it.replace(" ", "") },
                 password = password,
-                onPasswordChange = { password = it },
+                onPasswordChange = { password = it.replace(" ", "") },
                 jwtToken = jwtToken,
-                onJwtTokenChange = { jwtToken = it },
+                onJwtTokenChange = { jwtToken = it.replace(" ", "") },
                 uuid = uuid,
-                onUuidChange = { uuid = it },
+                onUuidChange = { uuid = it.replace(" ", "") },
                 rememberMe = rememberMe,
                 onRememberMeChange = {
                     rememberMe = it
@@ -129,12 +137,21 @@ fun LoginForm(
     onCellInfoDataClick: () -> Unit,
     onShowRegistrationClick: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(modifier = Modifier.fillMaxWidth(0.8f)) {
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text("Email") }
+                label = { Text("Email") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -143,7 +160,14 @@ fun LoginForm(
                 value = password,
                 onValueChange = onPasswordChange,
                 label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -152,7 +176,13 @@ fun LoginForm(
                 value = uuid,
                 onValueChange = onUuidChange,
                 label = { Text("UUID") },
-                enabled = true
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -161,7 +191,16 @@ fun LoginForm(
                 value = jwtToken,
                 onValueChange = onJwtTokenChange,
                 label = { Text("JWT Token") },
-                enabled = true
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        onCellInfoDataClick()
+                    }
+                )
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -191,12 +230,21 @@ fun RegistrationForm(
     onPasswordChange: (String) -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(modifier = Modifier.fillMaxWidth(0.8f)) {
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text("Email") }
+                label = { Text("Email") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                )
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -205,7 +253,19 @@ fun RegistrationForm(
                 value = password,
                 onValueChange = onPasswordChange,
                 label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            onRegisterClick()
+                        }
+                    }
+                )
             )
         }
         Spacer(modifier = Modifier.height(16.dp))

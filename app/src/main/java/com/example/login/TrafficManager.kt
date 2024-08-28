@@ -478,10 +478,15 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
     val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as android.app.usage.NetworkStatsManager
 
     val calendarStart = Calendar.getInstance()
-    calendarStart.add(Calendar.DAY_OF_YEAR, -1)
 
     if (selectedDate != null) {
         calendarStart.timeInMillis = selectedDate.timeInMillis
+        calendarStart.set(Calendar.HOUR_OF_DAY, 0)
+        calendarStart.set(Calendar.MINUTE, 0)
+        calendarStart.set(Calendar.SECOND, 0)
+        calendarStart.set(Calendar.MILLISECOND, 0)
+    } else {
+        calendarStart.add(Calendar.DAY_OF_YEAR, -1)
     }
 
     val startTime = calendarStart.timeInMillis
@@ -493,6 +498,7 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
     } else {
         startTime + TimeUnit.DAYS.toMillis(1)
     }
+
 
     val trafficData = mutableListOf<TrafficDataPoint>()
 
@@ -687,22 +693,28 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
 
     if (selectedDate != null) {
         calendar.timeInMillis = selectedDate.timeInMillis
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
     } else {
+        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
         calendar.add(Calendar.DAY_OF_YEAR, -1)
+        calendar.set(Calendar.HOUR_OF_DAY, currentHour)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
     }
 
-    calendar.set(Calendar.HOUR_OF_DAY, currentHour)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
     val startTime = calendar.timeInMillis
 
     val endTime = if (selectedDate != null) {
         calendar.apply {
-            set(Calendar.HOUR_OF_DAY, 23)
-            set(Calendar.MINUTE, 59)
-            set(Calendar.SECOND, 59)
-            set(Calendar.MILLISECOND, 999)
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }.timeInMillis
     } else {
         System.currentTimeMillis()

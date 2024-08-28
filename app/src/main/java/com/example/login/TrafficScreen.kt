@@ -21,8 +21,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,11 +65,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     var showDatePicker by remember { mutableStateOf(false) }
 
     var activeMode by remember { mutableStateOf("days") }
-
-    fun onDateSelected(selectedDate: Calendar) {
-        selectedCalendar = selectedDate
-        activeMode = "calendar"
-    }
 
     fun onDaysChanged(newDays: String) {
         days = newDays
@@ -125,12 +124,27 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         }
 
         item {
-            OutlinedTextField(
-                value = days,
-                onValueChange = { onDaysChanged(it) },
-                label = { Text("Days") },
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = days,
+                    onValueChange = { onDaysChanged(it) },
+                    label = { Text("Days") },
+                    modifier = Modifier.weight(1f)
+                )
+
+                IconButton(onClick = { showDatePicker = true }) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = "Choose Date"
+                    )
+                }
+            }
         }
 
         item {
@@ -183,15 +197,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             }
         }
 
-        item {
-            Button(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Choose Date")
-            }
-        }
-
         items(appTrafficData.value, key = { it.appName }) { appData ->
             TrafficItem(appData) { appName ->
                 selectedAppName = appName
@@ -205,7 +210,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
             appName = selectedAppName,
             onClose = { showAppChart = false },
             context = context,
-            selectedDate = if (activeMode == "calendar") selectedCalendar else null
+            selectedDate = selectedCalendar
         )
     }
 
@@ -226,15 +231,27 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         val datePickerDialog = DatePickerDialog(
             context,
             { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-                val selectedCalendar = Calendar.getInstance()
-                selectedCalendar.set(year, month, dayOfMonth)
-                onDateSelected(selectedCalendar)
+                selectedCalendar = Calendar.getInstance().apply {
+                    set(year, month, dayOfMonth)
+                }
+                activeMode = "calendar"
                 showDatePicker = false
+
             },
             year,
             month,
             day
         )
+
+        datePickerDialog.setOnCancelListener {
+            showDatePicker = false
+            activeMode = "days"
+        }
+
+        datePickerDialog.setOnDismissListener {
+            showDatePicker = false
+        }
+
         datePickerDialog.show()
     }
 }
