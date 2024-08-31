@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -70,29 +71,37 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
 
     var activeMode by remember { mutableStateOf("days") }
 
+    var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
+
     fun onDaysChanged(newDays: String) {
         days = newDays
         activeMode = "days"
         selectedCalendar = null
     }
 
-    LaunchedEffect(appTrafficData.value, days, selectedCalendar, activeMode) {
+    LaunchedEffect(appTrafficData.value, days, selectedCalendar, activeMode, sortCriteria) {
         if (activeMode == "calendar" && selectedCalendar != null) {
             val daysList = listOf(
                 TimeUnit.MILLISECONDS.toDays(
                     Calendar.getInstance().timeInMillis - selectedCalendar!!.timeInMillis
                 ).toInt()
             )
-            appTrafficData.value =
-                getAppTrafficDataForDays(context, daysList).sortedByDescending { it.totalBytes }
+            appTrafficData.value = when (sortCriteria) {
+                SortCriteria.TOTAL -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.totalBytes }
+                SortCriteria.MOBILE -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.mobileBytes }
+                SortCriteria.WIFI -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.wifiBytes }
+            }
             totalTrafficData.value = getTotalTrafficDataForDays(context, daysList)
         } else if (activeMode == "days") {
             val daysList = days.split(",").mapNotNull { it.toIntOrNull() }
             if (daysList.isNotEmpty()) {
                 showError = false
                 while (true) {
-                    appTrafficData.value =
-                        getAppTrafficData(context, daysList.sum()).sortedByDescending { it.totalBytes }
+                    appTrafficData.value = when (sortCriteria) {
+                        SortCriteria.TOTAL -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.totalBytes }
+                        SortCriteria.MOBILE -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.mobileBytes }
+                        SortCriteria.WIFI -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.wifiBytes }
+                    }
                     totalTrafficData.value = getTotalTrafficData(context, daysList.sum())
                     delay(5000)
                 }
@@ -114,15 +123,18 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Total Traffic:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "Total Traffic:", fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { sortCriteria = SortCriteria.TOTAL })
                     Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Mobile:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "Mobile:", fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { sortCriteria = SortCriteria.MOBILE })
                     Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Wi-Fi:", fontWeight = FontWeight.SemiBold)
+                    Text(text = "Wi-Fi:", fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { sortCriteria = SortCriteria.WIFI })
                     Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
                 }
             }
@@ -200,7 +212,9 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                             isSendingTrafficData = true
                             MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
                                 if (authResponse != null) {
-                                    val top5Apps = appTrafficData.value.take(10)
+                                    val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
+                                    val top5Apps = sortedApps.take(10)
+
                                     MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
                                         if (success) {
                                             Log.d(MainActivity.TAG, "Traffic data sent successfully!")
@@ -353,4 +367,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             Text("Hourly", fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
         }
     }
+}
+enum class SortCriteria {
+    TOTAL, MOBILE, WIFI
 }
