@@ -26,7 +26,10 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -69,6 +73,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     fun onDaysChanged(newDays: String) {
         days = newDays
         activeMode = "days"
+        selectedCalendar = null
     }
 
     LaunchedEffect(appTrafficData.value, days, selectedCalendar, activeMode) {
@@ -141,7 +146,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 IconButton(onClick = { showDatePicker = true }) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
-                        contentDescription = "Choose Date"
+                        contentDescription = "Choose Date",
+                        modifier = Modifier.size(35.dp)
                     )
                 }
             }
@@ -166,34 +172,60 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         }
 
         item {
-            Button(onClick = {
-                isSendingTrafficData = true
-                MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
-                    if (authResponse != null) {
-                        val top5Apps = appTrafficData.value.take(10)
-                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
-                            if (success) {
-                                Log.d(MainActivity.TAG, "Traffic data sent successfully!")
-                            } else {
-                                Log.e(MainActivity.TAG, "Failed to send traffic data")
-                            }
-                        }
-                    } else {
-                        Log.e(MainActivity.TAG, "Authentication for traffic data failed")
-                    }
-                    isSendingTrafficData = false
-                }
-            }) {
-                Text("Send Data to Server")
-            }
-        }
-
-        item {
-            Button(
-                onClick = { showTotalChart = true },
-                modifier = Modifier.padding(16.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Text("Show Total Hourly Traffic")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(
+                        onClick = { showTotalChart = true },
+                        modifier = Modifier
+                            .size(width = 64.dp, height = 48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Timeline,
+                            contentDescription = "Show Total Traffic",
+                            tint = Color.Black,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                    Text("Total", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(
+                        onClick = {
+                            isSendingTrafficData = true
+                            MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
+                                if (authResponse != null) {
+                                    val top5Apps = appTrafficData.value.take(10)
+                                    MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
+                                        if (success) {
+                                            Log.d(MainActivity.TAG, "Traffic data sent successfully!")
+                                        } else {
+                                            Log.e(MainActivity.TAG, "Failed to send traffic data")
+                                        }
+                                    }
+                                } else {
+                                    Log.e(MainActivity.TAG, "Authentication for traffic data failed")
+                                }
+                                isSendingTrafficData = false
+                            }
+                        },
+                        modifier = Modifier
+                            .size(width = 64.dp, height = 48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CloudUpload,
+                            contentDescription = "Send Data",
+                            tint = Color.Black,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                    Text("Send", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
 
@@ -246,6 +278,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         datePickerDialog.setOnCancelListener {
             showDatePicker = false
             activeMode = "days"
+            selectedCalendar = null
         }
 
         datePickerDialog.setOnDismissListener {
@@ -295,7 +328,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
             }
-            Column {
+            Column(modifier = Modifier.width(200.dp)) {
                 Text(text = appData.appName, fontWeight = FontWeight.SemiBold)
                 Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
                 Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
@@ -304,8 +337,20 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
                 Text(text = "Uplink: ${(appData.txBytes / 1024).toString()} Kb")
             }
         }
-        Button(onClick = { onShowChart(appData.appName) }) {
-            Text("Show Chart")
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            IconButton(
+                onClick = { onShowChart(appData.appName) },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.BarChart,
+                    contentDescription = "Show Chart",
+                    tint = Color.Black,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Text("Hourly", fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

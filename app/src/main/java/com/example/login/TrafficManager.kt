@@ -689,7 +689,8 @@ fun HourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, Long>>, selected
 @RequiresApi(Build.VERSION_CODES.M)
 fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Calendar? = null): List<Pair<Int, Long>> {
     val calendar = Calendar.getInstance()
-    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    val currentHour = if (selectedDate != null) 0 else calendar.get(Calendar.HOUR_OF_DAY)
 
     if (selectedDate != null) {
         calendar.timeInMillis = selectedDate.timeInMillis
@@ -698,7 +699,6 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
     } else {
-        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
         calendar.add(Calendar.DAY_OF_YEAR, -1)
         calendar.set(Calendar.HOUR_OF_DAY, currentHour)
         calendar.set(Calendar.MINUTE, 0)
@@ -734,7 +734,9 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
     try {
         var previousTotalBytes = 0L
 
-        for (hour in 0 until 24) {
+        val hourRange = if (selectedDate != null) 0 until 24 else 0 until 24
+
+        for (hour in hourRange) {
             calendar.add(Calendar.HOUR_OF_DAY, 1)
             val currentHourEnd = calendar.timeInMillis
 
