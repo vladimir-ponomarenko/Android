@@ -20,7 +20,7 @@ static int _decode_lte_pusch_power_control_payload(const char* b, int offset, si
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PUSCH_Power_Control with version: %d", pkt_ver);
+    //LOGD("Decoding LTE_PUSCH_Power_Control with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 25: {

@@ -67,7 +67,7 @@ static int _decode_lte_phy_serving_cell_com_loop_payload(const char* b, int offs
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_Serving_Cell_COM_Loop with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_Serving_Cell_COM_Loop with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 22: {

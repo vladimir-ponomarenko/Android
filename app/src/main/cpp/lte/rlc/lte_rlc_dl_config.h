@@ -36,7 +36,7 @@ static int _decode_lte_rlc_dl_config_log_packet_subpkt(const char* b, int offset
         return 0;
     }
 
-    LOGD("Decoding LTE_RLC_DL_Config_Log_Packet with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_RLC_DL_Config_Log_Packet with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {

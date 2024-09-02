@@ -25,7 +25,7 @@ static int _decode_lte_rrc_ota(const char* b, int offset, size_t length, json& j
         return 0;
     }
     int pkt_ver = j["Pkt Version"];
-    LOGD("Decoding LTE_RRC_OTA_Packet payload with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_RRC_OTA_Packet payload with version: %d", pkt_ver);
 
     int version_specific_consumed = 0;
     const Fmt* version_fmt_array = nullptr;

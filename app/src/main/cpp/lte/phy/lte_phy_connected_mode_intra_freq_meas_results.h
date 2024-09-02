@@ -95,7 +95,7 @@ static int _decode_lte_phy_cmlifmr(const char* b, int offset, size_t length, jso
     const char* serv_cell_name = search_name(ValueNameCellIndex, ARRAY_SIZE(ValueNameCellIndex, ValueName), j["Serving Cell Index"]);
     j["Serving Cell Index"] = (serv_cell_name ? serv_cell_name : "(MI)Unknown");
 
-    LOGD("Decoding LTE_PHY_Connected_Mode_LTE_Intra_Freq_Meas_Results with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_Connected_Mode_LTE_Intra_Freq_Meas_Results with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 3: {

@@ -30,7 +30,7 @@ static int _decode_lte_phy_pucch_tx_report_payload(const char* b, int offset, si
         j["error"] = "Missing Version in main header";
         return 0;
     }
-    LOGD("Decoding LTE_PHY_PUCCH_Tx_Report with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_PUCCH_Tx_Report with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 21: {

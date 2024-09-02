@@ -76,7 +76,7 @@ static int _decode_lte_phy_cdrx_events_info_payload(const char* b, int offset, s
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_CDRX_Events_Info with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_CDRX_Events_Info with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 1: {

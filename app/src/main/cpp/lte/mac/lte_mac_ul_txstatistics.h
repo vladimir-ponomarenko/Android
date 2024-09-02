@@ -36,7 +36,7 @@ static int _decode_lte_mac_ul_txstatistics_subpkt(const char* b, int offset, siz
         return 0;
     }
 
-    LOGD("Decoding LTE_MAC_UL_Tx_Statistics with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_MAC_UL_Tx_Statistics with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {

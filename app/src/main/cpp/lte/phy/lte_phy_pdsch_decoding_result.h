@@ -28,7 +28,7 @@ static int _decode_lte_phy_pdsch_decoding_result_payload(const char* b, int offs
         j["error"] = "Missing Version in main header";
         return 0;
     }
-    LOGD("Decoding LTE_PHY_PDSCH_Decoding_Result with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_PDSCH_Decoding_Result with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 24: {

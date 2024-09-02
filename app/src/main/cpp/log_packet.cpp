@@ -50,6 +50,9 @@
 #include "lte/nas/lte_nas_emm_state.h"
 #include "lte/nb1/lte_nb1_ml1_gm_tx_report.h"
 #include "lte/lte_pdsch_stat_indication.h"
+#include "lte/pdcp/lte_pdcp_dl_config.h"
+#include "lte/pdcp/lte_pdcp_ul_config.h"
+#include "lte/pdcp/lte_pdcp_dl_stats.h"
 #include "wcdma_signaling_messages.h"
 #include "srch_tng_1x_searcher_dump.h"
 
@@ -525,6 +528,21 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                 j["payload"]["LteMacUlBufferStatusInternal"] = {{"error", "Failed to decode base header"}};
             }
             break;
+        }
+        case LTE_PDCP_DL_Config: {
+            offset += _decode_by_fmt(LtePdcpDlConfig_Fmt,
+                                     ARRAY_SIZE(LtePdcpDlConfig_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePdcpDlConfig"] = jj;
+            offset += _decode_lte_pdcp_dl_config_subpkt(b, offset, length, j["payload"]["LtePdcpDlConfig"]);
+            break;
+        }
+        case LTE_PDCP_UL_Config: {
+            offset += _decode_by_fmt(LtePdcpUlConfig_Fmt,
+                                     ARRAY_SIZE(LtePdcpUlConfig_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePdcpUlConfig"] = jj;
+            offset += _decode_lte_pdcp_ul_config_subpkt(b, offset, length, j["payload"]["LtePdcpUlConfig"]);            break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
             offset += _decode_by_fmt(LteNb1Ml1GmTxReport,

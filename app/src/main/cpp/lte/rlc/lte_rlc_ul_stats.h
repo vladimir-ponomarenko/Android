@@ -26,7 +26,7 @@ static int _decode_lte_rlc_ul_stats_subpkt(const char* b, int offset, size_t len
         return 0;
     }
 
-    LOGD("Decoding LTE_RLC_UL_Stats with packet version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_RLC_UL_Stats with packet version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
 
     if (pkt_ver != 1) {

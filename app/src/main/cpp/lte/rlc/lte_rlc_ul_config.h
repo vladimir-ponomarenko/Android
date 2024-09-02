@@ -36,7 +36,7 @@ static int _decode_lte_rlc_ul_config_log_packet_subpkt(const char* b, int offset
         return 0;
     }
 
-    LOGD("Decoding LTE_RLC_UL_Config_Log_Packet with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_RLC_UL_Config_Log_Packet with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {
@@ -65,7 +65,7 @@ static int _decode_lte_rlc_ul_config_log_packet_subpkt(const char* b, int offset
                 }
 
                 if (!header_ok) {
-                    LOGD("LTE_RLC_UL_Config: Error decoding subpacket %d header or missing fields/invalid size.", i);
+                   // LOGD("LTE_RLC_UL_Config: Error decoding subpacket %d header or missing fields/invalid size.", i);
                     if (subpkt_j.find("Subpacket Size") != subpkt_j.end() && subpkt_j["Subpacket Size"].is_number()) {
                         int skip_size_check = subpkt_j["Subpacket Size"].get<int>();
                         if (start_subpkt + skip_size_check <= start + length && skip_size_check > 0) {

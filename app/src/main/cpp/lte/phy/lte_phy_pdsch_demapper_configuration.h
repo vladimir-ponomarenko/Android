@@ -21,7 +21,7 @@ static int _decode_lte_phy_pdsch_demapper_config(const char* b, int offset, size
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_PDSCH_Demapper_Configuration with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_PDSCH_Demapper_Configuration with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 23: {

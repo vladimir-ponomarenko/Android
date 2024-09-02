@@ -59,7 +59,7 @@ static int _decode_lte_phy_bplmn_cell_request_payload(const char* b, int offset,
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_BPLMN_Cell_Request with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_BPLMN_Cell_Request with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 4: {

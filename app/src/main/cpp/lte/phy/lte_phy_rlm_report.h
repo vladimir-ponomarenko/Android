@@ -45,7 +45,7 @@ static int _decode_lte_phy_rlm_report_payload(const char* b, int offset, size_t 
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_RLM_Report with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_RLM_Report with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 1: {

@@ -58,7 +58,7 @@ static int _decode_lte_phy_system_scan_results_payload(const char* b, int offset
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_System_Scan_Results with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_System_Scan_Results with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 2: {

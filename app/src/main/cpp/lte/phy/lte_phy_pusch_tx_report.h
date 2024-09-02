@@ -33,7 +33,7 @@ static int _decode_lte_phy_pusch_tx_report_payload(const char* b, int offset, si
     int temp = 0;
     unsigned int u_temp = 0;
 
-    LOGD("Decoding LTE_PHY_PUSCH_Tx_Report with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_PHY_PUSCH_Tx_Report with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 23:

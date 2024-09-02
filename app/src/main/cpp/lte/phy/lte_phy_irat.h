@@ -36,7 +36,7 @@ static int _decode_lte_phy_irat_subpkt(const char* b, int offset, size_t length,
         return 0;
     }
 
-    LOGD("Decoding LTE_PHY_IRAT_Measurement_Request with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_PHY_IRAT_Measurement_Request with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {

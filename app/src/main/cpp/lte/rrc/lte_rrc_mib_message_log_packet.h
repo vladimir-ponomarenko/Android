@@ -75,11 +75,11 @@ static int _decode_lte_rrc_mib(const char *b, int offset, size_t length, json &j
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("(MI)Decoding LTE RRC MIB with version: 0x%x", pkt_ver);
+   // LOGD("(MI)Decoding LTE RRC MIB with version: 0x%x", pkt_ver);
 
     switch (pkt_ver) {
         case 1: {
-            LOGD("(MI)Decoding LTE RRC MIB version 1");
+           // LOGD("(MI)Decoding LTE RRC MIB version 1");
             offset += _decode_by_fmt(LteRrcMibMessageLogPacketFmt_v1,
                                      ARRAY_SIZE(LteRrcMibMessageLogPacketFmt_v1, Fmt),
                                      b, offset, length, j);
@@ -100,7 +100,7 @@ static int _decode_lte_rrc_mib(const char *b, int offset, size_t length, json &j
             break;
         }
         case 2: {
-            LOGD("(MI)Decoding LTE RRC MIB version 2");
+           // LOGD("(MI)Decoding LTE RRC MIB version 2");
             offset += _decode_by_fmt(LteRrcMibMessageLogPacketFmt_v2,
                                      ARRAY_SIZE(LteRrcMibMessageLogPacketFmt_v2, Fmt),
                                      b, offset, length, j);
@@ -121,7 +121,7 @@ static int _decode_lte_rrc_mib(const char *b, int offset, size_t length, json &j
             break;
         }
         case 3: {
-            LOGD("(MI)Decoding LTE RRC MIB version 3");
+           // LOGD("(MI)Decoding LTE RRC MIB version 3");
             offset += _decode_by_fmt(LteRrcMibMessageLogPacketFmt_v3,
                                      ARRAY_SIZE(LteRrcMibMessageLogPacketFmt_v3, Fmt),
                                      b, offset, length, j);
@@ -146,7 +146,7 @@ static int _decode_lte_rrc_mib(const char *b, int offset, size_t length, json &j
             break;
         }
         case 17: {
-            LOGD("(MI)Decoding LTE RRC MIB version 17");
+           // LOGD("(MI)Decoding LTE RRC MIB version 17");
             offset += _decode_by_fmt(LteRrcMibMessageLogPacketFmt_v17,
                                      ARRAY_SIZE(LteRrcMibMessageLogPacketFmt_v17, Fmt),
                                      b, offset, length, j);

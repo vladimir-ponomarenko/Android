@@ -28,7 +28,7 @@ static int _decode_lte_rrc_serv_cell_info(const char* b, int offset, size_t leng
 
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_RRC_Serv_Cell_Info with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_RRC_Serv_Cell_Info with version: %d", pkt_ver);
 
     int consumed = 0;
     switch (pkt_ver) {

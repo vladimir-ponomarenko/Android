@@ -39,7 +39,7 @@ static int _decode_lte_rlc_dl_am_all_pdu_subpkt(const char* b, int offset, size_
         return 0;
     }
 
-    LOGD("Decoding LTE_RLC_DL_AM_All_PDU with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_RLC_DL_AM_All_PDU with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {

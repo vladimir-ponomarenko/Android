@@ -36,7 +36,7 @@ static int _decode_lte_mac_rach_attempt_subpkt(const char* b, int offset, size_t
         return 0;
     }
 
-    LOGD("Decoding LTE_MAC_Rach_Attempt with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+   // LOGD("Decoding LTE_MAC_Rach_Attempt with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {
