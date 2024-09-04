@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -120,19 +122,46 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            if (sortCriteria == SortCriteria.TOTAL) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp)
+                ) {
                     Text(text = "Total Traffic:", fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable { sortCriteria = SortCriteria.TOTAL })
                     Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            if (sortCriteria == SortCriteria.MOBILE) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp)
+                ) {
                     Text(text = "Mobile:", fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable { sortCriteria = SortCriteria.MOBILE })
                     Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(
+                            if (sortCriteria == SortCriteria.WIFI) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp)
+                ) {
                     Text(text = "Wi-Fi:", fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable { sortCriteria = SortCriteria.WIFI })
                     Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
