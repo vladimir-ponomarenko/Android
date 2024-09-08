@@ -183,12 +183,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.levelLTE, it.level?.toString() ?: "0", currentTimestamp)
                     addChartData(state.earfcnLTE, it.earfcn?.toString() ?: "0", currentTimestamp)
 
-                    addChartDataForDetailedChart(state.rsrpDetailedData, it.rsrp?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.rssiDetailedData, it.rssi?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.rsrqDetailedData, it.rsrq?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.asuLevelLTEDetailed, it.asuLevel?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.levelLTEDetailed, it.level?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.earfcnLTEDetailed, it.earfcn?.toString() ?: "0", currentTimestamp)
+                    addChartDataForDetailedChart(state.rsrpDetailedData, it.rsrp?.toString() ?: "0", currentTimestamp, it.ci.toString())
+                    addChartDataForDetailedChart(state.rssiDetailedData, it.rssi?.toString() ?: "0", currentTimestamp, it.ci.toString())
+                    addChartDataForDetailedChart(state.rsrqDetailedData, it.rsrq?.toString() ?: "0", currentTimestamp, it.ci.toString())
+                    addChartDataForDetailedChart(state.asuLevelLTEDetailed, it.asuLevel?.toString() ?: "0", currentTimestamp, it.ci.toString())
+                    addChartDataForDetailedChart(state.levelLTEDetailed, it.level?.toString() ?: "0", currentTimestamp, it.ci.toString())
+                    addChartDataForDetailedChart(state.earfcnLTEDetailed, it.earfcn?.toString() ?: "0", currentTimestamp, it.ci.toString())
                 }
 
                 // GSM data
@@ -197,8 +197,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.rssiDataGsm, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.arfcnGsm, it.arfcn?.toString() ?: "0", currentTimestamp)
 
-                    addChartDataForDetailedChart(state.rssiDataGsmDetailed, it.rssi?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.arfcnGsmDetailed, it.arfcn?.toString() ?: "0", currentTimestamp)
+                    addChartDataForDetailedChart(state.rssiDataGsmDetailed, it.rssi?.toString() ?: "0", currentTimestamp, it.cid.toString())
+                    addChartDataForDetailedChart(state.arfcnGsmDetailed, it.arfcn?.toString() ?: "0", currentTimestamp, it.cid.toString())
                 }
 
                 // WCDMA data
@@ -207,8 +207,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.rscpDataWcdma, it.rscp?.toString() ?: "0", currentTimestamp)
                     addChartData(state.levelWcdma, it.level?.toString() ?: "0", currentTimestamp)
 
-                    addChartDataForDetailedChart(state.rscpDataWcdmaDetailed, it.rscp?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.levelWcdmaDetailed, it.level?.toString() ?: "0", currentTimestamp)
+                    addChartDataForDetailedChart(state.rscpDataWcdmaDetailed, it.rscp?.toString() ?: "0", currentTimestamp, it.cid.toString())
+                    addChartDataForDetailedChart(state.levelWcdmaDetailed, it.level?.toString() ?: "0", currentTimestamp, it.cid.toString())
                 }
 
                 // CDMA data
@@ -217,8 +217,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.rssiDataCdma, it.rssi?.toString() ?: "0", currentTimestamp)
                     addChartData(state.levelCdma, it.level?.toString() ?: "0", currentTimestamp)
 
-                    addChartDataForDetailedChart(state.rssiDataCdmaDetailed, it.rssi?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.levelCdmaDetailed, it.level?.toString() ?: "0", currentTimestamp)
+                    addChartDataForDetailedChart(state.rssiDataCdmaDetailed, it.rssi?.toString() ?: "0", currentTimestamp, it.bsid.toString())
+                    addChartDataForDetailedChart(state.levelCdmaDetailed, it.level?.toString() ?: "0", currentTimestamp, it.bsid.toString())
                 }
 
                 // NR data
@@ -227,8 +227,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartData(state.rssiDataNr, it.csiRsrp?.toString() ?: "0", currentTimestamp)
                     addChartData(state.asuLevelNr, it.asuLevel?.toString() ?: "0", currentTimestamp)
 
-                    addChartDataForDetailedChart(state.rssiDataNrDetailed, it.csiRsrp?.toString() ?: "0", currentTimestamp)
-                    addChartDataForDetailedChart(state.asuLevelNrDetailed, it.asuLevel?.toString() ?: "0", currentTimestamp)
+                    addChartDataForDetailedChart(state.rssiDataNrDetailed, it.csiRsrp?.toString() ?: "0", currentTimestamp, it.nci.toString())
+                    addChartDataForDetailedChart(state.asuLevelNrDetailed, it.asuLevel?.toString() ?: "0", currentTimestamp, it.nci.toString())
                 }
 
                 delay(UPDATE_INTERVAL)
@@ -574,24 +574,24 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var rscpDataWcdma = mutableStateListOf<Pair<Long, Float>>()
         var levelWcdma = mutableStateListOf<Pair<Long, Float>>()
 
-        val rsrpDetailedData = mutableStateListOf<Pair<Long, Float>>()
-        val rssiDetailedData = mutableStateListOf<Pair<Long, Float>>()
-        val rsrqDetailedData = mutableStateListOf<Pair<Long, Float>>()
-        val asuLevelLTEDetailed = mutableStateListOf<Pair<Long, Float>>()
-        val levelLTEDetailed = mutableStateListOf<Pair<Long, Float>>()
-        val earfcnLTEDetailed = mutableStateListOf<Pair<Long, Float>>()
+        val rsrpDetailedData = mutableStateListOf<ChartDataPoint>()
+        val rssiDetailedData = mutableStateListOf<ChartDataPoint>()
+        val rsrqDetailedData = mutableStateListOf<ChartDataPoint>()
+        val asuLevelLTEDetailed = mutableStateListOf<ChartDataPoint>()
+        val levelLTEDetailed = mutableStateListOf<ChartDataPoint>()
+        val earfcnLTEDetailed = mutableStateListOf<ChartDataPoint>()
 
-        var rssiDataGsmDetailed = mutableStateListOf<Pair<Long, Float>>()
-        var arfcnGsmDetailed = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataGsmDetailed = mutableStateListOf<ChartDataPoint>()
+        var arfcnGsmDetailed = mutableStateListOf<ChartDataPoint>()
 
-        var rssiDataCdmaDetailed = mutableStateListOf<Pair<Long, Float>>()
-        var levelCdmaDetailed = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataCdmaDetailed = mutableStateListOf<ChartDataPoint>()
+        var levelCdmaDetailed = mutableStateListOf<ChartDataPoint>()
 
-        var rssiDataNrDetailed = mutableStateListOf<Pair<Long, Float>>()
-        var asuLevelNrDetailed = mutableStateListOf<Pair<Long, Float>>()
+        var rssiDataNrDetailed = mutableStateListOf<ChartDataPoint>()
+        var asuLevelNrDetailed = mutableStateListOf<ChartDataPoint>()
 
-        var rscpDataWcdmaDetailed = mutableStateListOf<Pair<Long, Float>>()
-        var levelWcdmaDetailed = mutableStateListOf<Pair<Long, Float>>()
+        var rscpDataWcdmaDetailed = mutableStateListOf<ChartDataPoint>()
+        var levelWcdmaDetailed = mutableStateListOf<ChartDataPoint>()
 
 
         //Для тепловой карты (точки)
