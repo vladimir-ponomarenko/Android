@@ -394,19 +394,19 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 onClick = { state.selectedTabIndex = 1 },
                                 text = { Text("Данные") }
                             )
+//                            Tab(
+//                                selected = state.selectedTabIndex == 2,
+//                                onClick = { state.selectedTabIndex = 2 },
+//                                text = { Text("Графики") }
+//                            )
                             Tab(
                                 selected = state.selectedTabIndex == 2,
                                 onClick = { state.selectedTabIndex = 2 },
-                                text = { Text("Графики") }
+                                text = { Text("Карта") }
                             )
                             Tab(
                                 selected = state.selectedTabIndex == 3,
                                 onClick = { state.selectedTabIndex = 3 },
-                                text = { Text("Карта") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 4,
-                                onClick = { state.selectedTabIndex = 4 },
                                 text = { Text("Трафик") }
                             )
                         }
@@ -438,7 +438,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 }
                             )
                             1 -> DataScreen(state)
-                            2 -> RSRPGraph(state)
+//                            2 -> RSRPGraph(state)
                             3 -> MapScreen(state)
                             4 -> TrafficScreen(state)
                         }
@@ -614,6 +614,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val nrLocations = mutableStateListOf<Pair<LatLng, Color>>()
 
         var isSendingCellInfoData by mutableStateOf(false)
+
+        var isFullscreen by mutableStateOf(false)
 
         val cellInfoJson = mutableStateOf(mutableMapOf<String, List<String>>())
         fun saveLoginData() {
