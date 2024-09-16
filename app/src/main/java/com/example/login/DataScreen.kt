@@ -561,7 +561,7 @@ fun DetailedChartContent(
     var offsetY by remember { mutableStateOf(0f) }
 
     val pointWidth = 10.dp
-    val chartWidth = chartData.size * pointWidth
+    val chartWidth = chartData.size * pointWidth * scale
     val chartHeight = if (state.isFullscreen) 600.dp else 300.dp
 
     val predefinedColors = listOf(
@@ -618,6 +618,16 @@ fun DetailedChartContent(
                 }
             }
             if (!state.isFullscreen) {
+                IconButton(onClick = {
+                    coroutineScope.launch {
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = "Scroll to End"
+                    )
+                }
                 IconButton(onClick = onFullscreenToggle) {
                     Icon(
                         imageVector = Icons.Default.Fullscreen,

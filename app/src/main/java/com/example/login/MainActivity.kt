@@ -439,8 +439,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             )
                             1 -> DataScreen(state)
 //                            2 -> RSRPGraph(state)
-                            3 -> MapScreen(state)
-                            4 -> TrafficScreen(state)
+                            2 -> MapScreen(state)
+                            3 -> TrafficScreen(state)
                         }
                     }
                 } else {
