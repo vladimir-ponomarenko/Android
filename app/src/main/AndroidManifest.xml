@@ -18,9 +18,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
       tools:ignore="ProtectedPermissions" />
 <!--    <permission android:name="android.permission.QUERY_ALL_PACKAGES"-->
@@ -50,10 +52,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="API_KEY"/>
         <service
-            android:name="mad.location.manager.lib.Services.KalmanLocationService"
-            android:enabled="true"
-            android:exported="false"
-            android:stopWithTask="false" />
+            android:name=".ForegroundService"
+            android:foregroundServiceType="location">
+        </service>
         <activity
             android:name=".MainActivity"
             android:exported="true"

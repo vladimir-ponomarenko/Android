@@ -18,6 +18,7 @@ package com.example.login
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -111,6 +112,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         networkManager = NetworkManager(this, SERVER_URL, "/api/sockets/thermalmap")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         DataManager.getLocation(this, state)
+        startForegroundService()
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 SendingIndicator(isSendingData)
@@ -641,5 +643,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             RememberMe = sharedPreferences.getBoolean(REMEMBER_ME_KEY, false)
         }
     }
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startForegroundService() {
+        val serviceIntent = Intent(this, ForegroundService::class.java)
+        startForegroundService(serviceIntent)
+    }
 
+    fun stopForegroundService() {
+        val serviceIntent = Intent(this, ForegroundService::class.java)
+        stopService(serviceIntent)
+    }
 }

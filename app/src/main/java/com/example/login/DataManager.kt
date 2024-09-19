@@ -11,6 +11,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.telephony.CellIdentityNr
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
@@ -59,7 +61,7 @@ object DataManager {
     val orientationAngles = FloatArray(3)
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun getLocation(activity: Activity, state: MainActivity.MainActivityState) {
+    fun getLocation(activity: Context, state: MainActivity.MainActivityState) {
         val context = activity.applicationContext
         Log.d(MainActivity.TAG, "getLocation() called")
 
@@ -70,7 +72,7 @@ object DataManager {
         ) {
 
             ActivityCompat.requestPermissions(
-                activity,
+                activity as Activity,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
@@ -188,9 +190,9 @@ object DataManager {
             }
         }
 
-            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-            }
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
         }
+    }
 
     internal fun adjustLocationWithOrientation(location: Location): Location {
         SensorManager.getOrientation(rotationMatrix, orientationAngles)
@@ -213,6 +215,8 @@ object DataManager {
         }
 
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        val handler = Handler(Looper.getMainLooper())
 
         val phoneStateListener = object : PhoneStateListener() {
             private var lastUpdateTime = 0L
@@ -280,8 +284,12 @@ object DataManager {
                             nr = NRData(cellInfoDataByType["NR"] ?: emptyList())
                         )
 
-                        (context as? Activity)?.runOnUiThread {
-                            state.messageToData2 = messageToData2
+                        val handler = Handler(Looper.getMainLooper())
+
+                        handler.post {
+                            (context as? Activity)?.runOnUiThread {
+                                state.messageToData2 = messageToData2
+                            }
                         }
 
                         val jsonMessageToData2 = Json.encodeToString(messageToData2)
@@ -304,6 +312,7 @@ object DataManager {
                     Log.e(MainActivity.TAG, "SecurityException in onCellInfoChanged: ", e)
                 }
             }
+
             @RequiresApi(Build.VERSION_CODES.Q)
             private fun logCellInfo(info: CellInfo) {
                 val type = when (info) {
