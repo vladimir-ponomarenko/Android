@@ -13,16 +13,19 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import com.example.login.MainActivity.Companion.ACTION_STOP_MAIN_ACTIVITY
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class ForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
+    private var dataCollectionJob: Job? = null
     private val TAG = "ForegroundService"
 
     override fun onCreate() {
@@ -32,23 +35,46 @@ class ForegroundService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification().build()
+        val stopIntent = Intent(this, ForegroundService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            0,
+            stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        if (intent?.action == ACTION_STOP_SERVICE) {
+            stopForeground(true)
+            stopSelf()
+
+            val stopMainActivityIntent = Intent(ACTION_STOP_MAIN_ACTIVITY)
+            sendBroadcast(stopMainActivityIntent)
+            serviceScope.cancel()
+            System.exit(0)
+            return START_NOT_STICKY
+        }
+
+        val notification = createNotification(stopPendingIntent).build()
         startForeground(NOTIFICATION_ID, notification)
 
-        serviceScope.launch {
-            while (true) {
-                try {
-                    val state = MainActivity.state
-                    DataManager.getLocation(applicationContext, state)
-                    DataManager.getSignalStrength(state)
+        if (dataCollectionJob == null || !dataCollectionJob!!.isActive) {
+            dataCollectionJob = serviceScope.launch {
+                while (isActive) {
+                    try {
+                        val state = MainActivity.state
+                        DataManager.getLocation(applicationContext, state)
+                        DataManager.getSignalStrength(state)
 
-                    Handler(Looper.getMainLooper()).post {
-                        DataManager.getCellInfo(applicationContext, state)
+                        Handler(Looper.getMainLooper()).post {
+                            DataManager.getCellInfo(applicationContext, state)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error in ForegroundService: ", e)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error in ForegroundService: ", e)
+                    delay(2000)
                 }
-                delay(2000)
             }
         }
 
@@ -77,23 +103,31 @@ class ForegroundService : Service() {
         }
     }
 
-    private fun createNotification(): NotificationCompat.Builder {
+    private fun createNotification(stopPendingIntent: PendingIntent): NotificationCompat.Builder {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
+            this,
+            0,
+            notificationIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Thermalmap")
-            .setContentText("Собирает данные...")
+            .setContentTitle("Application")
+            .setContentText("Приложение работает в фоновом режиме")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "Stop",
+                stopPendingIntent
+            )
     }
 
     companion object {
         private const val CHANNEL_ID = "ForegroundServiceChannel"
         private const val CHANNEL_NAME = "Foreground Service"
         private const val NOTIFICATION_ID = 1
+        const val ACTION_STOP_SERVICE = "com.example.login.stop_service"
     }
 }

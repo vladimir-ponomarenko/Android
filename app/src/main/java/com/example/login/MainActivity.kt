@@ -17,8 +17,10 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -64,6 +66,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
 
@@ -75,6 +78,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
         const val TAG = "com.example.login.MainActivity"
+        const val ACTION_STOP_MAIN_ACTIVITY = "com.example.login.stop_main_activity"
         const val UPDATE_INTERVAL = 2000L
         private const val SERVER_URL =  "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
 
@@ -90,6 +94,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         private var webSocket: WebSocket? = null
     }
 
+    private var isDataCollectionEnabled by mutableStateOf(true)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var webSocket: WebSocket? = null
     private var isWebSocketConnected by mutableStateOf(false)
@@ -121,6 +126,25 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         PermissionUtils.checkAndRequestPermissions(this)
         state.loadLoginData()
+        if (intent?.action == ForegroundService.ACTION_STOP_SERVICE) {
+            stopForegroundService()
+            finish()
+        }
+        val broadcastReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {
+                    isDataCollectionEnabled = false
+                    finishAndRemoveTask()
+                }
+            }
+        }
+        val intentFilter = IntentFilter(ACTION_STOP_MAIN_ACTIVITY)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(broadcastReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(broadcastReceiver, intentFilter)
+        }
 
         lifecycleScope.launch {
             while (true) {
@@ -278,8 +302,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                LaunchedEffect(key1 = permissionsGranted) {
-                    if (permissionsGranted) {
+                LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
+                    if (permissionsGranted && isDataCollectionEnabled) {
                         while (true) {
                             DataManager.getLocation(this@MainActivity, state)
                             DataManager.getSignalStrength(state)
@@ -366,8 +390,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 scaffoldState = scaffoldState
             ) { innerPadding ->
                 if (permissionsGranted) {
-                    LaunchedEffect(Unit) {
-                        while (true) {
+                    LaunchedEffect(Unit, isDataCollectionEnabled) {
+                        while (isActive && isDataCollectionEnabled) {
                             DataManager.getLocation(this@MainActivity, state)
                             DataManager.getSignalStrength(state)
                             DataManager.getCellInfo(context, state)
