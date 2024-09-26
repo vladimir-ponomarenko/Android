@@ -67,6 +67,8 @@ class ForegroundService : Service() {
                         DataManager.getLocation(applicationContext, state)
                         DataManager.getSignalStrength(state)
 
+                        updateNotification(state, stopPendingIntent)
+
                         Handler(Looper.getMainLooper()).post {
                             DataManager.getCellInfo(applicationContext, state)
                         }
@@ -122,6 +124,20 @@ class ForegroundService : Service() {
                 "Stop",
                 stopPendingIntent
             )
+    }
+
+    private fun updateNotification(state: MainActivity.MainActivityState, stopPendingIntent: PendingIntent) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val notificationText = "RSRP: ${state.Rsrp}\n" +
+                "Cell ID: ${state.Cellid}\nLat: ${state.Latitude}\nLon: ${state.Longtitude}"
+
+        val notification = createNotification(stopPendingIntent)
+            .setContentText(notificationText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notificationText))
+            .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     companion object {
