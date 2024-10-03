@@ -32,7 +32,7 @@ class ForegroundService : Service() {
         super.onCreate()
         createNotificationChannel()
     }
-
+    private var job: Job? = null
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val stopIntent = Intent(this, ForegroundService::class.java).apply {
@@ -50,7 +50,7 @@ class ForegroundService : Service() {
             stopSelf()
 
             val stopMainActivityIntent = Intent(ACTION_STOP_MAIN_ACTIVITY)
-            sendBroadcast(stopMainActivityIntent)
+//            sendBroadcast(stopMainActivityIntent)
             serviceScope.cancel()
             System.exit(0)
             return START_NOT_STICKY
@@ -79,6 +79,16 @@ class ForegroundService : Service() {
                 }
             }
         }
+        job = CoroutineScope(Dispatchers.IO).launch {
+            while (isActive) {
+                val messageToData2 = MainActivity.state.messageToData2
+                if (messageToData2 != null) {
+                    DataManager.saveCellInfoToJsonFile(this@ForegroundService, messageToData2)
+                }
+                delay(MainActivity.UPDATE_INTERVAL)
+            }
+        }
+
 
         return START_STICKY
     }
@@ -90,6 +100,7 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+        job?.cancel()
         Log.d(TAG, "ForegroundService stopped")
     }
 

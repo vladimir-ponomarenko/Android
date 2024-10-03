@@ -11,6 +11,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.telephony.CellIdentityNr
@@ -34,11 +35,18 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.time.Instant
 import java.time.format.DateTimeFormatter
-
 
 object DataManager {
     private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
@@ -46,6 +54,10 @@ object DataManager {
     private var locationCallback: LocationCallback? = null
     private var locationUpdatesCount = 0
     private const val MAX_LOCATION_UPDATES = 1
+
+
+    private var fileCounter = 6
+    private var fileName = "Signal_data_$fileCounter.json"
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
@@ -685,6 +697,91 @@ object DataManager {
         )
 
         return Json.encodeToString(messageData)
+    }
+    @RequiresApi(Build.VERSION_CODES.O)
+    suspend fun saveCellInfoToJsonFile(context: Context, messageToData2: MessageToData2) {
+        withContext(Dispatchers.IO) {
+            try {
+                val downloadsDir =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val signalDataDir = File(downloadsDir, "Signal_data")
+
+                if (!signalDataDir.exists()) {
+                    signalDataDir.mkdirs()
+                }
+
+                val file = File(signalDataDir, fileName)
+
+                val hasData = messageToData2.cdma.cellInfoList.isNotEmpty() ||
+                        messageToData2.gsm.cellInfoList.isNotEmpty() ||
+                        messageToData2.wcdma.cellInfoList.isNotEmpty() ||
+                        messageToData2.lte.cellInfoList.isNotEmpty() ||
+                        messageToData2.nr.cellInfoList.isNotEmpty()
+
+                if (hasData) {
+                    val modifiedJson = buildJsonObject {
+                        put("jwt", messageToData2.jwt)
+                        put("UUID", messageToData2.UUID)
+                        put("time", messageToData2.time)
+                        put("latitude", messageToData2.latitude)
+                        put("longitude", messageToData2.longitude)
+                        put("altitude", messageToData2.altitude)
+                        put("operator", messageToData2.operator)
+
+                        if (messageToData2.cdma.cellInfoList.isNotEmpty()) {
+                            put("cdma", Json.encodeToJsonElement(messageToData2.cdma.cellInfoList))
+                        }
+                        if (messageToData2.wcdma.cellInfoList.isNotEmpty()) {
+                            put("wcdma", Json.encodeToJsonElement(messageToData2.wcdma.cellInfoList))
+                        }
+                        if (messageToData2.gsm.cellInfoList.isNotEmpty()) {
+                            put("gsm", Json.encodeToJsonElement(messageToData2.gsm.cellInfoList))
+                        }
+                        if (messageToData2.lte.cellInfoList.isNotEmpty()) {
+                            put("lte", Json.encodeToJsonElement(messageToData2.lte.cellInfoList))
+                        }
+                        if (messageToData2.nr.cellInfoList.isNotEmpty()) {
+                            put("nr", Json.encodeToJsonElement(messageToData2.nr.cellInfoList))
+                        }
+                    }
+
+                    val outputStream = FileOutputStream(file, true)
+                    val jsonMessageToData2 = modifiedJson.toString() + "\n"
+                    outputStream.write(jsonMessageToData2.toByteArray())
+                    outputStream.close()
+
+                    Log.d(TAG, "JSON to be saved:\n$jsonMessageToData2")
+
+                    val lineCount = file.readLines().size
+
+                    if (lineCount >= 12) {  /* Кол-во строк в файле */
+//                        if (MainActivity.state.isSendingCellInfoData) {
+//                            MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
+//                                if (success) {
+//                                    Log.d(TAG, "CellInfo SENT TO SERVER from file: ${file.absolutePath}")
+//                                } else {
+//                                    Log.e(TAG, "FAILED TO SEND CellInfo from file: ${file.absolutePath}")
+//                                }
+//                                if (success || !MainActivity.state.isSendingCellInfoData) {
+//                                    file.delete()
+//                                }
+//                            }
+//                        } else {
+                            file.delete()
+//                        } Отправка данных файлом на сервер пока что закомментирована
+
+                        fileCounter++
+                        fileName = "Signal_data_$fileCounter.json"
+                    }
+
+                    Log.d(TAG, "CellInfo saved to file: ${file.absolutePath}")
+                } else {
+                    Log.d(TAG, "Skipping empty CellInfo data")
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Error saving CellInfo to file: ", e)
+            }
+        }
     }
 
     private fun getBandFromEarfcn(earfcn: Int): String {

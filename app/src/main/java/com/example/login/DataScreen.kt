@@ -418,7 +418,7 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
                 for (subscription in subscriptions) {
                     Text("SIM ${subscription.simSlotIndex + 1} Info:")
                     Text("  Carrier Name: ${subscription.carrierName}")
-                    Text("  Carrier id: ${subscription.carrierId}")
+//                    Text("  Carrier id: ${subscription.carrierId}")
                     Text("  Country ISO: ${subscription.countryIso}")
                     Text("  Number: ${subscription.number}")
                 }

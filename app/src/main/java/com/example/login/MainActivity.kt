@@ -17,10 +17,8 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -130,21 +128,21 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             stopForegroundService()
             finish()
         }
-        val broadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {
-                    isDataCollectionEnabled = false
-                    finishAndRemoveTask()
-                }
-            }
-        }
-        val intentFilter = IntentFilter(ACTION_STOP_MAIN_ACTIVITY)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(broadcastReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(broadcastReceiver, intentFilter)
-        }
+//        val broadcastReceiver = object : BroadcastReceiver() {
+//            override fun onReceive(context: Context?, intent: Intent?) {
+//                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {
+//                    isDataCollectionEnabled = false
+//                    finishAndRemoveTask()
+//                }
+//            }
+//        }
+//        val intentFilter = IntentFilter(ACTION_STOP_MAIN_ACTIVITY)
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//            registerReceiver(broadcastReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
+//        } else {
+//            registerReceiver(broadcastReceiver, intentFilter)
+//        }
 
         lifecycleScope.launch {
             while (true) {
