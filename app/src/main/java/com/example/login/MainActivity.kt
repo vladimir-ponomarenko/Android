@@ -358,7 +358,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     checkPermissionsForAndroid13(context)
                 } else {
-                    TODO("VERSION.SDK_INT < TIRAMISU")
+                    checkPermissionsForAndroid12(context)
                 }
             )
         }
@@ -378,9 +378,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         LaunchedEffect(context) {
-            permissionsGranted =
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-                else checkPermissionsForAndroid13(context)
+            permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+                checkPermissions(context)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                checkPermissionsForAndroid13(context)
+            } else {
+                checkPermissionsForAndroid12(context)
+            }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {

@@ -258,18 +258,24 @@ object DataManager {
                 } else {
                     TODO("VERSION.SDK_INT < O")
                 }
-
                 is CellInfoGsm -> extractGsmCellInfoToJson(cellInfo)
                 is CellInfoWcdma -> extractWcdmaCellInfoToJson(cellInfo)
                 is CellInfoCdma -> extractCdmaCellInfoToJson(cellInfo)
-                is CellInfoNr -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    extractNrCellInfoToJson(cellInfo)
-                } else {
-                    null
-                }
+
                 else -> {
                     Log.d(TAG, "Unknown cell info type: ${cellInfo.javaClass.simpleName}")
                     null
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                for (cellInfo in cellInfoList) {
+                    if (cellInfo is CellInfoNr) {
+                        val cellData = extractNrCellInfoToJson(cellInfo)
+                        if (cellData != null) {
+                            cellInfoDataByType["NR"]?.add(cellData)
+                        }
+                    }
                 }
             }
 
@@ -279,8 +285,11 @@ object DataManager {
                     is CellInfoGsm -> "GSM"
                     is CellInfoWcdma -> "WCDMA"
                     is CellInfoCdma -> "CDMA"
-                    is CellInfoNr -> "NR"
-                    else -> "Unknown"
+                    else ->  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo is CellInfoNr) {
+                        "NR"
+                    } else {
+                        "Unknown"
+                    }
                 }
                 cellInfoDataByType[cellType]?.add(cellData)
             }

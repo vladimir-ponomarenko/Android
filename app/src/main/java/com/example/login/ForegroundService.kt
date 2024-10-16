@@ -135,6 +135,7 @@ class ForegroundService : Service() {
                 "Stop",
                 stopPendingIntent
             )
+            .setOnlyAlertOnce(true)
     }
 
     private fun updateNotification(state: MainActivity.MainActivityState, stopPendingIntent: PendingIntent) {

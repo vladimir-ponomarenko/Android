@@ -5,7 +5,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -16,10 +18,40 @@ import androidx.core.content.ContextCompat
 object PermissionUtils {
 
     const val REQUEST_CODE_PERMISSIONS = 101
+    const val REQUEST_CODE_MANAGE_EXTERNAL_STORAGE = 102
+    const val REQUEST_CODE_BACKGROUND_LOCATION = 103
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun checkAndRequestPermissions(activity: Activity) {
         val context = activity.applicationContext
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Log.d(MainActivity.TAG, "Requesting MANAGE_EXTERNAL_STORAGE permission")
+                val uri = Uri.fromParts("package", activity.packageName, null)
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = uri
+                }
+                activity.startActivityForResult(intent, REQUEST_CODE_MANAGE_EXTERNAL_STORAGE)
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.d(MainActivity.TAG, "Requesting ACCESS_BACKGROUND_LOCATION permission")
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                    REQUEST_CODE_BACKGROUND_LOCATION
+                )
+            }
+        }
+
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             if (!checkPermissions(context)) {
                 Log.d(MainActivity.TAG, "Requesting permissions (API <= 30)")
