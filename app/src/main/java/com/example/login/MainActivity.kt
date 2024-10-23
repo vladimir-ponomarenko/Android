@@ -56,6 +56,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.login.PermissionUtils.checkPermissions
 import com.example.login.PermissionUtils.checkPermissionsForAndroid12
 import com.example.login.PermissionUtils.checkPermissionsForAndroid13
@@ -67,6 +72,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
+import java.util.concurrent.TimeUnit
 
 
 @Suppress("NAME_SHADOWING")
@@ -90,8 +96,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         lateinit var state: MainActivityState
         lateinit var networkManager: NetworkManager<Any?>
         private var webSocket: WebSocket? = null
+        var instance: MainActivity? = null
     }
-
+    init {
+        instance = this
+    }
     private var isDataCollectionEnabled by mutableStateOf(true)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var webSocket: WebSocket? = null
@@ -128,6 +137,32 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             stopForegroundService()
             finish()
         }
+
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val data = workDataOf(
+            "Email" to state.Email,
+            "Password" to state.Password,
+            "JwtToken" to state.JwtToken
+        )
+
+        val dailyWorkRequest = PeriodicWorkRequestBuilder<TrafficDataWorker>(
+            1, TimeUnit.DAYS // Каждые 24 часа отправляем статистику о трафике
+        )
+            .setConstraints(constraints)
+            .setInputData(data)
+            .build()
+
+// Отменяем существующую задачу (для дебага)
+//        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "TrafficDataWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            dailyWorkRequest
+        )
 //        val broadcastReceiver = object : BroadcastReceiver() {
 //            override fun onReceive(context: Context?, intent: Intent?) {
 //                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {

@@ -159,7 +159,8 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
     }
 
-    fun authenticateForTraffic(email: String, password: String, onComplete: (AuthResponse?) -> Unit) {
+    fun authenticateForTraffic(email: String, password: String): AuthResponse? {
+        var authResponse: AuthResponse? = null
         val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
@@ -168,35 +169,30 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             .post(requestBody)
             .build()
 
-        httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to authenticate for traffic data", e)
-                onComplete(null)
-            }
+        try {
+            val response = httpClient.newCall(request).execute()
 
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to authenticate for traffic data: ${response.code}")
-                        onComplete(null)
-                        return@use
-                    }
-
+            response.use {
+                if (response.isSuccessful) {
                     val responseBody = response.body?.string()
                     try {
-                        val authResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AuthResponse>(responseBody ?: "")
+                        authResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AuthResponse>(responseBody ?: "")
                         Log.d(TAG, "Auth response: $authResponse")
-                        onComplete(authResponse)
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to parse auth response: ${e.message}")
-                        onComplete(null)
                     }
+                } else {
+                    Log.e(TAG, "Failed to authenticate for traffic data: ${response.code}")
                 }
             }
-        })
+        } catch (e: IOException) {
+            Log.e(TAG, "Failed to authenticate for traffic data", e)
+        }
+
+        return authResponse
     }
 
-    fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>, onComplete: ((Boolean) -> Unit)? = null) {
+    fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>) {
         val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10)
 
         val modifiedJson = buildJsonObject {
@@ -230,7 +226,6 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                     Log.d(TAG, "WebSocket connected successfully for Traffic Data")
                     webSocket.send(jsonBody)
                     Log.d(TAG, "Sent Traffic Data: $jsonBody")
-                    onComplete?.invoke(true)
                     (context as? MainActivity)?.showSendingIndicator()
                 }
 
@@ -252,7 +247,6 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     Log.e(TAG, "Failed to connect WebSocket for Traffic Data", t)
-                    onComplete?.invoke(false)
                 }
             })
             this.isWebSocketConnected = this.webSocket != null
@@ -260,11 +254,9 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             Log.d(TAG, "Sending Traffic Data through existing WebSocket connection")
             this.webSocket?.send(jsonBody)
             Log.d(TAG, "Sent Traffic Data: $jsonBody")
-            onComplete?.invoke(true)
             (context as? MainActivity)?.showSendingIndicator()
         } else {
             Log.e(TAG, "WebSocket is not connected, cannot send Traffic Data")
-            onComplete?.invoke(false)
         }
     }
 

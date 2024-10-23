@@ -58,6 +58,7 @@ import java.util.concurrent.TimeUnit
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun TrafficScreen(state: MainActivity.MainActivityState) {
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
     var days by remember { mutableStateOf("1") }
@@ -238,18 +239,24 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(
                         onClick = {
-                            isSendingTrafficData = true
-                            MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password) { authResponse ->
+                            coroutineScope.launch {
+                                isSendingTrafficData = true
+
+                                val authResponse = try {
+                                    MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password)
+                                } catch (e: Exception) {
+                                    Log.e(MainActivity.TAG, "Authentication failed: ${e.message}", e)
+                                    null
+                                }
+
                                 if (authResponse != null) {
                                     val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
                                     val top5Apps = sortedApps.take(10)
-
-                                    MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps) { success ->
-                                        if (success) {
-                                            Log.d(MainActivity.TAG, "Traffic data sent successfully!")
-                                        } else {
-                                            Log.e(MainActivity.TAG, "Failed to send traffic data")
-                                        }
+                                    try {
+                                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps)
+                                        Log.d(MainActivity.TAG, "Traffic data sent successfully!")
+                                    } catch (e: Exception) {
+                                        Log.e(MainActivity.TAG, "Failed to send traffic data: ${e.message}", e)
                                     }
                                 } else {
                                     Log.e(MainActivity.TAG, "Authentication for traffic data failed")
