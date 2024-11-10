@@ -785,7 +785,7 @@ object DataManager {
 //                                }
 //                            }
 //                        } else {
-                            file.delete()
+                        file.delete()
 //                        } Отправка данных файлом на сервер пока что закомментирована
 
                         fileCounter = (fileCounter % maxFileCount) + 1

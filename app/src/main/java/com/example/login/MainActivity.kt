@@ -30,14 +30,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Scaffold
-import androidx.compose.material.ScrollableTabRow
 import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -84,7 +81,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val TAG = "com.example.login.MainActivity"
         const val ACTION_STOP_MAIN_ACTIVITY = "com.example.login.stop_main_activity"
         const val UPDATE_INTERVAL = 2000L
-        private const val SERVER_URL = "http://109.172.114.128:10000"  // "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
+        private const val SERVER_URL = "http://109.172.114.128:10000" // "http://78.24.222.170:8080" "http://45.90.218.73:8080"
 
         internal const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"
@@ -98,9 +95,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         private var webSocket: WebSocket? = null
         var instance: MainActivity? = null
     }
+
     init {
         instance = this
     }
+
     private var isDataCollectionEnabled by mutableStateOf(true)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var webSocket: WebSocket? = null
@@ -117,6 +116,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             isSendingData = false
         }
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -155,7 +155,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             .setInputData(data)
             .build()
 
-// Отменяем существующую задачу (для дебага)
+        // Отменяем существующую задачу (для дебага)
 //        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
@@ -163,7 +163,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             ExistingPeriodicWorkPolicy.KEEP,
             dailyWorkRequest
         )
-//        val broadcastReceiver = object : BroadcastReceiver() {
+
+        //        val broadcastReceiver = object : BroadcastReceiver() {
 //            override fun onReceive(context: Context?, intent: Intent?) {
 //                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {
 //                    isDataCollectionEnabled = false
@@ -302,7 +303,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val context = LocalContext.current
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
-        var isLoggedIn by remember { mutableStateOf(false) }
+        var selectedTabIndex by remember { mutableStateOf(5) }
 
         permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -335,21 +336,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
-                    if (permissionsGranted && isDataCollectionEnabled) {
-                        while (true) {
-                            DataManager.getLocation(this@MainActivity, state)
-                            DataManager.getSignalStrength(state)
-                            delay(UPDATE_INTERVAL)
-                        }
-                    }
-                }
-
-                if (permissionsGranted) {
-                    MainContent(state, isLoggedIn) { isLoggedIn = true }
-                } else {
-                    Text("Waiting for permissions...")
-                }
+                MainContent(
+                    state,
+                    selectedTabIndex = selectedTabIndex,
+                    onTabSelected = { newTabIndex -> selectedTabIndex = newTabIndex }
+                )
 
                 LaunchedEffect(isSendingData) {
                     delay(500)
@@ -384,7 +375,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun MainContent(state: MainActivity.MainActivityState, isLoggedIn: Boolean, onLoginSuccess: () -> Unit) {
+    fun MainContent(
+        state: MainActivity.MainActivityState,
+        selectedTabIndex: Int,
+        onTabSelected: (Int) -> Unit
+    ) {
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
         var permissionsGranted by remember {
@@ -442,47 +437,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        ScrollableTabRow(
-                            selectedTabIndex = state.selectedTabIndex,
-                            modifier = Modifier.fillMaxWidth(),
-                            edgePadding = 0.dp
-                        ) {
-                            Tab(
-                                selected = state.selectedTabIndex == 0,
-                                onClick = { state.selectedTabIndex = 0 },
-                                text = { Text("Сервер") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 1,
-                                onClick = { state.selectedTabIndex = 1 },
-                                text = { Text("Данные") }
-                            )
-//                            Tab(
-//                                selected = state.selectedTabIndex == 2,
-//                                onClick = { state.selectedTabIndex = 2 },
-//                                text = { Text("Графики") }
-//                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 2,
-                                onClick = { state.selectedTabIndex = 2 },
-                                text = { Text("Карта") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 3,
-                                onClick = { state.selectedTabIndex = 3 },
-                                text = { Text("Трафик") }
-                            )
-                        }
-                        when (state.selectedTabIndex) {
+                        when (selectedTabIndex) {
                             0 -> LoginScreen(
                                 state,
-                                onLoginSuccess = onLoginSuccess,
+                                onLoginSuccess = { onTabSelected(5) },
                                 onCellInfoDataClick = {
                                     coroutineScope.launch {
                                         if (!state.isSendingCellInfoData) {
                                             state.isSendingCellInfoData = true
 
-                                            MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
+                                            MainActivity.networkManager.authenticateUser(
+                                                state.Email, state.Password, state.JwtToken
+                                            ) { authResponse ->
                                                 if (authResponse != null) {
                                                     (context as? Activity)?.runOnUiThread {
                                                         state.JwtToken = authResponse.jwt
@@ -500,10 +466,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                     }
                                 }
                             )
-                            1 -> DataScreen(state)
-//                            2 -> RSRPGraph(state)
-                            2 -> MapScreen(state)
+                            1 -> DataScreen(state, onNavigateTo = onTabSelected)
+//                         2 -> RSRPGraph(state)
+                            2 -> MapScreen(state, onNavigateTo = onTabSelected)
                             3 -> TrafficScreen(state)
+                            4 -> SettingsScreen(state, onNavigateTo = onTabSelected)
+                            5 -> NavigationScreen(onNavigateTo = onTabSelected)
                         }
                     }
                 } else {
@@ -512,7 +480,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
-
 
 
     @RequiresApi(Build.VERSION_CODES.O)

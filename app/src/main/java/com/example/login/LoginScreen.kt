@@ -35,11 +35,7 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun LoginScreen(
-    state: MainActivity.MainActivityState,
-    onLoginSuccess: () -> Unit,
-    onCellInfoDataClick: () -> Unit
-) {
+fun LoginScreen(state: MainActivity.MainActivityState, onLoginSuccess: () -> Unit, onCellInfoDataClick: () -> Unit)  {
     val context = LocalContext.current
     var email by remember { mutableStateOf(state.Email) }
     var password by remember { mutableStateOf(state.Password) }
