@@ -392,7 +392,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             onComplete?.invoke(false)
         }
     }
-/* Способ отправки JSON на сервер с помощью multipart/form-data   */
+    /* Способ отправки JSON на сервер с помощью multipart/form-data   */
 //    fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
 //        val endpoint = "/api/sockets/thermalmap/file"
 //
