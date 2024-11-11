@@ -24,7 +24,7 @@ class TrafficDataWorker(appContext: Context, workerParams: WorkerParameters) :
             val email = inputData.getString("Email") ?: ""
             val password = inputData.getString("Password") ?: ""
 
-            val authResponse = MainActivity.networkManager.authenticateForTraffic(email, password).await() // <-- Here's the fix
+            val authResponse = MainActivity.networkManager.authenticateForTraffic(email, password).await()
 
             if (authResponse != null) {
                 val calendar = Calendar.getInstance()
@@ -40,7 +40,7 @@ class TrafficDataWorker(appContext: Context, workerParams: WorkerParameters) :
                     .sortedByDescending { it.totalBytes }
                     .take(10)
 
-                MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, topApps) // <-- Now jwt is accessible
+                MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, topApps)
 
                 showTrafficSentNotification()
 

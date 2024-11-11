@@ -252,7 +252,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
 
                                 if (authResponse != null) {
                                     val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
-                                    val top10Apps = sortedApps.take(10) // Исправлено: берем top-10, как в sendTrafficDataToServer
+                                    val top10Apps = sortedApps.take(10)
                                     try {
                                         MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top10Apps)
                                         Log.d(MainActivity.TAG, "Traffic data sent successfully!")
