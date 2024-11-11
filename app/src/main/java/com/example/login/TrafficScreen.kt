@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -239,11 +240,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(
                         onClick = {
-                            coroutineScope.launch {
+                            CoroutineScope(Dispatchers.Main).launch {
                                 isSendingTrafficData = true
 
                                 val authResponse = try {
-                                    MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password)
+                                    MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password).await()
                                 } catch (e: Exception) {
                                     Log.e(MainActivity.TAG, "Authentication failed: ${e.message}", e)
                                     null
@@ -251,9 +252,9 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
 
                                 if (authResponse != null) {
                                     val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
-                                    val top5Apps = sortedApps.take(10)
+                                    val top10Apps = sortedApps.take(10)
                                     try {
-                                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps)
+                                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top10Apps)
                                         Log.d(MainActivity.TAG, "Traffic data sent successfully!")
                                     } catch (e: Exception) {
                                         Log.e(MainActivity.TAG, "Failed to send traffic data: ${e.message}", e)

@@ -2,6 +2,10 @@ package com.example.login
 
 import android.app.Activity
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -159,7 +163,8 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
     }
 
-    fun authenticateForTraffic(email: String, password: String): AuthResponse? {
+    fun authenticateForTraffic(email: String, password: String): Deferred<AuthResponse?> = CoroutineScope(
+        Dispatchers.IO).async {
         var authResponse: AuthResponse? = null
         val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
@@ -189,7 +194,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             Log.e(TAG, "Failed to authenticate for traffic data", e)
         }
 
-        return authResponse
+        authResponse
     }
 
     fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>) {
@@ -392,7 +397,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             onComplete?.invoke(false)
         }
     }
-    /* Способ отправки JSON на сервер с помощью multipart/form-data   */
+/* Способ отправки JSON на сервер с помощью multipart/form-data   */
 //    fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
 //        val endpoint = "/api/sockets/thermalmap/file"
 //

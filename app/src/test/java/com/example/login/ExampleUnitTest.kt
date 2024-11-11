@@ -414,71 +414,71 @@ class CellInfoUnitTest {
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
     }
 
-    /*    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
-        @Test
-        fun testGetLocation_updatesStateWithAdjustedLocation() {
-            val activity = Robolectric.buildActivity(Activity::class.java).get()
-            val context = activity.applicationContext
-            val sensorManager = mockk<SensorManager>()
-            val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val shadowLocationManager = Shadows.shadowOf(locationManager)
-            val fusedLocationProviderClient = mockk<FusedLocationProviderClient>()
-            val locationCallbackSlot = slot<LocationCallback>()
-            every { context.getSystemService(Context.SENSOR_SERVICE) } returns sensorManager
-            every { context.checkPermission(any(), any(), any()) } returns PackageManager.PERMISSION_GRANTED
-            every { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) } returns mockk(relaxed = true)
-            every { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) } returns mockk(relaxed = true)
-            every { sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) } returns mockk(relaxed = true)
-            every { sensorManager.registerListener(any<SensorEventListener>(), any(), SensorManager.SENSOR_DELAY_NORMAL) } returns true
-            every { LocationServices.getFusedLocationProviderClient(activity) } returns fusedLocationProviderClient
+/*    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
+    @Test
+    fun testGetLocation_updatesStateWithAdjustedLocation() {
+        val activity = Robolectric.buildActivity(Activity::class.java).get()
+        val context = activity.applicationContext
+        val sensorManager = mockk<SensorManager>()
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val shadowLocationManager = Shadows.shadowOf(locationManager)
+        val fusedLocationProviderClient = mockk<FusedLocationProviderClient>()
+        val locationCallbackSlot = slot<LocationCallback>()
+        every { context.getSystemService(Context.SENSOR_SERVICE) } returns sensorManager
+        every { context.checkPermission(any(), any(), any()) } returns PackageManager.PERMISSION_GRANTED
+        every { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) } returns mockk(relaxed = true)
+        every { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) } returns mockk(relaxed = true)
+        every { sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) } returns mockk(relaxed = true)
+        every { sensorManager.registerListener(any<SensorEventListener>(), any(), SensorManager.SENSOR_DELAY_NORMAL) } returns true
+        every { LocationServices.getFusedLocationProviderClient(activity) } returns fusedLocationProviderClient
 
-            val accelerometerEvent = mockk<SensorEvent>()
-            every { accelerometerEvent.sensor.type } returns Sensor.TYPE_ACCELEROMETER
-            every { accelerometerEvent.values } returns floatArrayOf(0f, 0f, 9.81f)
+        val accelerometerEvent = mockk<SensorEvent>()
+        every { accelerometerEvent.sensor.type } returns Sensor.TYPE_ACCELEROMETER
+        every { accelerometerEvent.values } returns floatArrayOf(0f, 0f, 9.81f)
 
-            val magnetometerEvent = mockk<SensorEvent>()
-            every { magnetometerEvent.sensor.type } returns Sensor.TYPE_MAGNETIC_FIELD
-            every { magnetometerEvent.values } returns floatArrayOf(0f, 0f, 0f)
+        val magnetometerEvent = mockk<SensorEvent>()
+        every { magnetometerEvent.sensor.type } returns Sensor.TYPE_MAGNETIC_FIELD
+        every { magnetometerEvent.values } returns floatArrayOf(0f, 0f, 0f)
 
-            val location = mockk<Location>()
-            every { location.latitude } returns 55.7558
-            every { location.longitude } returns 37.6173
-            every { location.altitude } returns 150.0
+        val location = mockk<Location>()
+        every { location.latitude } returns 55.7558
+        every { location.longitude } returns 37.6173
+        every { location.altitude } returns 150.0
 
-            shadowLocationManager.setProviderEnabled(LocationManager.GPS_PROVIDER, true)
-            shadowLocationManager.simulateLocation(location)
+        shadowLocationManager.setProviderEnabled(LocationManager.GPS_PROVIDER, true)
+        shadowLocationManager.simulateLocation(location)
 
-            val lastLocationTask: Task<Location> = mockk(relaxed = true)
-            every { fusedLocationProviderClient.lastLocation } returns lastLocationTask
+        val lastLocationTask: Task<Location> = mockk(relaxed = true)
+        every { fusedLocationProviderClient.lastLocation } returns lastLocationTask
 
-            every { lastLocationTask.addOnSuccessListener(captureLambda()) } answers {
-                lambda<(Location) -> Unit>().captured.invoke(location)
-                lastLocationTask
-            }
-            every { lastLocationTask.addOnFailureListener(any()) } returns lastLocationTask
+        every { lastLocationTask.addOnSuccessListener(captureLambda()) } answers {
+            lambda<(Location) -> Unit>().captured.invoke(location)
+            lastLocationTask
+        }
+        every { lastLocationTask.addOnFailureListener(any()) } returns lastLocationTask
 
-            every {
-                fusedLocationProviderClient.requestLocationUpdates(
-                    any<LocationRequest>(),
-                    capture(locationCallbackSlot),
-                    isNull()
-                )
-            } returns mockk<Task<Void>>()
+        every {
+            fusedLocationProviderClient.requestLocationUpdates(
+                any<LocationRequest>(),
+                capture(locationCallbackSlot),
+                isNull()
+            )
+        } returns mockk<Task<Void>>()
 
-            DataManager.getLocation(activity, state)
+        DataManager.getLocation(activity, state)
 
-            locationCallbackSlot.captured.onLocationResult(LocationResult.create(listOf(location)))
+        locationCallbackSlot.captured.onLocationResult(LocationResult.create(listOf(location)))
 
-            DataManager.sensorListener.onSensorChanged(accelerometerEvent)
-            DataManager.sensorListener.onSensorChanged(magnetometerEvent)
+        DataManager.sensorListener.onSensorChanged(accelerometerEvent)
+        DataManager.sensorListener.onSensorChanged(magnetometerEvent)
 
-            verify { state.Latitude = any() }
-            verify { state.Longtitude = any() }
-            verify { state.Altitude = "150.0" }
+        verify { state.Latitude = any() }
+        verify { state.Longtitude = any() }
+        verify { state.Altitude = "150.0" }
 
-            assert(state.Latitude.toDouble() != 55.7558)
-            assert(state.Longtitude.toDouble() != 37.6173)
-        }*/
+        assert(state.Latitude.toDouble() != 55.7558)
+        assert(state.Longtitude.toDouble() != 37.6173)
+    }*/
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.O)
     @Test
