@@ -157,7 +157,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
 // Отменяем существующую задачу (для дебага)
 //        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
-
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "TrafficDataWorker",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -359,7 +358,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == UpdateManager.REQUEST_INSTALL_PACKAGES && resultCode == Activity.RESULT_OK) {
+            if (state.DownloadLink.isNotBlank()) {
+                UpdateManager.startDownloadAndInstall(this, state.DownloadLink)
+            }
+        }
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -472,6 +479,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 onClick = { state.selectedTabIndex = 3 },
                                 text = { Text("Трафик") }
                             )
+                            Tab(
+                                selected = state.selectedTabIndex == 4,
+                                onClick = { state.selectedTabIndex = 4 },
+                                text = { Text("Обновление") }
+                            )
                         }
                         when (state.selectedTabIndex) {
                             0 -> LoginScreen(
@@ -504,6 +516,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 //                            2 -> RSRPGraph(state)
                             2 -> MapScreen(state)
                             3 -> TrafficScreen(state)
+                            4 -> UpdateScreen(state.DownloadLink)
                         }
                     }
                 } else {
@@ -679,6 +692,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var isSendingCellInfoData by mutableStateOf(false)
 
         var isFullscreen by mutableStateOf(false)
+        var DownloadLink by mutableStateOf("")
 
         val cellInfoJson = mutableStateOf(mutableMapOf<String, List<String>>())
         fun saveLoginData() {
