@@ -77,22 +77,23 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, s
     }
 
     Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp)) {
+        Surface(shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFF9E9E9E)) ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Hourly Traffic for $appName",
+                    text = "Часовой трафик для $appName",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Закрыть")
                 }
 
                 if (packageName != null) {
                     HourlyTrafficChartContent(hourlyTrafficData)
                 } else {
-                    Text("Error: Package not found", color = Color.Red)
+                    Text("Ошибка: Пакет не найден", color = Color.Red)
                 }
             }
         }
@@ -118,13 +119,14 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
         Surface(shape = RoundedCornerShape(8.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Total Hourly Traffic",
+                    text = "Общий часовой трафик",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Закрыть")
                 }
 
                 if (showChart) {
@@ -144,11 +146,11 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
                     modifier = Modifier.fillMaxWidth(),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color.Black
+                        contentColor = Color(0xFF000000)
                     ),
-                    border = BorderStroke(1.dp, Color.Black)
+                    border = BorderStroke(1.dp, Color(0xFF9E9E9E))
                 ) {
-                    Text(if (showChart) "Show Diagram" else "Show Chart")
+                    Text(if (showChart) "Показать диаграмму" else "Показать график", color = Color(0xFF34204C))
                 }
             }
         }
@@ -516,7 +518,7 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
                 }
                 networkStats.close()
             } catch (e: Exception) {
-                Log.e(MainActivity.TAG, "Error fetching traffic data: ${e.message}", e)
+                Log.e(MainActivity.TAG, "Ошибка при получении данных о трафике: ${e.message}", e)
                 continue
             }
         }
@@ -727,7 +729,7 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
     val uid = try {
         packageManager.getApplicationInfo(packageName, 0).uid
     } catch (e: PackageManager.NameNotFoundException) {
-        Log.e(MainActivity.TAG, "Error: Package $packageName not found", e)
+        Log.e(MainActivity.TAG, "Ошибка: Пакет $packageName не найден", e)
         return emptyList()
     }
 
@@ -748,7 +750,7 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
             previousTotalBytes = totalBytes
         }
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Error fetching network stats: ${e.message}", e)
+        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках: ${e.message}", e)
     }
 
     return hourlyTrafficData.mapIndexed { index, traffic ->
@@ -772,7 +774,7 @@ internal fun getTotalTrafficData(context: Context, days: Int): TotalTrafficData 
         val wifiStats = networkStatsManager.querySummaryForDevice(ConnectivityManager.TYPE_WIFI, null, startTime, currentTime)
         wifiBytes = wifiStats.rxBytes + wifiStats.txBytes
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Error fetching network stats", e)
+        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках", e)
     }
 
     return TotalTrafficData(mobileBytes + wifiBytes, mobileBytes, wifiBytes)
@@ -795,7 +797,7 @@ private fun getTrafficForHour(networkStatsManager: android.app.usage.NetworkStat
         }
         networkStats.close()
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Error fetching network stats: ${e.message}", e)
+        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках: ${e.message}", e)
     }
     return totalBytes
 }
@@ -870,7 +872,7 @@ fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
             )
 
         } catch (e: Exception) {
-            Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
+            Log.e("AppTraffic", "Ошибка при получении данных о трафике для $appName: ${e.message}", e)
         }
     }
 
@@ -952,7 +954,7 @@ fun getAppTrafficDataForDays(context: Context, daysList: List<Int>): List<AppTra
                 )
 
             } catch (e: Exception) {
-                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
+                Log.e("AppTraffic", "Ошибка при получении данных о трафике для $appName: ${e.message}", e)
             }
         }
     }
@@ -992,7 +994,7 @@ fun getTotalTrafficDataForDays(context: Context, daysList: List<Int>): TotalTraf
             )
             totalWifiBytes += wifiStats.rxBytes + wifiStats.txBytes
         } catch (e: Exception) {
-            Log.e(MainActivity.TAG, "Error fetching network stats", e)
+            Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках", e)
         }
     }
 
