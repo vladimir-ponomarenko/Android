@@ -356,7 +356,6 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Cell Type: $cellType", style = MaterialTheme.typography.titleMedium, color = textColor)
 
-            // Перебор свойств CellInfoData
             for (field in CellInfoData::class.declaredMemberProperties) {
                 val fieldValue = field.getter.call(cellInfo)
                 if (field.name != "type" &&
