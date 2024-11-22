@@ -469,7 +469,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             1 -> DataScreen(state, onNavigateTo = onTabSelected)
 //                         2 -> RSRPGraph(state)
                             2 -> MapScreen(state, onNavigateTo = onTabSelected)
-                            3 -> TrafficScreen(state)
+                            3 -> TrafficScreen(state, onNavigateTo = onTabSelected)
                             4 -> SettingsScreen(state, onNavigateTo = onTabSelected)
                             5 -> NavigationScreen(onNavigateTo = onTabSelected)
                         }
