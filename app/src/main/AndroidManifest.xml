@@ -53,7 +53,7 @@
         tools:targetApi="31">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="A{I_KEY"/>
+            android:value="API_KEY"/>
         <service
             android:name=".ForegroundService"
             android:foregroundServiceType="location">

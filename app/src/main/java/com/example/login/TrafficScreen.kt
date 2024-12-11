@@ -48,9 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -58,7 +56,7 @@ import java.util.concurrent.TimeUnit
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun TrafficScreen(state: MainActivity.MainActivityState) {
+fun TrafficScreen(state: MainActivity.MainActivityState)    {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
@@ -69,13 +67,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
     var selectedAppName by remember { mutableStateOf("") }
     val totalTrafficData = remember { mutableStateOf(TotalTrafficData(0L, 0L, 0L)) }
     var isSendingTrafficData by remember { mutableStateOf(false) }
-
     var selectedCalendar by remember { mutableStateOf<Calendar?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
-
     var activeMode by remember { mutableStateOf("days") }
-
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
+    var isLoading by remember { mutableStateOf(false) }
 
     fun onDaysChanged(newDays: String) {
         days = newDays
@@ -83,34 +79,41 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
         selectedCalendar = null
     }
 
-    LaunchedEffect(appTrafficData.value, days, selectedCalendar, activeMode, sortCriteria) {
-        if (activeMode == "calendar" && selectedCalendar != null) {
-            val daysList = listOf(
-                TimeUnit.MILLISECONDS.toDays(
-                    Calendar.getInstance().timeInMillis - selectedCalendar!!.timeInMillis
-                ).toInt()
-            )
-            appTrafficData.value = when (sortCriteria) {
-                SortCriteria.TOTAL -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.totalBytes }
-                SortCriteria.MOBILE -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.mobileBytes }
-                SortCriteria.WIFI -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.wifiBytes }
-            }
-            totalTrafficData.value = getTotalTrafficDataForDays(context, daysList)
-        } else if (activeMode == "days") {
-            val daysList = days.split(",").mapNotNull { it.toIntOrNull() }
-            if (daysList.isNotEmpty()) {
-                showError = false
-                while (true) {
+    LaunchedEffect(days, selectedCalendar, activeMode, sortCriteria) {
+        isLoading = true
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                if (activeMode == "calendar" && selectedCalendar != null) {
+                    val daysList = listOf(
+                        TimeUnit.MILLISECONDS.toDays(
+                            Calendar.getInstance().timeInMillis - selectedCalendar!!.timeInMillis
+                        ).toInt()
+                    )
                     appTrafficData.value = when (sortCriteria) {
-                        SortCriteria.TOTAL -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.totalBytes }
-                        SortCriteria.MOBILE -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.mobileBytes }
-                        SortCriteria.WIFI -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.wifiBytes }
+                        SortCriteria.TOTAL -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.totalBytes }
+                        SortCriteria.MOBILE -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.mobileBytes }
+                        SortCriteria.WIFI -> getAppTrafficDataForDays(context, daysList).sortedByDescending { it.wifiBytes }
                     }
-                    totalTrafficData.value = getTotalTrafficData(context, daysList.sum())
-                    delay(5000)
+                    totalTrafficData.value = getTotalTrafficDataForDays(context, daysList)
+                } else if (activeMode == "days") {
+                    val daysList = days.split(",").mapNotNull { it.toIntOrNull() }
+                    if (daysList.isNotEmpty()) {
+                        showError = false
+                        appTrafficData.value = when (sortCriteria) {
+                            SortCriteria.TOTAL -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.totalBytes }
+                            SortCriteria.MOBILE -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.mobileBytes }
+                            SortCriteria.WIFI -> getAppTrafficData(context, daysList.sum()).sortedByDescending { it.wifiBytes }
+                        }
+                        totalTrafficData.value = getTotalTrafficData(context, daysList.sum())
+                    } else {
+                        showError = true
+                    }
                 }
-            } else {
+            } catch (e: Exception) {
+                Log.e(MainActivity.TAG, "Error fetching app traffic data: ${e.message}", e)
                 showError = true
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -126,7 +129,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
                 Column(horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
@@ -240,7 +242,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(
                         onClick = {
-                            CoroutineScope(Dispatchers.Main).launch {
+                            coroutineScope.launch {
                                 isSendingTrafficData = true
 
                                 val authResponse = try {
@@ -319,7 +321,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState) {
                 }
                 activeMode = "calendar"
                 showDatePicker = false
-
             },
             year,
             month,

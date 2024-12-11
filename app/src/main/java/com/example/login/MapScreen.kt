@@ -44,13 +44,15 @@ fun MapScreen(state: MainActivity.MainActivityState) {
 
     var expanded by remember { mutableStateOf(false) }
 
-    val locations = when (state.selectedNetworkType) {
-        "LTE" -> state.lteLocations
-        "GSM" -> state.gsmLocations
-        "WCDMA" -> state.wcdmaLocations
-        "CDMA" -> state.cdmaLocations
-        "NR" -> state.nrLocations
-        else -> emptyList()
+    val locations = remember(state.selectedNetworkType) {
+        when (state.selectedNetworkType) {
+            "LTE" -> state.lteLocations
+            "GSM" -> state.gsmLocations
+            "WCDMA" -> state.wcdmaLocations
+            "CDMA" -> state.cdmaLocations
+            "NR" -> state.nrLocations
+            else -> emptyList()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -58,14 +60,14 @@ fun MapScreen(state: MainActivity.MainActivityState) {
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            for (i in 1 until locations.size) {
-                val (location1, color1) = locations[i - 1]
-                val (location2, color2) = locations[i]
-                Polyline(
-                    points = listOf(location1, location2),
-                    color = color1,
-                    width = 15f
-                )
+            if (locations.size > 1) {
+                locations.windowed(2).forEach { (location1, location2) ->
+                    Polyline(
+                        points = listOf(location1.first, location2.first),
+                        color = location1.second,
+                        width = 15f
+                    )
+                }
             }
         }
 
@@ -104,69 +106,74 @@ fun MapScreen(state: MainActivity.MainActivityState) {
                 .align(Alignment.CenterEnd)
                 .padding(8.dp)
         ) {
-            when (state.selectedNetworkType) {
-                "LTE" -> {
-                    ColorScaleItem(color = Color.Red, text = "-40")
-                    ColorScaleItem(color = Color(0xFFFFA500), text = "-50")
-                    ColorScaleItem(color = Color(0xFFFFFF00), text = "-60")
-                    ColorScaleItem(color = Color(0xFF90EE90), text = "-70")
-                    ColorScaleItem(color = Color(0xFF00FFFF), text = "-80")
-                    ColorScaleItem(color = Color(0xFFADD8E6), text = "-90")
-                    ColorScaleItem(color = Color(0xFF87CEEB), text = "-100")
-                    ColorScaleItem(color = Color(0xFF6495ED), text = "-110")
-                    ColorScaleItem(color = Color(0xFF4682B4), text = "-120")
-                    ColorScaleItem(color = Color.Blue, text = "-130")
-                    ColorScaleItem(color = Color(0xFF00008B), text = "-140")
-                }
-                "GSM" -> {
-                    ColorScaleItem(color = Color.Red, text = "-51")
-                    ColorScaleItem(color = Color(0xFFFFA500), text = "-60")
-                    ColorScaleItem(color = Color(0xFFFFFF00), text = "-70")
-                    ColorScaleItem(color = Color(0xFF90EE90), text = "-80")
-                    ColorScaleItem(color = Color(0xFF00FFFF), text = "-90")
-                    ColorScaleItem(color = Color(0xFFADD8E6), text = "-100")
-                    ColorScaleItem(color = Color(0xFF87CEEB), text = "-110")
-                    ColorScaleItem(color = Color(0xFF00008B), text = "-113")
-                }
-                "WCDMA" -> {
-                    ColorScaleItem(color = Color.Red, text = "-24")
-                    ColorScaleItem(color = Color(0xFFFFA500), text = "-30")
-                    ColorScaleItem(color = Color(0xFFFFFF00), text = "-40")
-                    ColorScaleItem(color = Color(0xFF90EE90), text = "-50")
-                    ColorScaleItem(color = Color(0xFF00FFFF), text = "-60")
-                    ColorScaleItem(color = Color(0xFFADD8E6), text = "-70")
-                    ColorScaleItem(color = Color(0xFF87CEEB), text = "-80")
-                    ColorScaleItem(color = Color(0xFF6495ED), text = "-90")
-                    ColorScaleItem(color = Color(0xFF4682B4), text = "-100")
-                    ColorScaleItem(color = Color.Blue, text = "-110")
-                    ColorScaleItem(color = Color(0xFF00008B), text = "-120")
-                }
-                "CDMA" -> {
-                    ColorScaleItem(color = Color.Red, text = "-75")
-                    ColorScaleItem(color = Color(0xFFFFA500), text = "-80")
-                    ColorScaleItem(color = Color(0xFFFFFF00), text = "-85")
-                    ColorScaleItem(color = Color(0xFF90EE90), text = "-90")
-                    ColorScaleItem(color = Color(0xFF00FFFF), text = "-95")
-                    ColorScaleItem(color = Color(0xFFADD8E6), text = "-100")
-                    ColorScaleItem(color = Color(0xFF00008B), text = "-101")
-                }
-                "NR" -> {
-                    ColorScaleItem(color = Color(0xFFE60000), text = "-31")
-                    ColorScaleItem(color = Color(0xFFFF6600), text = "-40")
-                    ColorScaleItem(color = Color(0xFFFFCC00), text = "-50")
-                    ColorScaleItem(color = Color(0xFFFFFF00), text = "-60")
-                    ColorScaleItem(color = Color(0xFF99FF33), text = "-70")
-                    ColorScaleItem(color = Color(0xFF33FF99), text = "-80")
-                    ColorScaleItem(color = Color(0xFF00FFFF), text = "-90")
-                    ColorScaleItem(color = Color(0xFF00CCFF), text = "-100")
-                    ColorScaleItem(color = Color(0xFF0099FF), text = "-110")
-                    ColorScaleItem(color = Color(0xFF0066FF), text = "-120")
-                    ColorScaleItem(color = Color(0xFF0033FF), text = "-130")
-                    ColorScaleItem(color = Color(0xFF0000FF), text = "-140")
-                    ColorScaleItem(color = Color(0xFF0000CC), text = "-150")
-                    ColorScaleItem(color = Color(0xFF000099), text = "-156")
-                }
-            }
+            displayColorScale(state.selectedNetworkType)
+        }
+    }
+}
+
+@Composable
+fun displayColorScale(selectedNetworkType: String) {
+    when (selectedNetworkType) {
+        "LTE" -> {
+            ColorScaleItem(color = Color.Red, text = "-40")
+            ColorScaleItem(color = Color(0xFFFFA500), text = "-50")
+            ColorScaleItem(color = Color(0xFFFFFF00), text = "-60")
+            ColorScaleItem(color = Color(0xFF90EE90), text = "-70")
+            ColorScaleItem(color = Color(0xFF00FFFF), text = "-80")
+            ColorScaleItem(color = Color(0xFFADD8E6), text = "-90")
+            ColorScaleItem(color = Color(0xFF87CEEB), text = "-100")
+            ColorScaleItem(color = Color(0xFF6495ED), text = "-110")
+            ColorScaleItem(color = Color(0xFF4682B4), text = "-120")
+            ColorScaleItem(color = Color.Blue, text = "-130")
+            ColorScaleItem(color = Color(0xFF00008B), text = "-140")
+        }
+        "GSM" -> {
+            ColorScaleItem(color = Color.Red, text = "-51")
+            ColorScaleItem(color = Color(0xFFFFA500), text = "-60")
+            ColorScaleItem(color = Color(0xFFFFFF00), text = "-70")
+            ColorScaleItem(color = Color(0xFF90EE90), text = "-80")
+            ColorScaleItem(color = Color(0xFF00FFFF), text = "-90")
+            ColorScaleItem(color = Color(0xFFADD8E6), text = "-100")
+            ColorScaleItem(color = Color(0xFF87CEEB), text = "-110")
+            ColorScaleItem(color = Color(0xFF00008B), text = "-113")
+        }
+        "WCDMA" -> {
+            ColorScaleItem(color = Color.Red, text = "-24")
+            ColorScaleItem(color = Color(0xFFFFA500), text = "-30")
+            ColorScaleItem(color = Color(0xFFFFFF00), text = "-40")
+            ColorScaleItem(color = Color(0xFF90EE90), text = "-50")
+            ColorScaleItem(color = Color(0xFF00FFFF), text = "-60")
+            ColorScaleItem(color = Color(0xFFADD8E6), text = "-70")
+            ColorScaleItem(color = Color(0xFF87CEEB), text = "-80")
+            ColorScaleItem(color = Color(0xFF6495ED), text = "-90")
+            ColorScaleItem(color = Color(0xFF4682B4), text = "-100")
+            ColorScaleItem(color = Color.Blue, text = "-110")
+            ColorScaleItem(color = Color(0xFF00008B), text = "-120")
+        }
+        "CDMA" -> {
+            ColorScaleItem(color = Color.Red, text = "-75")
+            ColorScaleItem(color = Color(0xFFFFA500), text = "-80")
+            ColorScaleItem(color = Color(0xFFFFFF00), text = "-85")
+            ColorScaleItem(color = Color(0xFF90EE90), text = "-90")
+            ColorScaleItem(color = Color(0xFF00FFFF), text = "-95")
+            ColorScaleItem(color = Color(0xFFADD8E6), text = "-100")
+            ColorScaleItem(color = Color(0xFF00008B), text = "-101")
+        }
+        "NR" -> {
+            ColorScaleItem(color = Color(0xFFE60000), text = "-31")
+            ColorScaleItem(color = Color(0xFFFF6600), text = "-40")
+            ColorScaleItem(color = Color(0xFFFFCC00), text = "-50")
+            ColorScaleItem(color = Color(0xFFFFFF00), text = "-60")
+            ColorScaleItem(color = Color(0xFF99FF33), text = "-70")
+            ColorScaleItem(color = Color(0xFF33FF99), text = "-80")
+            ColorScaleItem(color = Color(0xFF00FFFF), text = "-90")
+            ColorScaleItem(color = Color(0xFF00CCFF), text = "-100")
+            ColorScaleItem(color = Color(0xFF0099FF), text = "-110")
+            ColorScaleItem(color = Color(0xFF0066FF), text = "-120")
+            ColorScaleItem(color = Color(0xFF0033FF), text = "-130")
+            ColorScaleItem(color = Color(0xFF0000FF), text = "-140")
+            ColorScaleItem(color = Color(0xFF0000CC), text = "-150")
+            ColorScaleItem(color = Color(0xFF000099), text = "-156")
         }
     }
 }

@@ -25,7 +25,6 @@ object PermissionUtils {
     fun checkAndRequestPermissions(activity: Activity) {
         val context = activity.applicationContext
 
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 Log.d(MainActivity.TAG, "Requesting MANAGE_EXTERNAL_STORAGE permission")
@@ -34,6 +33,7 @@ object PermissionUtils {
                     data = uri
                 }
                 activity.startActivityForResult(intent, REQUEST_CODE_MANAGE_EXTERNAL_STORAGE)
+                return
             }
         }
 
@@ -49,6 +49,7 @@ object PermissionUtils {
                     arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
                     REQUEST_CODE_BACKGROUND_LOCATION
                 )
+                return
             }
         }
 
@@ -65,6 +66,7 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
+                return
             }
         } else if (Build.VERSION.SDK_INT in Build.VERSION_CODES.S..Build.VERSION_CODES.S_V2) {
             if (!checkPermissionsForAndroid12(context)) {
@@ -79,6 +81,7 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
+                return
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!checkPermissionsForAndroid13(context)) {
@@ -95,6 +98,7 @@ object PermissionUtils {
                     ),
                     REQUEST_CODE_PERMISSIONS
                 )
+                return
             }
         }
     }

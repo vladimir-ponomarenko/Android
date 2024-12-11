@@ -411,16 +411,19 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
             Text("Longitude: ${state.Longtitude}")
             Text("Altitude: ${state.Altitude}")
 
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
                 val subscriptions = subscriptionManager.activeSubscriptionInfoList
-                for (subscription in subscriptions) {
-                    Text("SIM ${subscription.simSlotIndex + 1} Info:")
-                    Text("  Carrier Name: ${subscription.carrierName}")
-//                    Text("  Carrier id: ${subscription.carrierId}")
-                    Text("  Country ISO: ${subscription.countryIso}")
-                    Text("  Number: ${subscription.number}")
+
+                if (subscriptions.isNullOrEmpty()) {
+                    Text("No active SIM cards found.")
+                } else {
+                    for (subscription in subscriptions) {
+                        Text("SIM ${subscription.simSlotIndex + 1} Info:")
+                        Text("  Carrier Name: ${subscription.carrierName}")
+                        Text("  Country ISO: ${subscription.countryIso}")
+                        Text("  Number: ${subscription.number ?: "N/A"}")
+                    }
                 }
             }
         }

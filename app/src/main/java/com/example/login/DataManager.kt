@@ -24,6 +24,7 @@ import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
 import android.telephony.gsm.GsmCellLocation
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -225,20 +226,32 @@ object DataManager {
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d(MainActivity.TAG, "No READ_PHONE_STATE or ACCESS_COARSE_LOCATION permission for cell info")
-            ActivityCompat.requestPermissions(
-                context as Activity,
-                arrayOf(
-                    android.Manifest.permission.READ_PHONE_STATE,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
-                1
-            )
+            Log.d(MainActivity.TAG, "Нет разрешений READ_PHONE_STATE или ACCESS_COARSE_LOCATION для получения cell info")
+
+            if (context is Activity) {
+                ActivityCompat.requestPermissions(
+                    context,
+                    arrayOf(
+                        android.Manifest.permission.READ_PHONE_STATE,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    ),
+                    1
+                )
+            } else {
+                Log.e(MainActivity.TAG, "Контекст не является экземпляром Activity, невозможно запросить разрешения")
+                Toast.makeText(context, "Нет доступных данных, проверьте настройки GPS", Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        processCellInfo(telephonyManager.allCellInfo, state)
+        val cellInfoList = telephonyManager.allCellInfo
+
+        if (cellInfoList != null) {
+            processCellInfo(cellInfoList, state)
+        } else {
+            Log.d(MainActivity.TAG, "cellInfoList is null, GPS может быть отключен или нет доступных данных cell info")
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -261,7 +274,6 @@ object DataManager {
                 is CellInfoGsm -> extractGsmCellInfoToJson(cellInfo)
                 is CellInfoWcdma -> extractWcdmaCellInfoToJson(cellInfo)
                 is CellInfoCdma -> extractCdmaCellInfoToJson(cellInfo)
-
                 else -> {
                     Log.d(TAG, "Unknown cell info type: ${cellInfo.javaClass.simpleName}")
                     null
@@ -269,12 +281,10 @@ object DataManager {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                for (cellInfo in cellInfoList) {
-                    if (cellInfo is CellInfoNr) {
-                        val cellData = extractNrCellInfoToJson(cellInfo)
-                        if (cellData != null) {
-                            cellInfoDataByType["NR"]?.add(cellData)
-                        }
+                if (cellInfo is CellInfoNr) {
+                    val cellData = extractNrCellInfoToJson(cellInfo)
+                    if (cellData != null) {
+                        cellInfoDataByType["NR"]?.add(cellData)
                     }
                 }
             }
@@ -285,7 +295,7 @@ object DataManager {
                     is CellInfoGsm -> "GSM"
                     is CellInfoWcdma -> "WCDMA"
                     is CellInfoCdma -> "CDMA"
-                    else ->  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo is CellInfoNr) {
+                    else -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo is CellInfoNr) {
                         "NR"
                     } else {
                         "Unknown"
@@ -297,7 +307,6 @@ object DataManager {
 
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
         val currentDateAndTime = sdf.format(Date())
-
 
         val messageToData2 = MessageToData2(
             jwt = state.JwtToken,
@@ -316,20 +325,27 @@ object DataManager {
 
         state.messageToData2 = messageToData2
 
-        val jsonMessageToData2 = Json.encodeToString(messageToData2)
-        val maxLogLength = 4000
-        for (i in jsonMessageToData2.indices step maxLogLength) {
-            val chunk = jsonMessageToData2.substring(i, minOf(i + maxLogLength, jsonMessageToData2.length))
-            Log.d(TAG, "CellInfo JSON (part ${i / maxLogLength}): $chunk")
-        }
-        if (state.isSendingCellInfoData) {
-            MainActivity.networkManager.sendMessageToData2ToServer(messageToData2) { success ->
-                if (success) {
-                    Log.d(TAG, "CellInfo SENT TO SERVER")
-                } else {
-                    Log.e(TAG, "FAILED TO SEND CellInfo")
+        val hasLocationData = messageToData2.latitude != 0.0 && messageToData2.longitude != 0.0
+        val hasCellInfoData = cellInfoDataByType.values.any { it.isNotEmpty() }
+
+        if (hasLocationData && hasCellInfoData) {
+            val jsonMessageToData2 = Json.encodeToString(messageToData2)
+            val maxLogLength = 4000
+            for (i in jsonMessageToData2.indices step maxLogLength) {
+                val chunk = jsonMessageToData2.substring(i, minOf(i + maxLogLength, jsonMessageToData2.length))
+                Log.d(TAG, "CellInfo JSON (part ${i / maxLogLength}): $chunk")
+            }
+            if (state.isSendingCellInfoData) {
+                MainActivity.networkManager.sendMessageToData2ToServer(messageToData2) { success ->
+                    if (success) {
+                        Log.d(TAG, "CellInfo SENT TO SERVER")
+                    } else {
+                        Log.e(TAG, "FAILED TO SEND CellInfo")
+                    }
                 }
             }
+        } else {
+            Log.d(TAG, "No cell info data to send to server or location data is missing")
         }
     }
 
@@ -340,7 +356,6 @@ object DataManager {
             val signalStrength = info.cellSignalStrength
             val identity = info.cellIdentity
             val timestamp = System.currentTimeMillis()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 CellInfoData(
                     type = "LTE",
                     timestamp = timestamp,
@@ -365,7 +380,11 @@ object DataManager {
                     earfcn = identity.earfcn.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
                     bandwidth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) identity.bandwidth.takeIf { it != CellInfo.UNAVAILABLE }?.toLong() else null,
                     rsrp = signalStrength.rsrp.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    rssi = signalStrength.rssi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                    rssi= if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        signalStrength.rssi.takeIf {it != Integer.MAX_VALUE }?.toLong()
+                    } else {
+                        null
+                    },
                     rsrq = signalStrength.rsrq.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     rssnr = signalStrength.rssnr.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     cqi = signalStrength.cqi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
@@ -374,9 +393,7 @@ object DataManager {
                     level = signalStrength.level.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     asuLevel = signalStrength.asuLevel.takeIf { it != Integer.MAX_VALUE } ?: 0
                 )
-            } else {
-                TODO("VERSION.SDK_INT < Q")
-            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error encoding LTE cell info to JSON: ", e)
             null
@@ -785,7 +802,7 @@ object DataManager {
 //                                }
 //                            }
 //                        } else {
-                            file.delete()
+                        file.delete()
 //                        } Отправка данных файлом на сервер пока что закомментирована
 
                         fileCounter = (fileCounter % maxFileCount) + 1
