@@ -400,17 +400,19 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     /* Способ отправки JSON на сервер с помощью multipart/form-data   */
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
         val endpoint = "/api/sockets/thermalmap/file"
-
         val file = File(filePath)
+
+        // Проверка, существует ли файл
         if (!file.exists()) {
             Log.e(TAG, "File not found: $filePath")
             onComplete?.invoke(false)
             return
         }
 
+        // Использование правильного MIME-типа для передачи файла
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("file", file.name, file.asRequestBody("application/json".toMediaTypeOrNull()))
+            .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaTypeOrNull()))  // Более общий тип
             .build()
 
         val request = Request.Builder()
@@ -418,24 +420,32 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             .post(requestBody)
             .build()
 
+        // Отправка запроса
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
+                // Логируем ошибку при отправке
                 Log.e(TAG, "Failed to send file to server", e)
+                // Убедитесь, что onComplete вызывается в случае ошибки
                 onComplete?.invoke(false)
             }
 
             override fun onResponse(call: Call, response: Response) {
+                // Проверка кода ответа
                 if (response.isSuccessful) {
                     Log.d(TAG, "File sent to server successfully")
                     onComplete?.invoke(true)
                     (context as? MainActivity)?.showSendingIndicator()
                 } else {
+                    // Логируем ошибку сервера
                     Log.e(TAG, "Failed to send file to server: ${response.code} ${response.message}")
                     onComplete?.invoke(false)
                 }
+                // Закрытие ответа для освобождения ресурсов
+                response.close()
             }
         })
     }
+
 
     fun connectWebSocket(
         jwt: String,
