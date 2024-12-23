@@ -60,6 +60,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.*
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.stringResource
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -104,7 +105,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             IconButton(onClick = { onNavigateTo(5) }) {
                 Image(
                     painter = painterResource(id = R.drawable.transition_light),
-                    contentDescription = "Назад",
+                    contentDescription = "back",
                     modifier = Modifier
                         .padding(start = 16.dp)
                         .size(24.dp)
@@ -112,7 +113,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Трафик",
+                text = stringResource(id = R.string.traffic),
                 color = Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
@@ -178,7 +179,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "Общий:",
+                        text = stringResource(id = R.string.total),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF34204C)
                     )
@@ -201,7 +202,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "Мобильный:",
+                        text = stringResource(id = R.string.mobile),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF34204C)
                     )
@@ -224,7 +225,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "Wi-Fi:",
+                        text = stringResource(id = R.string.wifi),
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF34204C)
                     )
@@ -251,7 +252,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     OutlinedTextField(
                         value = days,
                         onValueChange = { onDaysChanged(it) },
-                        label = { Text("Количество дней", color = Color(0xFF7B7B7B)) },
+                        label = { Text(stringResource(id = R.string.days_count), color = Color(0xFF7B7B7B)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -273,7 +274,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
-                        contentDescription = "Выбрать дату",
+                        contentDescription = "Select date",
                         tint = Color.White,
                         modifier = Modifier.size(30.dp)
                     )
@@ -285,7 +286,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         item {
             if (showError) {
                 Text(
-                    text = "Неверное количество дней",
+                    text = stringResource(id = R.string.incorrect_days_count),
                     color = Color(0xCCAF1027),
                     modifier = Modifier.padding(16.dp)
                 )
@@ -302,7 +303,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         .padding(16.dp)
                         .fillMaxWidth()
                 ) {
-                    Text("Предоставить доступ к статистике", color = Color.White, fontSize = 16.sp)
+                    Text(
+                        text = stringResource(id = R.string.grant_permission),
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
                 }
             }
         }
@@ -325,7 +330,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                             .padding(2.dp)
                     ) {
                         Text(
-                            "Общий трафик",
+                            text = stringResource(id = R.string.total_traffic),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
@@ -342,7 +347,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                                 val authResponse = try {
                                     MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password)
                                 } catch (e: Exception) {
-                                    Log.e(MainActivity.TAG, "Ошибка аутентификации: ${e.message}", e)
+                                    Log.e(MainActivity.TAG, "Authentication failed: ${e.message}", e)
                                     null
                                 }
 
@@ -351,12 +356,12 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                                     val top5Apps = sortedApps.take(10)
                                     try {
                                         MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top5Apps)
-                                        Log.d(MainActivity.TAG, "Трафик успешно отправлен!")
+                                        Log.d(MainActivity.TAG, "Traffic data sent successfully!")
                                     } catch (e: Exception) {
-                                        Log.e(MainActivity.TAG, "Не удалось отправить данные трафика: ${e.message}", e)
+                                        Log.e(MainActivity.TAG, "Failed to send traffic data: ${e.message}", e)
                                     }
                                 } else {
-                                    Log.e(MainActivity.TAG, "Ошибка аутентификации для данных трафика")
+                                    Log.e(MainActivity.TAG, "Authentication for traffic data failed")
                                 }
                                 isSendingTrafficData = false
                             }
@@ -369,7 +374,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                             .padding(2.dp)
                     ) {
                         Text(
-                            "Отправить данные",
+                            text = stringResource(id = R.string.send_data),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
@@ -452,7 +457,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             icon = try {
                 context.packageManager.getApplicationIcon(appData.packageName)
             } catch (e: PackageManager.NameNotFoundException) {
-                Log.e("TrafficItem", "Ошибка загрузки иконки для ${appData.packageName}", e)
+                Log.e("TrafficItem", "Error loading icon for ${appData.packageName}", e)
                 null
             }
         }
@@ -495,11 +500,11 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
                     color = textColor,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(text = "Общий: ${(appData.totalBytes / 1024).toString()} Kb", color = textColor)
-                Text(text = "Мобильный: ${(appData.mobileBytes / 1024).toString()} Kb", color = textColor)
-                Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb", color = textColor)
-                Text(text = "Прием: ${(appData.rxBytes / 1024).toString()} Kb", color = textColor)
-                Text(text = "Отправка: ${(appData.txBytes / 1024).toString()} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.total)} ${(appData.totalBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.mobile)} ${(appData.mobileBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.wifi)} ${(appData.wifiBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.downlink)} ${(appData.rxBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.uplink)} ${(appData.txBytes / 1024)} Kb", color = textColor)
             }
         }
 
@@ -518,7 +523,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.Default.BarChart,
-                contentDescription = "Показать график",
+                contentDescription = "Show graph",
                 tint = if (isHighlighted) Color.White else Color.Transparent,
                 modifier = Modifier.size(24.dp)
             )

@@ -19,21 +19,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material.Text
-import androidx.compose.material.Scaffold
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.stringResource
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
-    val istokWebFontFamily = FontFamily(Font(R.font.istokweb_regular))
 
     Scaffold(
         topBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(56.dp)
                     .background(Color(0xFFF8F8F8))
                     .border(
                         width = 2.dp,
@@ -52,17 +55,16 @@ fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
                             painter = painterResource(id = R.drawable.exit_light),
                             contentDescription = "Выход",
                             modifier = Modifier
-                                .padding(start = 20.dp)
+                                .padding(start = 16.dp)
                                 .size(24.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Меню",
+                        text = stringResource(id = R.string.menu_title),
                         color = Color(0xFF34204C),
                         fontSize = 20.sp,
-                        fontFamily = istokWebFontFamily,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -84,7 +86,6 @@ fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Кнопки в сетке
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
@@ -94,16 +95,16 @@ fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    MenuButton(onClick = { onNavigateTo(2) }, text = "Карта", iconResId = R.drawable.map1_icon_l)
-                    MenuButton(onClick = { onNavigateTo(3) }, text = "Трафик", iconResId = R.drawable.traffic_icon_l)
+                    MenuButton(onClick = { onNavigateTo(2) }, text = stringResource(id = R.string.map_button_text), iconResId = R.drawable.map1_icon_l)
+                    MenuButton(onClick = { onNavigateTo(3) }, text = stringResource(id = R.string.traffic_button_text), iconResId = R.drawable.traffic_icon_l)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    MenuButton(onClick = { onNavigateTo(1) }, text = "Данные", iconResId = R.drawable.data_icon_l)
-                    MenuButton(onClick = { onNavigateTo(4) }, text = "Настройки", iconResId = R.drawable.settings_icon_l)
+                    MenuButton(onClick = { onNavigateTo(1) }, text = stringResource(id = R.string.data_button_text), iconResId = R.drawable.data_icon_l)
+                    MenuButton(onClick = { onNavigateTo(4) }, text = stringResource(id = R.string.settings_button_text), iconResId = R.drawable.settings_icon_l)
                 }
             }
         }
@@ -112,7 +113,6 @@ fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
 
 @Composable
 fun MenuButton(onClick: () -> Unit, text: String, iconResId: Int) {
-    val istokWebFontFamily = FontFamily(Font(R.font.istokweb_regular)) // Создаем FontFamily из ресурса шрифта
 
     Button(
         onClick = onClick,
@@ -135,7 +135,6 @@ fun MenuButton(onClick: () -> Unit, text: String, iconResId: Int) {
                 text = text,
                 color = Color.White,
                 fontSize = 20.sp,
-                fontFamily = istokWebFontFamily,
                 textAlign = TextAlign.Center
             )
         }

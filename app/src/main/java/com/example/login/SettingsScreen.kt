@@ -1,5 +1,6 @@
 package com.example.login
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,25 +21,61 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.AlertDialog
+import android.content.Context
+import android.content.res.Configuration
+import java.util.Locale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material.Text
+
 
 @Composable
-fun SettingsScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
+fun SettingsScreen(
+    state: MainActivity.MainActivityState,
+    onNavigateTo: (Int, String?, String?) -> Unit,
+) {
+    var isLanguageDialogVisible by remember { mutableStateOf(false) }
+    var currentLanguage by remember { mutableStateOf("ru") }
+
+    val context = LocalContext.current
+
+    if (isLanguageDialogVisible) {
+        LanguageSelectionDialog(
+            currentLanguage = currentLanguage,
+            onDismiss = { isLanguageDialogVisible = false },
+            onLanguageSelected = { selectedLanguage ->
+                currentLanguage = selectedLanguage
+                isLanguageDialogVisible = false
+                setLocale(context, selectedLanguage)
+                (context as? Activity)?.recreate()
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .background(Color.White)
-            .border(width = 1.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { onNavigateTo(5) }) {
+            IconButton(onClick = { onNavigateTo(5, null, null) }) {
                 Image(
                     painter = painterResource(id = R.drawable.transition_light),
-                    contentDescription = "Назад",
+                    contentDescription = stringResource(R.string.settings_title),
                     modifier = Modifier
                         .padding(start = 16.dp)
                         .size(24.dp)
@@ -46,7 +83,7 @@ fun SettingsScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) ->
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Настройки",
+                text = stringResource(R.string.settings_title),
                 color = Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
@@ -60,50 +97,95 @@ fun SettingsScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) ->
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        SettingItem("Язык интерфейса", "Русский", R.drawable.language)
-        SettingItem("Уведомления", "Вкл.", R.drawable.notifications)
-        // Пункт "Внешний вид" с интерактивной стрелкой
-        SettingItemWithArrow("Внешний вид", onNavigateTo = { onNavigateTo(6) }, R.drawable.style)
-        SettingItemWithArrow("Помощь и обратная связь", onNavigateTo = { onNavigateTo(7) }, R.drawable.help)
 
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingItemWithArrow(
+            label = stringResource(R.string.interface_language),
+            onNavigateTo = { isLanguageDialogVisible = true },
+            iconRes = R.drawable.language
+        )
+        SettingItemWithArrow(
+            label = stringResource(R.string.appearance),
+            onNavigateTo = { onNavigateTo(6, null, null) },
+            iconRes = R.drawable.style
+        )
+        SettingItemWithArrow(
+            label = stringResource(R.string.sending_collected_data),
+            onNavigateTo = { onNavigateTo(7, state.Uuid, state.JwtToken) }, // Используем значения из state
+            iconRes = R.drawable.s_data
+        )
         Spacer(modifier = Modifier.weight(1f))
-
-        ResetButton()
     }
 }
 
-// Функция для создания обычного пункта настройки
+fun setLocale(context: Context, languageCode: String) {
+    val locale = Locale(languageCode)
+    Locale.setDefault(locale)
+
+    val config = Configuration(context.resources.configuration)
+    config.setLocale(locale)
+
+    context.resources.updateConfiguration(config, context.resources.displayMetrics)
+}
+
 @Composable
-fun SettingItem(label: String, value: String, iconRes: Int) {
+fun LanguageSelectionDialog(
+    currentLanguage: String, // Текущий язык, например "ru" или "en"
+    onDismiss: () -> Unit,
+    onLanguageSelected: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        confirmButton = {},
+        dismissButton = {},
+        text = {
+            Column {
+                LanguageOption(
+                    language = "ru",
+                    label = "Русский",
+                    isSelected = currentLanguage == "ru", // Проверка, выбран ли язык
+                    onSelect = { onLanguageSelected("ru") }
+                )
+                LanguageOption(
+                    language = "en",
+                    label = "English",
+                    isSelected = currentLanguage == "en", // Проверка, выбран ли язык
+                    onSelect = { onLanguageSelected("en") }
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun LanguageOption(
+    language: String,
+    label: String,
+    isSelected: Boolean,
+    onSelect: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .background(Color(0xFFF8F8F8))
-            .border(width = 1.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(8.dp))
-            .padding(16.dp),
+            .clickable { onSelect(language) },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            contentDescription = label,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-
         Text(
             text = label,
-            color = Color(0xFF34204C),
+            modifier = Modifier.weight(1f),
             fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier.weight(1f)
+            color = if (isSelected) Color(0xFF34204C) else Color.Gray // Более бледный цвет для невыбранных языков
         )
 
-        Text(
-            text = value,
-            color = Color(0xFF34204C),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Light
+        // Круг, меняющий цвет в зависимости от выбранного языка
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .background(
+                    color = if (isSelected) Color(0xFF132C86) else Color(0xFFB0B0B0), // Цвет серого для невыбранного
+                    shape = RoundedCornerShape(12.dp)
+                )
         )
     }
 }
@@ -115,7 +197,7 @@ fun SettingItemWithArrow(label: String, onNavigateTo: () -> Unit, iconRes: Int) 
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .background(Color(0xFFF8F8F8))
-            .border(width = 1.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(8.dp))
+            .border(width = 1.5.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(8.dp))
             .padding(16.dp)
             .clickable { onNavigateTo() },
         verticalAlignment = Alignment.CenterVertically
@@ -140,34 +222,6 @@ fun SettingItemWithArrow(label: String, onNavigateTo: () -> Unit, iconRes: Int) 
             contentDescription = "Перейти",
             tint = Color(0xFF34204C),
             modifier = Modifier.size(24.dp)
-        )
-    }
-}
-
-@Composable
-fun ResetButton() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .background(Color(0xFFF8F8F8))
-            .border(width = 1.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(8.dp))
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.reset),
-            contentDescription = "Сбросить приложение",
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            text = "Сбросить приложение",
-            color = Color(0xCCAF1027),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f)
         )
     }
 }

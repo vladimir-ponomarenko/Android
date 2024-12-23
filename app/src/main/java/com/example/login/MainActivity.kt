@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val TAG = "com.example.login.MainActivity"
         const val ACTION_STOP_MAIN_ACTIVITY = "com.example.login.stop_main_activity"
         const val UPDATE_INTERVAL = 2000L
-        private const val SERVER_URL = "http://109.172.114.128:10000" // "http://78.24.222.170:8080" "http://45.90.218.73:8080"
+        private const val SERVER_URL = "http://109.172.114.128:10000"  // "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
 
         internal const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"
@@ -99,7 +99,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     init {
         instance = this
     }
-
     private var isDataCollectionEnabled by mutableStateOf(true)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var webSocket: WebSocket? = null
@@ -116,7 +115,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             isSendingData = false
         }
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -155,16 +153,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             .setInputData(data)
             .build()
 
-        // Отменяем существующую задачу (для дебага)
+// Отменяем существующую задачу (для дебага)
 //        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
-
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "TrafficDataWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             dailyWorkRequest
         )
-
-        //        val broadcastReceiver = object : BroadcastReceiver() {
+//        val broadcastReceiver = object : BroadcastReceiver() {
 //            override fun onReceive(context: Context?, intent: Intent?) {
 //                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {
 //                    isDataCollectionEnabled = false
@@ -336,6 +332,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
+                    if (permissionsGranted && isDataCollectionEnabled) {
+                        while (true) {
+                            DataManager.getLocation(this@MainActivity, state)
+                            DataManager.getSignalStrength(state)
+                            delay(UPDATE_INTERVAL)
+                        }
+                    }
+                }
                 MainContent(
                     state,
                     selectedTabIndex = selectedTabIndex,
@@ -349,8 +354,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
         }
     }
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -446,9 +449,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                         if (!state.isSendingCellInfoData) {
                                             state.isSendingCellInfoData = true
 
-                                            MainActivity.networkManager.authenticateUser(
-                                                state.Email, state.Password, state.JwtToken
-                                            ) { authResponse ->
+                                            MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
                                                 if (authResponse != null) {
                                                     (context as? Activity)?.runOnUiThread {
                                                         state.JwtToken = authResponse.jwt
@@ -470,8 +471,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 //                         2 -> RSRPGraph(state)
                             2 -> MapScreen(state, onNavigateTo = onTabSelected)
                             3 -> TrafficScreen(state, onNavigateTo = onTabSelected)
-                            4 -> SettingsScreen(state, onNavigateTo = onTabSelected)
+                            4 -> SettingsScreen(state, onNavigateTo = { index, uuid, jwtToken -> onTabSelected(index)})
                             5 -> NavigationScreen(onNavigateTo = onTabSelected)
+                            7 -> DataSendingScreen(state, onNavigateTo = onTabSelected, onCellInfoDataClick  = {})
                         }
                     }
                 } else {
@@ -646,6 +648,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         var isSendingCellInfoData by mutableStateOf(false)
 
         var isFullscreen by mutableStateOf(false)
+        var DownloadLink by mutableStateOf("")
 
         val cellInfoJson = mutableStateOf(mutableMapOf<String, List<String>>())
         fun saveLoginData() {

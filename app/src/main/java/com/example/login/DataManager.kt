@@ -55,7 +55,6 @@ object DataManager {
     private var locationUpdatesCount = 0
     private const val MAX_LOCATION_UPDATES = 1
 
-
     private var fileCounter = 1
     private val maxFileCount = 10
     private var fileName = "Signal_data_$fileCounter.txt"
@@ -522,9 +521,6 @@ object DataManager {
         }
     }
 
-
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     internal fun getSignalStrength(state: MainActivity.MainActivityState) {
         val context = state.context
@@ -716,20 +712,29 @@ object DataManager {
 
         return Json.encodeToString(messageData)
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun saveCellInfoToJsonFile(context: Context, messageToData2: MessageToData2) {
         withContext(Dispatchers.IO) {
             try {
-                val downloadsDir =
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                val signalDataDir = File(downloadsDir, "Signal_data")
+                // Получаем директорию для хранения данных в области, предоставленной приложению
+                val signalDataDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Signal_data")
 
+                // Если директория не существует, создаем ее
                 if (!signalDataDir.exists()) {
-                    signalDataDir.mkdirs()
+                    val created = signalDataDir.mkdirs()
+                    if (created) {
+                        Log.d(TAG, "Directory created: ${signalDataDir.absolutePath}")
+                    } else {
+                        Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
+                        return@withContext
+                    }
                 }
 
+                // Путь к файлу
                 val file = File(signalDataDir, fileName)
 
+                // Проверка на наличие данных
                 val hasData = messageToData2.cdma.cellInfoList.isNotEmpty() ||
                         messageToData2.gsm.cellInfoList.isNotEmpty() ||
                         messageToData2.wcdma.cellInfoList.isNotEmpty() ||
@@ -763,6 +768,7 @@ object DataManager {
                         }
                     }
 
+                    // Запись данных в файл
                     val outputStream = FileOutputStream(file, true)
                     val jsonMessageToData2 = modifiedJson.toString() + "\n"
                     outputStream.write(jsonMessageToData2.toByteArray())
@@ -770,29 +776,35 @@ object DataManager {
 
                     Log.d(TAG, "JSON to be saved:\n$jsonMessageToData2")
 
-                    val lineCount = file.readLines().size
+                    // Получаем текущий размер файла
+                    val fileSize = file.length()
+                    Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
 
-                    if (lineCount >= 12) {  /* Кол-во строк в файле */
-//                        if (MainActivity.state.isSendingCellInfoData) {
-//                            MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
-//                                if (success) {
-//                                    Log.d(TAG, "CellInfo SENT TO SERVER from file: ${file.absolutePath}")
-//                                } else {
-//                                    Log.e(TAG, "FAILED TO SEND CellInfo from file: ${file.absolutePath}")
-//                                }
-//                                if (success || !MainActivity.state.isSendingCellInfoData) {
-//                                    file.delete()
-//                                }
-//                            }
-//                        } else {
-                        file.delete()
-//                        } Отправка данных файлом на сервер пока что закомментирована
+                    // Отправка файла если его размер больше 1 МБ
+                    if (fileSize >= 1_048_576) {  // 1 МБ
+                        if (MainActivity.state.isSendingCellInfoData) {
+                            MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
+                                if (success) {
+                                    Log.d(TAG, "CellInfo SENT TO SERVER from file: ${file.absolutePath}")
+                                } else {
+                                    Log.e(TAG, "FAILED TO SEND CellInfo from file: ${file.absolutePath}")
+                                }
+                                // Удаляем файл после отправки
+                                if (success || !MainActivity.state.isSendingCellInfoData) {
+                                    file.delete()
+                                }
+                            }
+                        } else {
+                            file.delete()
+                        }
 
+                        // Переименование файла для дальнейших записей
                         fileCounter = (fileCounter % maxFileCount) + 1
                         fileName = "Signal_data_$fileCounter.txt"
                     }
 
                     Log.d(TAG, "CellInfo saved to file: ${file.absolutePath}")
+                    Log.d(TAG, "File path: ${file.absolutePath}")
                 } else {
                     Log.d(TAG, "Skipping empty CellInfo data")
                 }
@@ -801,6 +813,21 @@ object DataManager {
             }
         }
     }
+
+    // Функция для конвертации размера файла в человекочитаемый формат
+    fun getReadableFileSize(size: Long): String {
+        val bytesInKB = 1024
+        val bytesInMB = bytesInKB * 1024
+        val bytesInGB = bytesInMB * 1024
+
+        return when {
+            size < bytesInKB -> "$size bytes"
+            size < bytesInMB -> String.format("%.2f KB", size / bytesInKB.toDouble())
+            size < bytesInGB -> String.format("%.2f MB", size / bytesInMB.toDouble())
+            else -> String.format("%.2f GB", size / bytesInGB.toDouble())
+        }
+    }
+
 
     private fun getBandFromEarfcn(earfcn: Int): String {
         return when (earfcn) {

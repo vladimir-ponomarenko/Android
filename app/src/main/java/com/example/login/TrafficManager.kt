@@ -59,6 +59,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.res.stringResource
+
 
 @Composable
 fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
@@ -80,20 +82,20 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, s
         Surface(shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFF9E9E9E)) ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Часовой трафик для $appName",
+                    text = stringResource(id = R.string.hourly_traffic_for_app, appName),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Закрыть")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
 
                 if (packageName != null) {
                     HourlyTrafficChartContent(hourlyTrafficData)
                 } else {
-                    Text("Ошибка: Пакет не найден", color = Color.Red)
+                    Text("Error: Package not found", color = Color.Red)
                 }
             }
         }
@@ -119,14 +121,14 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
         Surface(shape = RoundedCornerShape(8.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Общий часовой трафик",
+                    text = stringResource(id = R.string.total_hourly_traffic),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Закрыть")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
 
                 if (showChart) {
@@ -146,11 +148,11 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
                     modifier = Modifier.fillMaxWidth(),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color(0xFF000000)
+                        contentColor = Color.Black
                     ),
                     border = BorderStroke(1.dp, Color(0xFF9E9E9E))
                 ) {
-                    Text(if (showChart) "Показать диаграмму" else "Показать график", color = Color(0xFF34204C))
+                    Text(text = stringResource(if (showChart) R.string.show_diagram else R.string.show_chart))
                 }
             }
         }
@@ -260,7 +262,6 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
         }
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
@@ -501,7 +502,6 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
         startTime + TimeUnit.DAYS.toMillis(1)
     }
 
-
     val trafficData = mutableListOf<TrafficDataPoint>()
 
     for (packageInfo in packageManager.getInstalledApplications(PackageManager.GET_META_DATA)) {
@@ -518,7 +518,7 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
                 }
                 networkStats.close()
             } catch (e: Exception) {
-                Log.e(MainActivity.TAG, "Ошибка при получении данных о трафике: ${e.message}", e)
+                Log.e(MainActivity.TAG, "Error fetching traffic data: ${e.message}", e)
                 continue
             }
         }
@@ -729,7 +729,7 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
     val uid = try {
         packageManager.getApplicationInfo(packageName, 0).uid
     } catch (e: PackageManager.NameNotFoundException) {
-        Log.e(MainActivity.TAG, "Ошибка: Пакет $packageName не найден", e)
+        Log.e(MainActivity.TAG, "Error: Package $packageName not found", e)
         return emptyList()
     }
 
@@ -750,7 +750,7 @@ fun getHourlyTrafficData(context: Context, packageName: String, selectedDate: Ca
             previousTotalBytes = totalBytes
         }
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках: ${e.message}", e)
+        Log.e(MainActivity.TAG, "Error fetching network stats: ${e.message}", e)
     }
 
     return hourlyTrafficData.mapIndexed { index, traffic ->
@@ -774,7 +774,7 @@ internal fun getTotalTrafficData(context: Context, days: Int): TotalTrafficData 
         val wifiStats = networkStatsManager.querySummaryForDevice(ConnectivityManager.TYPE_WIFI, null, startTime, currentTime)
         wifiBytes = wifiStats.rxBytes + wifiStats.txBytes
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках", e)
+        Log.e(MainActivity.TAG, "Error fetching network stats", e)
     }
 
     return TotalTrafficData(mobileBytes + wifiBytes, mobileBytes, wifiBytes)
@@ -797,7 +797,7 @@ private fun getTrafficForHour(networkStatsManager: android.app.usage.NetworkStat
         }
         networkStats.close()
     } catch (e: Exception) {
-        Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках: ${e.message}", e)
+        Log.e(MainActivity.TAG, "Error fetching network stats: ${e.message}", e)
     }
     return totalBytes
 }
@@ -872,7 +872,7 @@ fun getAppTrafficData(context: Context, days: Int): List<AppTrafficData> {
             )
 
         } catch (e: Exception) {
-            Log.e("AppTraffic", "Ошибка при получении данных о трафике для $appName: ${e.message}", e)
+            Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
         }
     }
 
@@ -954,7 +954,7 @@ fun getAppTrafficDataForDays(context: Context, daysList: List<Int>): List<AppTra
                 )
 
             } catch (e: Exception) {
-                Log.e("AppTraffic", "Ошибка при получении данных о трафике для $appName: ${e.message}", e)
+                Log.e("AppTraffic", "Error getting traffic data for $appName: ${e.message}", e)
             }
         }
     }
@@ -994,7 +994,7 @@ fun getTotalTrafficDataForDays(context: Context, daysList: List<Int>): TotalTraf
             )
             totalWifiBytes += wifiStats.rxBytes + wifiStats.txBytes
         } catch (e: Exception) {
-            Log.e(MainActivity.TAG, "Ошибка при получении данных о сетевых статистиках", e)
+            Log.e(MainActivity.TAG, "Error fetching network stats", e)
         }
     }
 

@@ -86,6 +86,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Text
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.res.stringResource
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -246,7 +247,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Данные",
+                text = stringResource(id = R.string.data),
                 color = Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
@@ -337,7 +338,6 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
-
     val backgroundColor = Color(0xFFFFFFFFF)
     val textColor = Color(0xCC34204C)
     val borderColor = Color(0x809E9E9E)
@@ -459,48 +459,142 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
         border = BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Phone Information", style = MaterialTheme.typography.titleMedium, color = textColor)
+            Text(
+                text = stringResource(id = R.string.phone_info),
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor
+            )
             Divider(Modifier.padding(vertical = 8.dp))
 
-            Text("Device Model: ${Build.MODEL}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Manufacturer: ${Build.MANUFACTURER}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Brand: ${Build.BRAND}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Android Version: ${Build.VERSION.RELEASE} (SDK: ${Build.VERSION.SDK_INT})", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Board: ${Build.BOARD}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Bootloader: ${Build.BOOTLOADER}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Device: ${Build.DEVICE}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Hardware: ${Build.HARDWARE}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Product: ${Build.PRODUCT}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+            Text(
+                text = stringResource(id = R.string.device_model, Build.MODEL ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.manufacturer, Build.MANUFACTURER ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.brand, Build.BRAND ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.android_version, Build.VERSION.RELEASE, Build.VERSION.SDK_INT),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.board, Build.BOARD ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.bootloader, Build.BOOTLOADER ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.device, Build.DEVICE ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.hardware, Build.HARDWARE ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.product, Build.PRODUCT ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.operator, telephonyManager?.networkOperatorName ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.network_type, getNetworkType(telephonyManager?.networkType ?: 0)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
 
-            Text("Operator: ${telephonyManager.networkOperatorName}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Network Type: ${getNetworkType(telephonyManager.networkType)}", style = MaterialTheme.typography.bodyMedium, color = textColor)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Text("SIM Operator: ${telephonyManager.simOperatorName}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-                Text("SIM State: ${getSimState(telephonyManager.simState)}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+                Text(
+                    text = stringResource(id = R.string.sim_operator, telephonyManager?.simOperatorName ?: "N/A"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+                Text(
+                    text = stringResource(id = R.string.sim_state, getSimState(telephonyManager?.simState ?: 0)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
             }
-            Text("Phone Type: ${getPhoneType(telephonyManager.phoneType)}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+            Text(
+                text = stringResource(id = R.string.phone_type, getPhoneType(telephonyManager?.phoneType ?: 0)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Text("Data Network Type: ${getDataNetworkType(telephonyManager.dataNetworkType)}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+                Text(
+                    text = stringResource(id = R.string.data_network_type, getDataNetworkType(telephonyManager?.dataNetworkType ?: 0)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
             }
 
-            Text("Latitude: ${state.Latitude}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Longitude: ${state.Longtitude}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-            Text("Altitude: ${state.Altitude}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+            Text(
+                text = stringResource(id = R.string.latitude, state.Latitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.longitude, state.Longtitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.altitude, state.Altitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
                 val subscriptions = subscriptionManager.activeSubscriptionInfoList
                 for (subscription in subscriptions) {
-                    Text("SIM ${subscription.simSlotIndex + 1} Info:", style = MaterialTheme.typography.bodyMedium, color = textColor)
-                    Text("  Carrier Name: ${subscription.carrierName}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-                    Text("  Country ISO: ${subscription.countryIso}", style = MaterialTheme.typography.bodyMedium, color = textColor)
-                    Text("  Number: ${subscription.number}", style = MaterialTheme.typography.bodyMedium, color = textColor)
+                    Text(
+                        text = stringResource(id = R.string.sim_info, subscription.simSlotIndex + 1),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor
+                    )
+                    Text(
+                        text = stringResource(id = R.string.carrier_name, subscription.carrierName ?: "Unknown"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
+                    )
+                    Text(
+                        text = stringResource(id = R.string.country_iso, subscription.countryIso ?: "Unknown"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
+                    )
+                    Text(
+                        text = stringResource(id = R.string.number, subscription.number ?: "Unknown"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
+                    )
                 }
             }
         }
     }
 }
-
 
 private fun getNetworkType(networkType: Int): String {
     return when (networkType) {
@@ -949,7 +1043,6 @@ internal fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: Stri
         chartData.removeAt(0)
     }
 }
-
 
 private fun getDefaultChartType(tabIndex: Int): String {
     return when (tabIndex) {
