@@ -22,14 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Timeline
@@ -49,14 +42,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import androidx.compose.ui.zIndex
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Icon
+import androidx.compose.material3.*
+import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.stringResource
 
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun TrafficScreen(state: MainActivity.MainActivityState)    {
+fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val appTrafficData = remember { mutableStateOf(emptyList<AppTrafficData>()) }
@@ -73,10 +82,42 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
     var isLoading by remember { mutableStateOf(false) }
 
+
     fun onDaysChanged(newDays: String) {
         days = newDays
         activeMode = "days"
         selectedCalendar = null
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(Color.White)
+            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onNavigateTo(5) }) {
+                Image(
+                    painter = painterResource(id = R.drawable.transition_light),
+                    contentDescription = "back",
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = stringResource(id = R.string.traffic),
+                color = Color(0xFF34204C),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.weight(1f))
+        }
     }
 
     LaunchedEffect(days, selectedCalendar, activeMode, sortCriteria) {
@@ -129,49 +170,75 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(
-                            if (sortCriteria == SortCriteria.TOTAL) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .border(
+                            1.5.dp,
+                            if (sortCriteria == SortCriteria.TOTAL) Color(0xFF132C86) else Color(0x809E9E9E),
                             shape = RoundedCornerShape(8.dp)
                         )
+                        .clickable { sortCriteria = SortCriteria.TOTAL }
                         .padding(8.dp)
                 ) {
-                    Text(text = "Total Traffic:", fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { sortCriteria = SortCriteria.TOTAL })
+                    Text(
+                        text = stringResource(id = R.string.total),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF34204C)
+                    )
                     Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
                 }
+
                 Spacer(modifier = Modifier.width(8.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally,
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(
-                            if (sortCriteria == SortCriteria.MOBILE) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .border(
+                            1.5.dp,
+                            if (sortCriteria == SortCriteria.MOBILE) Color(0xFF132C86) else Color(0x809E9E9E),
                             shape = RoundedCornerShape(8.dp)
                         )
+                        .clickable { sortCriteria = SortCriteria.MOBILE }
                         .padding(8.dp)
                 ) {
-                    Text(text = "Mobile:", fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { sortCriteria = SortCriteria.MOBILE })
+                    Text(
+                        text = stringResource(id = R.string.mobile),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF34204C)
+                    )
                     Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
                 }
+
                 Spacer(modifier = Modifier.width(8.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally,
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(
-                            if (sortCriteria == SortCriteria.WIFI) Color.LightGray else Color.Gray.copy(alpha = 0.2f),
+                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .border(
+                            1.5.dp,
+                            if (sortCriteria == SortCriteria.WIFI) Color(0xFF132C86) else Color(0x809E9E9E),
                             shape = RoundedCornerShape(8.dp)
                         )
+                        .clickable { sortCriteria = SortCriteria.WIFI }
                         .padding(8.dp)
                 ) {
-                    Text(text = "Wi-Fi:", fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { sortCriteria = SortCriteria.WIFI })
+                    Text(
+                        text = stringResource(id = R.string.wifi),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF34204C)
+                    )
                     Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
                 }
             }
         }
+
 
         item {
             Row(
@@ -181,19 +248,42 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = days,
-                    onValueChange = { onDaysChanged(it) },
-                    label = { Text("Days") },
-                    modifier = Modifier.weight(1f)
-                )
-
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = "Choose Date",
-                        modifier = Modifier.size(35.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .padding(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = days,
+                        onValueChange = { onDaysChanged(it) },
+                        label = { Text(stringResource(id = R.string.days_count), color = Color(0xFF7B7B7B)) },
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .offset(y = 4.dp)
+                        .background(Color(0xCC132C86), shape = RoundedCornerShape(8.dp))
+                )
+                {
+
+                    IconButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .align(Alignment.Center)
+                            .zIndex(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = "Select date",
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                 }
             }
         }
@@ -201,8 +291,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
         item {
             if (showError) {
                 Text(
-                    text = "Invalid number of days",
-                    color = Color.Red,
+                    text = stringResource(id = R.string.incorrect_days_count),
+                    color = Color(0xCCAF1027),
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -210,8 +300,19 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
 
         item {
             if (!PermissionUtils.hasUsageStatsPermission(context)) {
-                Button(onClick = { PermissionUtils.requestUsageStatsPermission(context) }) {
-                    Text("Grant Usage Stats Permission")
+                Button(
+                    onClick = { PermissionUtils.requestUsageStatsPermission(context) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.grant_permission),
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
                 }
             }
         }
@@ -224,23 +325,26 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(
+                    Button(
                         onClick = { showTotalChart = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
-                            .size(width = 64.dp, height = 48.dp)
+                            .wrapContentWidth()
+                            .wrapContentHeight()
+                            .padding(2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Timeline,
-                            contentDescription = "Show Total Traffic",
-                            tint = Color.Black,
-                            modifier = Modifier.size(40.dp)
+                        Text(
+                            text = stringResource(id = R.string.total_traffic),
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
-                    Text("Total", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(
+                    Button(
                         onClick = {
                             coroutineScope.launch {
                                 isSendingTrafficData = true
@@ -267,17 +371,20 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
                                 isSendingTrafficData = false
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
-                            .size(width = 64.dp, height = 48.dp)
+                            .wrapContentWidth()
+                            .wrapContentHeight()
+                            .padding(2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.CloudUpload,
-                            contentDescription = "Send Data",
-                            tint = Color.Black,
-                            modifier = Modifier.size(40.dp)
+                        Text(
+                            text = stringResource(id = R.string.send_data),
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
-                    Text("Send", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -321,6 +428,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
                 }
                 activeMode = "calendar"
                 showDatePicker = false
+
             },
             year,
             month,
@@ -341,12 +449,13 @@ fun TrafficScreen(state: MainActivity.MainActivityState)    {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
     val context = LocalContext.current
     var icon by remember { mutableStateOf<Drawable?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    var isSelected by remember { mutableStateOf(false) }
+    var isHighlighted by remember { mutableStateOf(false) }
 
     LaunchedEffect(appData) {
         coroutineScope.launch(Dispatchers.IO) {
@@ -356,6 +465,14 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
                 Log.e("TrafficItem", "Error loading icon for ${appData.packageName}", e)
                 null
             }
+        }
+    }
+
+    LaunchedEffect(isSelected) {
+        if (isSelected) {
+            isHighlighted = true
+            delay(2000)
+            isHighlighted = false
         }
     }
 
@@ -380,29 +497,41 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
             }
+
             Column(modifier = Modifier.width(200.dp)) {
-                Text(text = appData.appName, fontWeight = FontWeight.SemiBold)
-                Text(text = "Total: ${(appData.totalBytes / 1024).toString()} Kb")
-                Text(text = "Mobile: ${(appData.mobileBytes / 1024).toString()} Kb")
-                Text(text = "Wi-Fi: ${(appData.wifiBytes / 1024).toString()} Kb")
-                Text(text = "Downlink: ${(appData.rxBytes / 1024).toString()} Kb")
-                Text(text = "Uplink: ${(appData.txBytes / 1024).toString()} Kb")
+                val textColor = Color(0xFF34204C)
+                Text(
+                    text = appData.appName,
+                    color = textColor,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(text = "${stringResource(id = R.string.total)} ${(appData.totalBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.mobile)} ${(appData.mobileBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.wifi)} ${(appData.wifiBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.downlink)} ${(appData.rxBytes / 1024)} Kb", color = textColor)
+                Text(text = "${stringResource(id = R.string.uplink)} ${(appData.txBytes / 1024)} Kb", color = textColor)
             }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            IconButton(
-                onClick = { onShowChart(appData.appName) },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.BarChart,
-                    contentDescription = "Show Chart",
-                    tint = Color.Black,
-                    modifier = Modifier.size(32.dp)
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .background(
+                    if (isHighlighted) Color(0xCC132C86) else Color(0x809E9E9E).copy(alpha = 0.5f),
+                    shape = CircleShape
                 )
-            }
-            Text("Hourly", fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
+                .clickable {
+                    isSelected = !isSelected
+                    onShowChart(appData.appName)
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.BarChart,
+                contentDescription = "Show graph",
+                tint = if (isHighlighted) Color.White else Color.Transparent,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

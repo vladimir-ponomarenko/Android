@@ -59,6 +59,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.res.stringResource
+
 
 @Composable
 fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
@@ -77,12 +79,13 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, s
     }
 
     Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp)) {
+        Surface(shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFF9E9E9E)) ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Hourly Traffic for $appName",
+                    text = stringResource(id = R.string.hourly_traffic_for_app, appName),
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
@@ -118,9 +121,10 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
         Surface(shape = RoundedCornerShape(8.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Total Hourly Traffic",
+                    text = stringResource(id = R.string.total_hourly_traffic),
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
@@ -146,9 +150,9 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
                         containerColor = Color.Transparent,
                         contentColor = Color.Black
                     ),
-                    border = BorderStroke(1.dp, Color.Black)
+                    border = BorderStroke(1.dp, Color(0xFF9E9E9E))
                 ) {
-                    Text(if (showChart) "Show Diagram" else "Show Chart")
+                    Text(text = stringResource(if (showChart) R.string.show_diagram else R.string.show_chart))
                 }
             }
         }
@@ -258,7 +262,6 @@ fun TotalHourlyTrafficChartContent(hourlyTrafficData: List<Pair<Int, AppTrafficD
         }
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
@@ -498,7 +501,6 @@ fun getTotalHourlyTrafficData(context: Context, selectedDate: Calendar? = null):
     } else {
         startTime + TimeUnit.DAYS.toMillis(1)
     }
-
 
     val trafficData = mutableListOf<TrafficDataPoint>()
 

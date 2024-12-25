@@ -110,6 +110,5 @@ dependencies {
     debugImplementation ("androidx.compose.ui:ui-test-manifest")
 
     testImplementation("org.robolectric:robolectric:4.9")
-/*    testImplementation("org.robolectric:shadows-location:4.9")
-    testImplementation ("org.robolectric:shadows-supportv4:4.9")*/
+
 }

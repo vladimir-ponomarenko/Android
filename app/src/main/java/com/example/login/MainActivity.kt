@@ -27,17 +27,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.Button
 import androidx.compose.material.Scaffold
-import androidx.compose.material.ScrollableTabRow
 import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -98,6 +97,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         private var webSocket: WebSocket? = null
         var instance: MainActivity? = null
     }
+
     init {
         instance = this
     }
@@ -124,14 +124,19 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         networkManager = NetworkManager(this, SERVER_URL, "/api/sockets/thermalmap")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         DataManager.getLocation(this, state)
-        startForegroundService()
+//        startForegroundService()
+        permissionsGranted = checkAllPermissions(this)
+
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 SendingIndicator(isSendingData)
-                MainScreen(isSendingData)
+                MainScreen(isSendingData, permissionsGranted)
             }
         }
-        PermissionUtils.checkAndRequestPermissions(this)
+
+        if (permissionsGranted) {
+            startForegroundService()
+        }
         state.loadLoginData()
         if (intent?.action == ForegroundService.ACTION_STOP_SERVICE) {
             stopForegroundService()
@@ -297,76 +302,123 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private var permissionsGranted by mutableStateOf(false)
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun MainScreen(isSendingData: Boolean) {
+    fun MainScreen(isSendingData: Boolean, permissionsGranted: Boolean) {
         val context = LocalContext.current
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
-        var isLoggedIn by remember { mutableStateOf(false) }
-
-        permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            checkPermissionsForAndroid13(context)
-        } else {
-            checkPermissionsForAndroid12(context)
-        }
+        var selectedTabIndex by remember { mutableStateOf(5) }
 
         if (!permissionsGranted) {
-            PermissionUtils.checkAndRequestPermissions(this@MainActivity)
-        }
-
-        LaunchedEffect(isWebSocketConnected) {
-            if (isWebSocketConnected) {
-                showConnectionSnackbar = true
-                scaffoldState.snackbarHostState.showSnackbar(
-                    message = "WebSocket connected!",
-                    duration = SnackbarDuration.Short
-                )
-                delay(2000)
-                showConnectionSnackbar = false
+            PermissionRequestButtons(context) { allGranted ->
+                this@MainActivity.permissionsGranted = allGranted
+                if (allGranted) {
+                    selectedTabIndex = 5
+                }
             }
-        }
+        } else {
+            LaunchedEffect(isWebSocketConnected) {
+                if (isWebSocketConnected) {
+                    showConnectionSnackbar = true
+                    scaffoldState.snackbarHostState.showSnackbar(
+                        message = "WebSocket connected!",
+                        duration = SnackbarDuration.Short
+                    )
+                    delay(2000)
+                    showConnectionSnackbar = false
+                }
+            }
 
-        Scaffold(
-            scaffoldState = scaffoldState
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
-                    if (permissionsGranted && isDataCollectionEnabled) {
-                        while (true) {
-                            DataManager.getLocation(this@MainActivity, state)
-                            DataManager.getSignalStrength(state)
-                            delay(UPDATE_INTERVAL)
+            Scaffold(scaffoldState = scaffoldState) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
+                        if (permissionsGranted && isDataCollectionEnabled) {
+                            while (true) {
+                                DataManager.getLocation(this@MainActivity, state)
+                                DataManager.getSignalStrength(state)
+                                delay(UPDATE_INTERVAL)
+                            }
                         }
                     }
-                }
+                    MainContent(
+                        state,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { newTabIndex -> selectedTabIndex = newTabIndex }
+                    )
 
-                if (permissionsGranted) {
-                    MainContent(state, isLoggedIn) { isLoggedIn = true }
-                } else {
-                    Text("Waiting for permissions...")
+                    LaunchedEffect(isSendingData) {
+                        delay(500)
+                    }
+                    SendingIndicator(isSendingData)
                 }
-
-                LaunchedEffect(isSendingData) {
-                    delay(500)
-                }
-                SendingIndicator(isSendingData)
             }
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == UpdateManager.REQUEST_INSTALL_PACKAGES && resultCode == Activity.RESULT_OK) {
-            if (state.DownloadLink.isNotBlank()) {
-                UpdateManager.startDownloadAndInstall(this, state.DownloadLink)
+    // TODO оформить (сделать дизайн) для экрана с запросами разрешений (PermissionRequestButtons)
+    @Composable
+    fun PermissionRequestButtons(context: Context, onPermissionsResult: (Boolean) -> Unit) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Button(onClick = {
+                ActivityCompat.requestPermissions(
+                    context as Activity,
+                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                    LOCATION_PERMISSION_REQUEST_CODE
+                )
+            }) {
+                Text("Запросить разрешение на местоположение")
+            }
+
+            Button(onClick = {
+                ActivityCompat.requestPermissions(
+                    context as Activity,
+                    arrayOf(android.Manifest.permission.READ_PHONE_STATE),
+                    LOCATION_PERMISSION_REQUEST_CODE
+                )
+            }) {
+                Text("Запросить разрешение на телефон")
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Button(onClick = {
+                    ActivityCompat.requestPermissions(
+                        context as Activity,
+                        arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                        LOCATION_PERMISSION_REQUEST_CODE
+                    )
+                }) {
+                    Text("Запросить разрешение на фоновое местоположение")
+                }
+            }
+
+//            // Запрос разрешения на FOREGROUND_SERVICE_LOCATION только для Android 14+
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+//                Button(onClick = {
+//                    ActivityCompat.requestPermissions(
+//                        context as Activity,
+//                        arrayOf(android.Manifest.permission.FOREGROUND_SERVICE_LOCATION),
+//                        LOCATION_PERMISSION_REQUEST_CODE
+//                    )
+//                }) {
+//                    Text("Запросить разрешение на сервис местоположения")
+//                }
+//            }
+
+            Button(onClick = {
+                onPermissionsResult(checkAllPermissions(context))
+            }) {
+                Text("Я предоставил все разрешения")
             }
         }
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -374,24 +426,67 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PermissionUtils.REQUEST_CODE_PERMISSIONS) {
-            val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             permissionsGranted = allPermissionsGranted
 
+            setContent {
+                MainScreen(isSendingData, permissionsGranted)
+            }
+
             if (allPermissionsGranted) {
-                lifecycleScope.launch {
-                    delay(100)
-                    setContent {
-                        MainScreen(isSendingData)
-                    }
-                }
+                Log.d(TAG, "All permissions granted")
+                startForegroundService()
+            } else {
+                Log.d(TAG, "Permissions not granted")
             }
         }
     }
 
+    private fun checkAllPermissions(context: Context): Boolean {
+//        Если приложения, предназначенные для Android 14, используют службу переднего плана,
+//        они должны объявить определенное разрешение на основе типа службы переднего плана,
+//        которое представлено в Android 14.
+//        https://developer.android.com/about/versions/14/changes/fgs-types-required?hl=ru
+        val hasForegroundServiceLocationPermission =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.FOREGROUND_SERVICE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // На версиях ниже Android 14 разрешение не требуется
+            }
+
+        val hasBackgroundLocationPermission =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+
+        return ActivityCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.READ_PHONE_STATE
+                ) == PackageManager.PERMISSION_GRANTED &&
+                hasBackgroundLocationPermission &&
+                hasForegroundServiceLocationPermission
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun MainContent(state: MainActivity.MainActivityState, isLoggedIn: Boolean, onLoginSuccess: () -> Unit) {
+    fun MainContent(
+        state: MainActivity.MainActivityState,
+        selectedTabIndex: Int,
+        onTabSelected: (Int) -> Unit
+    ) {
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
         var permissionsGranted by remember {
@@ -449,46 +544,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        ScrollableTabRow(
-                            selectedTabIndex = state.selectedTabIndex,
-                            modifier = Modifier.fillMaxWidth(),
-                            edgePadding = 0.dp
-                        ) {
-                            Tab(
-                                selected = state.selectedTabIndex == 0,
-                                onClick = { state.selectedTabIndex = 0 },
-                                text = { Text("Сервер") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 1,
-                                onClick = { state.selectedTabIndex = 1 },
-                                text = { Text("Данные") }
-                            )
-//                            Tab(
-//                                selected = state.selectedTabIndex == 2,
-//                                onClick = { state.selectedTabIndex = 2 },
-//                                text = { Text("Графики") }
-//                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 2,
-                                onClick = { state.selectedTabIndex = 2 },
-                                text = { Text("Карта") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 3,
-                                onClick = { state.selectedTabIndex = 3 },
-                                text = { Text("Трафик") }
-                            )
-                            Tab(
-                                selected = state.selectedTabIndex == 4,
-                                onClick = { state.selectedTabIndex = 4 },
-                                text = { Text("Обновление") }
-                            )
-                        }
-                        when (state.selectedTabIndex) {
+                        when (selectedTabIndex) {
                             0 -> LoginScreen(
                                 state,
-                                onLoginSuccess = onLoginSuccess,
+                                onLoginSuccess = { onTabSelected(5) },
                                 onCellInfoDataClick = {
                                     coroutineScope.launch {
                                         if (!state.isSendingCellInfoData) {
@@ -512,68 +571,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                     }
                                 }
                             )
-                            1 -> DataScreen(state)
-//                            2 -> RSRPGraph(state)
-                            2 -> MapScreen(state)
-                            3 -> TrafficScreen(state)
-                            4 -> UpdateScreen(state.DownloadLink)
+                            1 -> DataScreen(state, onNavigateTo = onTabSelected)
+//                         2 -> RSRPGraph(state)
+                            2 -> MapScreen(state, onNavigateTo = onTabSelected)
+                            3 -> TrafficScreen(state, onNavigateTo = onTabSelected)
+                            4 -> SettingsScreen(state, onNavigateTo = { index, uuid, jwtToken -> onTabSelected(index)})
+                            5 -> NavigationScreen(onNavigateTo = onTabSelected)
+                            7 -> DataSendingScreen(state, onNavigateTo = onTabSelected, onCellInfoDataClick  = {})
                         }
                     }
-                } else {
-                    Text("Waiting for permissions...")
+                }
+                else {
+                    PermissionRequestButtons(context) { allGranted ->
+                        permissionsGranted = allGranted
+                    }
                 }
             }
         }
-    }
-
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun connectWebSocket(jwt: String) {
-        if (webSocket != null) {
-            return
-        }
-        webSocket = networkManager.connectWebSocket(
-            jwt,
-            onOpen = { webSocket, _ ->
-                Log.d(TAG, "WebSocket connection established")
-                isWebSocketConnected = true
-                lifecycleScope.launch {
-                    while (true) {
-                        delay(UPDATE_INTERVAL)
-                        val jsonString = DataManager.generateJSON(state)
-                        webSocket.send(jsonString)
-                        isSendingData = true
-                        if (isSendingData == true){
-                            Log.d(TAG, "SendingIndicator = TRUE")
-                        }
-                        delay(2000)
-                        isSendingData = false
-                        if (isSendingData == false){
-                            Log.d(TAG, "SendingIndicator = FALSE")
-                        }
-                        Log.d(TAG, "Sent JSON to server: $jsonString")
-                    }
-                }
-            },
-            onMessage = { _, text ->
-                Log.d(TAG, "Received message from server: $text")
-            },
-            onClosed = { webSocket, code, reason ->
-                Log.d(TAG, "WebSocket connection closed: $code, $reason")
-                isWebSocketConnected = false
-                this@MainActivity.webSocket = null
-            },
-            onFailure = { _, t, response ->
-                Log.e(TAG, "WebSocket connection failure", t)
-                if (response != null) {
-                    Log.e(TAG, "Response message: ${response.message}")
-                    Log.e(TAG, "Response code: ${response.code}")
-                }
-                isWebSocketConnected = false
-                this@MainActivity.webSocket = null
-            }
-        )
     }
 
     @Composable
@@ -721,7 +735,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @RequiresApi(Build.VERSION_CODES.O)
     fun startForegroundService() {
         val serviceIntent = Intent(this, ForegroundService::class.java)
-        startForegroundService(serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.FOREGROUND_SERVICE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                startForegroundService(serviceIntent)
+            } else {
+                Log.e(TAG, "Foreground service location permission not granted")
+            }
+        } else {
+            startForegroundService(serviceIntent)
+        }
     }
 
     fun stopForegroundService() {

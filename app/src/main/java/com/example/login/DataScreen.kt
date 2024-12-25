@@ -33,13 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.Button
-import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.IconButton
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
@@ -81,16 +75,29 @@ import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.reflect.full.declaredMemberProperties
+import androidx.compose.material3.*
+import androidx.compose.foundation.border
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Text
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.res.stringResource
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DataScreen(state: MainActivity.MainActivityState) {
+fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
     val context = LocalContext.current
     var selectedTabIndex by remember { mutableStateOf(0) }
-    var expanded by remember { mutableStateOf(false) }
+    var selectedChartType by rememberSaveable { mutableStateOf("RSRP") }
+
     val cellInfoDataByType = remember { mutableStateOf(mapOf<String, List<CellInfoData>>()) }
-    var selectedChartType by rememberSaveable { mutableStateOf(getDefaultChartType(selectedTabIndex)) }
 
     val cellIdToColorLTE = remember { mutableStateMapOf<String, Color>() }
     val cellIdToColorGSM = remember { mutableStateMapOf<String, Color>() }
@@ -114,44 +121,34 @@ fun DataScreen(state: MainActivity.MainActivityState) {
     }
 
     val chartData = when (selectedTabIndex) {
-        0 -> {
-            when (selectedChartType) {
-                "RSRP" -> state.rsrpDetailedData
-                "RSSI" -> state.rssiDetailedData
-                "RSRQ" -> state.rsrqDetailedData
-                "AsuLevel" -> state.asuLevelLTEDetailed
-                "Level" -> state.levelLTEDetailed
-                "Earfcn" -> state.earfcnLTEDetailed
-                else -> state.rsrpDetailedData
-            }
+        0 -> when (selectedChartType) {
+            "RSRP" -> state.rsrpDetailedData
+            "RSSI" -> state.rssiDetailedData
+            "RSRQ" -> state.rsrqDetailedData
+            "AsuLevel" -> state.asuLevelLTEDetailed
+            "Level" -> state.levelLTEDetailed
+            "Earfcn" -> state.earfcnLTEDetailed
+            else -> state.rsrpDetailedData
         }
-        1 -> {
-            when (selectedChartType) {
-                "RSSI" -> state.rssiDataGsmDetailed
-                "ARFCN" -> state.arfcnGsmDetailed
-                else -> state.rssiDataGsmDetailed
-            }
+        1 -> when (selectedChartType) {
+            "RSSI" -> state.rssiDataGsmDetailed
+            "ARFCN" -> state.arfcnGsmDetailed
+            else -> state.rssiDataGsmDetailed
         }
-        2 -> {
-            when (selectedChartType) {
-                "RSCP" -> state.rscpDataWcdmaDetailed
-                "Level" -> state.levelWcdmaDetailed
-                else -> state.rscpDataWcdmaDetailed
-            }
+        2 -> when (selectedChartType) {
+            "RSCP" -> state.rscpDataWcdmaDetailed
+            "Level" -> state.levelWcdmaDetailed
+            else -> state.rscpDataWcdmaDetailed
         }
-        3 -> {
-            when (selectedChartType) {
-                "RSSI" -> state.rssiDataCdmaDetailed
-                "Level" -> state.levelCdmaDetailed
-                else -> state.rssiDataCdmaDetailed
-            }
+        3 -> when (selectedChartType) {
+            "RSSI" -> state.rssiDataCdmaDetailed
+            "Level" -> state.levelCdmaDetailed
+            else -> state.rssiDataCdmaDetailed
         }
-        4 -> {
-            when (selectedChartType) {
-                "RSSI" -> state.rssiDataNrDetailed
-                "AsuLevel" -> state.asuLevelNrDetailed
-                else -> state.rssiDataNrDetailed
-            }
+        4 -> when (selectedChartType) {
+            "RSSI" -> state.rssiDataNrDetailed
+            "AsuLevel" -> state.asuLevelNrDetailed
+            else -> state.rssiDataNrDetailed
         }
         else -> emptyList()
     }
@@ -174,112 +171,32 @@ fun DataScreen(state: MainActivity.MainActivityState) {
             cellIdToColor = currentCellIdToColor
         )
     } else {
-        Scaffold { innerPadding ->
+        Scaffold(
+            topBar = {
+                DataTopBar(
+                    state = state,
+                    onNavigateTo = onNavigateTo,
+                    selectedTabIndex = selectedTabIndex,
+                    onNetworkChange = { selectedTabIndex = it },
+                    selectedChartType = selectedChartType,
+                    onChartTypeChange = { selectedChartType = it }
+                )
+            }
+        ) { innerPadding ->
             LazyColumn(
                 modifier = Modifier
                     .padding(innerPadding)
                     .fillMaxSize()
             ) {
                 item {
-                    TabRow(selectedTabIndex = selectedTabIndex) {
-                        Tab(
-                            text = { Text("LTE") },
-                            selected = selectedTabIndex == 0,
-                            onClick = {
-                                selectedTabIndex = 0
-                                selectedChartType = getDefaultChartType(selectedTabIndex)
-                            }
-                        )
-                        Tab(
-                            text = { Text("GSM") },
-                            selected = selectedTabIndex == 1,
-                            onClick = {
-                                selectedTabIndex = 1
-                                selectedChartType = getDefaultChartType(selectedTabIndex)
-                            }
-                        )
-                        Tab(
-                            text = { Text("WCDMA") },
-                            selected = selectedTabIndex == 2,
-                            onClick = {
-                                selectedTabIndex = 2
-                                selectedChartType = getDefaultChartType(selectedTabIndex)
-                            }
-                        )
-                        Tab(
-                            text = { Text("CDMA") },
-                            selected = selectedTabIndex == 3,
-                            onClick = {
-                                selectedTabIndex = 3
-                                selectedChartType = getDefaultChartType(selectedTabIndex)
-                            }
-                        )
-                        Tab(
-                            text = { Text("NR") },
-                            selected = selectedTabIndex == 4,
-                            onClick = {
-                                selectedTabIndex = 4
-                                selectedChartType = getDefaultChartType(selectedTabIndex)
-                            }
-                        )
-                    }
-                }
-
-                item {
                     DetailedChartContent(
                         chartData = chartData,
                         state = state,
-                        onDismiss = { /* Ничего не делаем */ },
+                        onDismiss = {},
                         networkType = getNetworkTypeShortName(selectedTabIndex),
-                        cellIdToColor = currentCellIdToColor,
-                        onFullscreenToggle = { state.isFullscreen = !state.isFullscreen }
+                        onFullscreenToggle = { state.isFullscreen = !state.isFullscreen },
+                        cellIdToColor = currentCellIdToColor
                     )
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Column {
-                            Button(onClick = { expanded = true }) {
-                                Text(selectedChartType)
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                when (selectedTabIndex) {
-                                    0 -> {
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSRP"; expanded = false }) { Text("RSRP") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSSI"; expanded = false }) { Text("RSSI") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSRQ"; expanded = false }) { Text("RSRQ") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "AsuLevel"; expanded = false }) { Text("AsuLevel") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "Level"; expanded = false }) { Text("Level") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "Earfcn"; expanded = false }) { Text("Earfcn") }
-                                    }
-                                    1 -> {
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSSI"; expanded = false }) { Text("RSSI") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "ARFCN"; expanded = false }) { Text("ARFCN") }
-                                    }
-                                    2 -> {
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSCP"; expanded = false }) { Text("RSCP") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "Level"; expanded = false }) { Text("Level") }
-                                    }
-                                    3 -> {
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSSI"; expanded = false }) { Text("RSSI") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "Level"; expanded = false }) { Text("Level") }
-                                    }
-                                    4 -> {
-                                        DropdownMenuItem(onClick = { selectedChartType = "RSSI"; expanded = false }) { Text("RSSI") }
-                                        DropdownMenuItem(onClick = { selectedChartType = "AsuLevel"; expanded = false }) { Text("AsuLevel") }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
 
                 item {
@@ -294,18 +211,151 @@ fun DataScreen(state: MainActivity.MainActivityState) {
     }
 }
 
+@Composable
+fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Unit,  selectedTabIndex: Int,  onNetworkChange: (Int) -> Unit,  selectedChartType: String, onChartTypeChange: (String) -> Unit) {
+    var expandedNetworkMenu by remember { mutableStateOf(false) }
+    var expandedChartMenu by remember { mutableStateOf(false) }
+    val networkNames = listOf("LTE", "GSM", "WCDMA", "CDMA", "NR")
+
+    val chartTypesByNetwork = mapOf(
+        0 to listOf("RSRP", "RSSI", "RSRQ", "AsuLevel", "Level", "Earfcn"),
+        1 to listOf("RSSI", "ARFCN"),
+        2 to listOf("RSCP", "Level"),
+        3 to listOf("RSSI", "Level"),
+        4 to listOf("RSSI", "AsuLevel")
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(Color(0xFFF8F8F8))
+            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onNavigateTo(5) }) {
+                Image(
+                    painter = painterResource(id = R.drawable.transition_light),
+                    contentDescription = "Назад",
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = stringResource(id = R.string.data),
+                color = Color(0xFF34204C),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.weight(1f))
+
+            Box {
+                Button(
+                    onClick = { expandedNetworkMenu = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0x809E9E9E)),
+                    shape = RoundedCornerShape(5.dp),
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(36.dp)
+                        .padding(end = 20.dp)
+                ) {
+                    Text(
+                        text = networkNames[selectedTabIndex],
+                        color = Color(0xB334204C),
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = expandedNetworkMenu,
+                    onDismissRequest = { expandedNetworkMenu = false },
+                    modifier = Modifier
+                        .width(90.dp)
+                        .background(Color.White)
+                        .align(Alignment.CenterStart)
+                ) {
+                    networkNames.forEachIndexed { index, name ->
+                        DropdownMenuItem(onClick = {
+                            onNetworkChange(index)
+                            expandedNetworkMenu = false
+                        }) {
+                            Text(name, color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+
+            Box {
+                Button(
+                    onClick = { expandedChartMenu = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0x809E9E9E)),
+                    shape = RoundedCornerShape(5.dp),
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(36.dp)
+                        .padding(end = 20.dp)
+                ) {
+                    Text(
+                        text = selectedChartType,
+                        color = Color(0xB334204C),
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = expandedChartMenu,
+                    onDismissRequest = { expandedChartMenu = false },
+                    modifier = Modifier
+                        .width(90.dp)
+                        .background(Color.White)
+                        .align(Alignment.CenterStart)
+                ) {
+
+                    chartTypesByNetwork[selectedTabIndex]?.forEach { chartType ->
+                        DropdownMenuItem(onClick = {
+                            onChartTypeChange(chartType)
+                            expandedChartMenu = false
+                        }) {
+                            Text(chartType, color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
+    val backgroundColor = Color(0xFFFFFFFFF)
+    val textColor = Color(0xCC34204C)
+    val borderColor = Color(0x809E9E9E)
+    val paddingModifier = Modifier.padding(horizontal = 15.dp)
+
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .then(paddingModifier),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Cell Type: $cellType")
+            Text("Cell Type: $cellType", style = MaterialTheme.typography.titleMedium, color = textColor)
+
             for (field in CellInfoData::class.declaredMemberProperties) {
                 val fieldValue = field.getter.call(cellInfo)
                 if (field.name != "type" &&
@@ -321,7 +371,11 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                                     "asuLevel"
                                 )
                             ) {
-                                Text("${field.name.capitalize()}: $fieldValue")
+                                Text(
+                                    text = "${field.name.capitalize()}: $fieldValue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
                             }
                         }
                         "GSM" -> {
@@ -330,7 +384,11 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                                     "timingAdvance", "level", "asuLevel"
                                 )
                             ) {
-                                Text("${field.name.capitalize()}: $fieldValue")
+                                Text(
+                                    text = "${field.name.capitalize()}: $fieldValue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
                             }
                         }
                         "WCDMA" -> {
@@ -339,7 +397,11 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                                     "asuLevel", "ecNo"
                                 )
                             ) {
-                                Text("${field.name.capitalize()}: $fieldValue")
+                                Text(
+                                    text = "${field.name.capitalize()}: $fieldValue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
                             }
                         }
                         "CDMA" -> {
@@ -348,7 +410,11 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                                     "evdoSnr", "cdmaLevel", "asuLevel", "level"
                                 )
                             ) {
-                                Text("${field.name.capitalize()}: $fieldValue")
+                                Text(
+                                    text = "${field.name.capitalize()}: $fieldValue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
                             }
                         }
                         "NR" -> {
@@ -358,7 +424,11 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
                                     "csiCqiTableIndex", "ssRsrpDbm", "timingAdvanceMicros", "csiCqiReport"
                                 )
                             ) {
-                                Text("${field.name.capitalize()}: $fieldValue")
+                                Text(
+                                    text = "${field.name.capitalize()}: $fieldValue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
                             }
                         }
                     }
@@ -371,58 +441,172 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
 
 @Composable
 fun PhoneInfoCard(state: MainActivity.MainActivityState) {
+    val backgroundColor = Color(0xFFFFFFFFF)
+    val textColor = Color(0xCC34204C)
+    val borderColor = Color(0x809E9E9E)
+    val paddingModifier = Modifier.padding(horizontal = 15.dp)
     val context = LocalContext.current
     val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-    val cardBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
+    val cardBackgroundColor = backgroundColor
 
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(vertical = 4.dp)
+            .then(paddingModifier),
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Phone Information", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(id = R.string.phone_info),
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor
+            )
             Divider(Modifier.padding(vertical = 8.dp))
 
-            Text("Device Model: ${Build.MODEL}")
-            Text("Manufacturer: ${Build.MANUFACTURER}")
-            Text("Brand: ${Build.BRAND}")
-            Text("Android Version: ${Build.VERSION.RELEASE} (SDK: ${Build.VERSION.SDK_INT})")
-            Text("Board: ${Build.BOARD}")
-            Text("Bootloader: ${Build.BOOTLOADER}")
-            Text("Device: ${Build.DEVICE}")
-            Text("Hardware: ${Build.HARDWARE}")
-            Text("Product: ${Build.PRODUCT}")
+            Text(
+                text = stringResource(id = R.string.device_model, Build.MODEL ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.manufacturer, Build.MANUFACTURER ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.brand, Build.BRAND ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.android_version, Build.VERSION.RELEASE, Build.VERSION.SDK_INT),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.board, Build.BOARD ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.bootloader, Build.BOOTLOADER ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.device, Build.DEVICE ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.hardware, Build.HARDWARE ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.product, Build.PRODUCT ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.operator, telephonyManager?.networkOperatorName ?: "Unknown"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.network_type, getNetworkType(telephonyManager?.networkType ?: 0)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
 
-            Text("Operator: ${telephonyManager.networkOperatorName}")
-            Text("Network Type: ${getNetworkType(telephonyManager.networkType)}")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Text("SIM Operator: ${telephonyManager.simOperatorName}")
-                Text("SIM State: ${getSimState(telephonyManager.simState)}")
+                Text(
+                    text = stringResource(id = R.string.sim_operator, telephonyManager?.simOperatorName ?: "N/A"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+                Text(
+                    text = stringResource(id = R.string.sim_state, getSimState(telephonyManager?.simState ?: 0)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
             }
-            Text("Phone Type: ${getPhoneType(telephonyManager.phoneType)}")
+            Text(
+                text = stringResource(id = R.string.phone_type, getPhoneType(telephonyManager?.phoneType ?: 0)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Text("Data Network Type: ${getDataNetworkType(telephonyManager.dataNetworkType)}")
+                Text(
+                    text = stringResource(id = R.string.data_network_type, getDataNetworkType(telephonyManager?.dataNetworkType ?: 0)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
             }
 
-            Text("Latitude: ${state.Latitude}")
-            Text("Longitude: ${state.Longtitude}")
-            Text("Altitude: ${state.Altitude}")
+            Text(
+                text = stringResource(id = R.string.latitude, state.Latitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.longitude, state.Longtitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
+            Text(
+                text = stringResource(id = R.string.altitude, state.Altitude),
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor
+            )
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+                val subscriptionManager =
+                    context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
                 val subscriptions = subscriptionManager.activeSubscriptionInfoList
 
                 if (subscriptions.isNullOrEmpty()) {
                     Text("No active SIM cards found.")
                 } else {
                     for (subscription in subscriptions) {
-                        Text("SIM ${subscription.simSlotIndex + 1} Info:")
-                        Text("  Carrier Name: ${subscription.carrierName}")
-                        Text("  Country ISO: ${subscription.countryIso}")
-                        Text("  Number: ${subscription.number ?: "N/A"}")
+                        Text(
+                            text = stringResource(
+                                id = R.string.sim_info,
+                                subscription.simSlotIndex + 1
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.carrier_name,
+                                subscription.carrierName ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.country_iso,
+                                subscription.countryIso ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.number,
+                                subscription.number ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
                     }
                 }
             }
@@ -877,7 +1061,6 @@ internal fun addChartData(chartData: MutableList<Pair<Long, Float>>, value: Stri
         chartData.removeAt(0)
     }
 }
-
 
 private fun getDefaultChartType(tabIndex: Int): String {
     return when (tabIndex) {

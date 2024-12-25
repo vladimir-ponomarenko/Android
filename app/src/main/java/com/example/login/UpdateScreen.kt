@@ -64,3 +64,4 @@ fun UpdateScreen(downloadLink: String) {
         }
     }
 }
+

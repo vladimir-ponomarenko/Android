@@ -1,3 +1,83 @@
 <resources>
+    <string name="app_logo_desc">Логотип приложения</string>
+    <string name="registration_title">Регистрация</string>
+    <string name="email_label">Электронная почта</string>
+    <string name="password_label">Пароль</string>
+    <string name="uuid_label">UUID</string>
+    <string name="jwt_token_label">JWT Токен</string>
+    <string name="remember_me">Запомнить меня</string>
+    <string name="send_cell_info">Отправить CellInfoData</string>
+    <string name="register">Зарегистрироваться</string>
+    <string name="login">Войти</string>
+    <string name="registration_success">Регистрация успешна! Ваш JWT токен: %1$s</string>
+    <string name="registration_failure">Регистрация не удалась. Пожалуйста, попробуйте снова.</string>
+
+    <!-- Меню -->
+    <string name="menu_title">Меню</string>
+    <string name="map_button_text">Карта</string>
+    <string name="traffic_button_text">Трафик</string>
+    <string name="data_button_text">Данные</string>
+    <string name="settings_button_text">Настройки</string>
+
+    <!-- Карта -->
+    <string name="map_screen_title">Карта</string>
+    <string name="last_update_time">Последнее обновление</string>
+    <string name="network_selector">сеть</string>
+    <string name="signal_distribution_title">Распределение силы сигнала</string>
+    <string name="no_data_message">Нет данных для отображения</string>
+
+    <!-- Трафик -->
+    <string name="traffic">Трафик</string>
+    <string name="days_count">Количество дней</string>
+    <string name="incorrect_days_count">Неверное количество дней</string>
+    <string name="grant_permission">Предоставить доступ к статистике</string>
+    <string name="total_traffic">Общий трафик</string>
+    <string name="send_data">Отправить данные</string>
+    <string name="total">Общий:</string>
+    <string name="mobile">Мобильный:</string>
+    <string name="wifi">Wi-Fi:</string>
+    <string name="downlink">Прием:</string>
+    <string name="uplink">Отправка:</string>
+    <string name="hourly_traffic_for_app">Часовой трафик для %1$s</string> <!-- %1$s - это placeholder для имени приложения -->
+    <string name="total_hourly_traffic">Общий часовой трафик</string>
+    <string name="show_chart">Показать график</string>
+    <string name="show_diagram">Показать диаграмму</string>
+
+    <!-- Данные -->
+    <string name="data">Данные</string>
+    <string name="phone_info">Информация о телефоне</string>
+    <string name="device_model">Модель устройства: %1$s</string>
+    <string name="manufacturer">Производитель: %1$s</string>
+    <string name="brand">Бренд: %1$s</string>
+    <string name="android_version">Версия Android: %1$s (SDK: %2$d)</string>
+    <string name="board">Плата: %1$s</string>
+    <string name="bootloader">Загрузчик: %1$s</string>
+    <string name="device">Устройство: %1$s</string>
+    <string name="hardware">Аппаратное обеспечение: %1$s</string>
+    <string name="product">Продукт: %1$s</string>
+    <string name="operator">Оператор: %1$s</string>
+    <string name="network_type">Тип сети: %1$s</string>
+    <string name="sim_operator">Оператор SIM: %1$s</string>
+    <string name="sim_state">Состояние SIM: %1$s</string>
+    <string name="phone_type">Тип телефона: %1$s</string>
+    <string name="data_network_type">Тип сети передачи данных: %1$s</string>
+    <string name="latitude">Широта: %1$sf</string>
+    <string name="longitude">Долгота: %1$s</string>
+    <string name="altitude">Высота: %1$s</string>
+    <string name="sim_info">Информация о SIM %1$d:</string>
+    <string name="carrier_name">Оператор: %1$s</string>
+    <string name="country_iso">Код страны: %1$s</string>
+    <string name="number">Номер: %1$s</string>
+
+    <!-- Настройки -->
     <string name="app_name">SIGNAL</string>
+    <string name="settings_title">Настройки</string>
+    <string name="interface_language">Язык интерфейса</string>
+    <string name="notifications">Уведомления</string>
+    <string name="enabled">Вкл.</string>
+    <string name="appearance">Внешний вид</string>
+    <string name="help_and_feedback">Помощь и обратная связь</string>
+    <string name="sending_collected_data">Отправка собранных данных</string>
+    <string name="reset_app">Сбросить приложение</string>
+    <string name="not_specified">Не указано</string>
 </resources>
