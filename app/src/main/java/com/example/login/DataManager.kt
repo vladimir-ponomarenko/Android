@@ -48,6 +48,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
+import kotlinx.coroutines.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
 object DataManager {
     private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
     private const val TAG = "DataManager"
@@ -717,24 +721,15 @@ object DataManager {
     suspend fun saveCellInfoToJsonFile(context: Context, messageToData2: MessageToData2) {
         withContext(Dispatchers.IO) {
             try {
-                // Получаем директорию для хранения данных в области, предоставленной приложению
+                // Директория для хранения файлов
                 val signalDataDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Signal_data")
-
-                // Если директория не существует, создаем ее
-                if (!signalDataDir.exists()) {
-                    val created = signalDataDir.mkdirs()
-                    if (created) {
-                        Log.d(TAG, "Directory created: ${signalDataDir.absolutePath}")
-                    } else {
-                        Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
-                        return@withContext
-                    }
+                if (!signalDataDir.exists() && !signalDataDir.mkdirs()) {
+                    Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
+                    return@withContext
                 }
 
-                // Путь к файлу
+                // Создание или открытие файла
                 val file = File(signalDataDir, fileName)
-
-                // Проверка на наличие данных
                 val hasData = messageToData2.cdma.cellInfoList.isNotEmpty() ||
                         messageToData2.gsm.cellInfoList.isNotEmpty() ||
                         messageToData2.wcdma.cellInfoList.isNotEmpty() ||
@@ -742,6 +737,7 @@ object DataManager {
                         messageToData2.nr.cellInfoList.isNotEmpty()
 
                 if (hasData) {
+                    // Создание JSON-объекта
                     val modifiedJson = buildJsonObject {
                         put("jwt", messageToData2.jwt)
                         put("UUID", messageToData2.UUID)
@@ -768,7 +764,7 @@ object DataManager {
                         }
                     }
 
-                    // Запись данных в файл
+                    // Запись в файл
                     val outputStream = FileOutputStream(file, true)
                     val jsonMessageToData2 = modifiedJson.toString() + "\n"
                     outputStream.write(jsonMessageToData2.toByteArray())
@@ -776,27 +772,12 @@ object DataManager {
 
                     Log.d(TAG, "JSON to be saved:\n$jsonMessageToData2")
 
-                    // Получаем текущий размер файла
                     val fileSize = file.length()
                     Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
 
-                    // Отправка файла если его размер больше 1 МБ
-                    if (fileSize >= 1_048_576) {  // 1 МБ
-                        if (MainActivity.state.isSendingCellInfoData) {
-                            MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
-                                if (success) {
-                                    Log.d(TAG, "CellInfo SENT TO SERVER from file: ${file.absolutePath}")
-                                } else {
-                                    Log.e(TAG, "FAILED TO SEND CellInfo from file: ${file.absolutePath}")
-                                }
-                                // Удаляем файл после отправки
-                                if (success || !MainActivity.state.isSendingCellInfoData) {
-                                    file.delete()
-                                }
-                            }
-                        } else {
-                            file.delete()
-                        }
+                    // Автоматическая отправка файла, если размер больше 1 МБ
+                    if (fileSize >= 1_048_576) { // 1 МБ
+                        sendFileWithRetry(context, file)
 
                         // Переименование файла для дальнейших записей
                         fileCounter = (fileCounter % maxFileCount) + 1
@@ -804,7 +785,6 @@ object DataManager {
                     }
 
                     Log.d(TAG, "CellInfo saved to file: ${file.absolutePath}")
-                    Log.d(TAG, "File path: ${file.absolutePath}")
                 } else {
                     Log.d(TAG, "Skipping empty CellInfo data")
                 }
@@ -814,18 +794,47 @@ object DataManager {
         }
     }
 
-    // Функция для конвертации размера файла в человекочитаемый формат
-    fun getReadableFileSize(size: Long): String {
-        val bytesInKB = 1024
-        val bytesInMB = bytesInKB * 1024
-        val bytesInGB = bytesInMB * 1024
+    // Отправка файла на сервер с повторной попыткой
+    private suspend fun sendFileWithRetry(context: Context, file: File) {
+        var success = false
+        var attempts = 0
+        while (!success && attempts < 5) { // Повторить максимум 5 раз
+            success = try {
+                sendFileToServer(file)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error sending file to server on attempt ${attempts + 1}: ", e)
+                false
+            }
 
-        return when {
-            size < bytesInKB -> "$size bytes"
-            size < bytesInMB -> String.format("%.2f KB", size / bytesInKB.toDouble())
-            size < bytesInGB -> String.format("%.2f MB", size / bytesInMB.toDouble())
-            else -> String.format("%.2f GB", size / bytesInGB.toDouble())
+            if (!success) {
+                attempts++
+                delay(60000) // Задержка 60 секунд между попытками
+            }
         }
+
+        if (success) {
+            Log.d(TAG, "File sent successfully: ${file.absolutePath}")
+            file.delete()
+        } else {
+            Log.e(TAG, "Failed to send file after 5 attempts: ${file.absolutePath}")
+        }
+    }
+
+    // Отправка файла на сервер
+    private suspend fun sendFileToServer(file: File): Boolean {
+        return suspendCoroutine { continuation ->
+            MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
+                continuation.resume(success)
+            }
+        }
+    }
+
+    // Утилита для преобразования размера файла в удобный формат
+    private fun getReadableFileSize(size: Long): String {
+        if (size <= 0) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
+        return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
     }
 
 
