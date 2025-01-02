@@ -58,7 +58,7 @@ object DataManager {
 
     private var fileCounter = 1
     private val maxFileCount = 10
-    private var fileName = "Signal_data_$fileCounter.txt"
+    internal var fileName = "Signal_data_$fileCounter.txt"
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
@@ -780,7 +780,7 @@ object DataManager {
         }
     }
 
-    private suspend fun sendFileWithRetry(context: Context, file: File) {
+    internal suspend fun sendFileWithRetry(context: Context, file: File) {
         var success = false
         var attempts = 0
         while (!success && attempts < 5) {
@@ -797,14 +797,14 @@ object DataManager {
             }
         }
 
-        val (pendingCount, successCount) = DataManager.getFileCounters(context)
+        val (pendingCount, successCount) = getFileCounters(context)
         if (success) {
             Log.d(TAG, "File sent successfully: ${file.absolutePath}")
             file.delete()
-            DataManager.updateFileCounters(context, pendingCount - 1, successCount + 1)
+            updateFileCounters(context, pendingCount, successCount + 1)
         } else {
             Log.e(TAG, "Failed to send file after 5 attempts: ${file.absolutePath}")
-            DataManager.updateFileCounters(context, pendingCount + 1, successCount)
+            updateFileCounters(context, pendingCount + 1, successCount)
         }
     }
 

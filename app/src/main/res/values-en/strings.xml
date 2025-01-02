@@ -6,7 +6,8 @@
     <string name="uuid_label">UUID</string>
     <string name="jwt_token_label">JWT Token</string>
     <string name="remember_me">Remember me</string>
-    <string name="send_cell_info">Send CellInfoData</string>
+    <string name="send_cell_info">Send file</string>
+    <string name="delete_file">Delete file</string>
     <string name="register">Register</string>
     <string name="login">Login</string>
     <string name="registration_success">Registration successful! Your JWT token is: %1$s</string>

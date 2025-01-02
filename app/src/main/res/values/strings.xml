@@ -6,7 +6,8 @@
     <string name="uuid_label">UUID</string>
     <string name="jwt_token_label">JWT Токен</string>
     <string name="remember_me">Запомнить меня</string>
-    <string name="send_cell_info">Отправить CellInfoData</string>
+    <string name="send_cell_info">Отправить файл</string>
+    <string name="delete_file">Удалить файл</string>
     <string name="register">Зарегистрироваться</string>
     <string name="login">Войти</string>
     <string name="registration_success">Регистрация успешна! Ваш JWT токен: %1$s</string>

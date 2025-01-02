@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -21,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Checkbox
+import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -44,17 +46,32 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
+// Предварительный просмотр UI
+@RequiresApi(Build.VERSION_CODES.O)
+@Preview(showBackground = true)
+@Composable
+fun PreviewLoginScreen() {
+    val state = MainActivity.MainActivityState(LocalContext.current)
+    LoginScreen(
+        state = state,
+        onLoginSuccess = {},
+        onCellInfoDataClick = {},
+        onBackClick = {}
+    )
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun LoginScreen(
     state: MainActivity.MainActivityState,
     onLoginSuccess: () -> Unit,
-    onCellInfoDataClick: () -> Unit
+    onCellInfoDataClick: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     var email by remember { mutableStateOf(state.Email) }
@@ -78,8 +95,24 @@ fun LoginScreen(
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            IconButton(onClick = onBackClick) {
+                Image(
+                    painter = painterResource(id = R.drawable.transition_light),
+                    contentDescription = stringResource(R.string.settings_title),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
         if (showRegistration) {
             RegistrationForm(
                 email = email,
@@ -101,7 +134,6 @@ fun LoginScreen(
                                 showSuccessMessage = true
                                 showRegistration = false
                             } else {
-
                                 showErrorMessage = true
                             }
                         }
