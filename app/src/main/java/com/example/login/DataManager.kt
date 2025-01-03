@@ -72,6 +72,8 @@ object DataManager {
     private const val PREFS_NAME = "FileUploadPrefs"
     private const val KEY_PENDING_COUNT = "pending_count"
     private const val KEY_SUCCESS_COUNT = "success_count"
+    private const val RECORDING_PREFS_NAME = "app_prefs"
+    private const val KEY_IS_RECORDING = "is_recording"
 
     var isOrientationReady = false
     val rotationMatrix = FloatArray(9)
@@ -711,6 +713,14 @@ object DataManager {
     suspend fun saveCellInfoToJsonFile(context: Context, messageToData2: MessageToData2) {
         withContext(Dispatchers.IO) {
             try {
+                val sharedPreferences = context.getSharedPreferences(RECORDING_PREFS_NAME, Context.MODE_PRIVATE)
+                val isRecording = sharedPreferences.getBoolean(KEY_IS_RECORDING, true)
+
+                if (!isRecording) {
+                    Log.d(TAG, "Recording is paused, skipping save")
+                    return@withContext
+                }
+
                 val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
                 if (!signalDataDir.exists() && !signalDataDir.mkdirs()) {
                     Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
@@ -725,6 +735,11 @@ object DataManager {
                         messageToData2.nr.cellInfoList.isNotEmpty()
 
                 val hasLocationData = messageToData2.latitude != 0.0 && messageToData2.longitude != 0.0
+
+                if (messageToData2.jwt.isEmpty() || messageToData2.UUID.isEmpty()) {
+                    Log.d(TAG, "Skipping save: jwt or UUID is empty")
+                    return@withContext
+                }
 
                 if (hasData && hasLocationData) {
                     val modifiedJson = buildJsonObject {
@@ -764,7 +779,13 @@ object DataManager {
                     Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
 
                     if (fileSize >= 1_048_576) { // 1 МБ
-                        sendFileWithRetry(context, file)
+                        sendFileWithRetry(context, file) { success ->
+                            if (success) {
+                                Log.d(TAG, "File sent successfully (from save function)")
+                            } else {
+                                Log.e(TAG, "Failed to send file (from save function)")
+                            }
+                        }
 
                         fileCounter = (fileCounter % maxFileCount) + 1
                         fileName = "Signal_data_$fileCounter.txt"
@@ -780,7 +801,7 @@ object DataManager {
         }
     }
 
-    internal suspend fun sendFileWithRetry(context: Context, file: File) {
+    internal suspend fun sendFileWithRetry(context: Context, file: File, onComplete: (Boolean) -> Unit) {
         var success = false
         var attempts = 0
         while (!success && attempts < 5) {
@@ -793,7 +814,7 @@ object DataManager {
 
             if (!success) {
                 attempts++
-                delay(10000)
+                delay(5000)
             }
         }
 
@@ -806,6 +827,7 @@ object DataManager {
             Log.e(TAG, "Failed to send file after 5 attempts: ${file.absolutePath}")
             updateFileCounters(context, pendingCount + 1, successCount)
         }
+        onComplete(success)
     }
 
     private suspend fun sendFileToServer(file: File): Boolean {

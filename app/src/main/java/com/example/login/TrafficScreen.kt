@@ -8,24 +8,44 @@ import android.util.Log
 import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,32 +55,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.border
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Button
-import androidx.compose.ui.zIndex
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Icon
-import androidx.compose.material3.*
-import androidx.compose.material3.Text
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.res.stringResource
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -82,13 +94,35 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
     var isLoading by remember { mutableStateOf(false) }
 
-
     fun onDaysChanged(newDays: String) {
         days = newDays
         activeMode = "days"
         selectedCalendar = null
     }
+    val shimmerColors = listOf(
+        Color(0xFFE0E0E0),
+        Color(0xFFF5F4F4),
+        Color(0xFFE0E0E0),
+    )
 
+    val transition = rememberInfiniteTransition()
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1150,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    val shimmerBrush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset(translateAnim - 100f, translateAnim - 100f),
+        end = Offset(translateAnim, translateAnim)
+    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -174,7 +208,10 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .background(
+                            Color.White,
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .border(
                             1.5.dp,
                             if (sortCriteria == SortCriteria.TOTAL) Color(0xFF132C86) else Color(0x809E9E9E),
@@ -197,7 +234,10 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .background(
+                            Color.White,
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .border(
                             1.5.dp,
                             if (sortCriteria == SortCriteria.MOBILE) Color(0xFF132C86) else Color(0x809E9E9E),
@@ -220,7 +260,10 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
-                        .background(Color.White, shape = RoundedCornerShape(8.dp))
+                        .background(
+                            Color.White,
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .border(
                             1.5.dp,
                             if (sortCriteria == SortCriteria.WIFI) Color(0xFF132C86) else Color(0x809E9E9E),
@@ -238,8 +281,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                 }
             }
         }
-
-
         item {
             Row(
                 modifier = Modifier
@@ -266,10 +307,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     modifier = Modifier
                         .size(56.dp)
                         .offset(y = 4.dp)
-                        .background(Color(0xCC132C86), shape = RoundedCornerShape(8.dp))
-                )
-                {
-
+                        .background(
+                            Color(0xCC132C86),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                ) {
                     IconButton(
                         onClick = { showDatePicker = true },
                         modifier = Modifier
@@ -389,10 +431,16 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             }
         }
 
-        items(appTrafficData.value, key = { it.appName }) { appData ->
-            TrafficItem(appData) { appName ->
-                selectedAppName = appName
-                showAppChart = true
+        if (isLoading) {
+            items(10) {
+                ShimmerTrafficItem(brush = shimmerBrush)
+            }
+        } else {
+            items(appTrafficData.value, key = { it.appName }) { appData ->
+                TrafficItem(appData) { appName ->
+                    selectedAppName = appName
+                    showAppChart = true
+                }
             }
         }
     }
@@ -447,6 +495,54 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
 
         datePickerDialog.show()
     }
+}
+
+@Composable
+fun ShimmerTrafficItem(brush: Brush) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(brush, shape = RoundedCornerShape(4.dp))
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.width(200.dp)) {
+                ShimmerText(width = 120.dp, height = 16.sp, brush = brush)
+                Spacer(modifier = Modifier.height(4.dp))
+                ShimmerText(width = 80.dp, height = 14.sp, brush = brush)
+                Spacer(modifier = Modifier.height(4.dp))
+                ShimmerText(width = 80.dp, height = 14.sp, brush = brush)
+                Spacer(modifier = Modifier.height(4.dp))
+                ShimmerText(width = 80.dp, height = 14.sp, brush = brush)
+                Spacer(modifier = Modifier.height(4.dp))
+                ShimmerText(width = 80.dp, height = 14.sp, brush = brush)
+                Spacer(modifier = Modifier.height(4.dp))
+                ShimmerText(width = 80.dp, height = 14.sp, brush = brush)
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .background(brush, shape = CircleShape)
+        )
+    }
+}
+
+@Composable
+fun ShimmerText(width: Dp, height: TextUnit, brush: Brush) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(height.value.dp)
+            .background(brush)
+    )
 }
 
 @Composable

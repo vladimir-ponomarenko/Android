@@ -7,6 +7,9 @@
     <string name="jwt_token_label">JWT Токен</string>
     <string name="remember_me">Запомнить меня</string>
     <string name="send_cell_info">Отправить файл</string>
+    <string name="stop_recording">Остановить запись</string>
+    <string name="resume_recording">Запись в файл</string>
+    <string name="resume_recording_description">Начать или остановить запись</string>
     <string name="delete_file">Удалить файл</string>
     <string name="register">Зарегистрироваться</string>
     <string name="login">Войти</string>

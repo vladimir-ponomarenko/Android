@@ -16,7 +16,6 @@ import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -24,8 +23,6 @@ import okhttp3.WebSocketListener
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-
-import okhttp3.MultipartBody
 
 
 class NetworkManager<Context>(private val context: Context, private val serverUrl: String, private val webSocketEndpoint: String) {
@@ -389,14 +386,14 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             })
             this.isWebSocketConnected = this.webSocket != null
         } else {
-            Log.d(TAG, "Sending CellInfo (from file) through existing WebSocket connection")
+            Log.d(TAG, "Sending CellInfo through existing WebSocket connection")
             sendJsonBody(jsonBody, onComplete)
         }
     }
 
     private fun sendJsonBody(jsonBody: String, onComplete: ((Boolean) -> Unit)?) {
         this.webSocket?.send(jsonBody)
-        Log.d(TAG, "Sent CellInfo (from file): $jsonBody")
+        Log.d(TAG, "Sent CellInfo (from networkmanager): $jsonBody")
         onComplete?.invoke(true)
         (context as? MainActivity)?.showSendingIndicator()
     }
