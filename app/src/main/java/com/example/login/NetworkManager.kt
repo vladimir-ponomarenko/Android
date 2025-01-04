@@ -199,6 +199,13 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>) {
+        val state = MainActivity.state
+
+        if (state.Uuid.isNullOrEmpty() || jwt.isNullOrEmpty()) {
+            Log.e(TAG, "Cannot send traffic data: UUID or JWT is missing.")
+            return
+        }
+
         val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10)
 
         val modifiedJson = buildJsonObject {

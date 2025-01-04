@@ -313,7 +313,9 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         )
                 ) {
                     IconButton(
-                        onClick = { showDatePicker = true },
+                        onClick = {
+                            showDatePicker = true
+                        },
                         modifier = Modifier
                             .size(56.dp)
                             .align(Alignment.Center)
@@ -468,32 +470,31 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         val month = calendar.get(Calendar.MONTH)
         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        val datePickerDialog = DatePickerDialog(
-            context,
-            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-                selectedCalendar = Calendar.getInstance().apply {
-                    set(year, month, dayOfMonth)
+        LaunchedEffect(key1 = showDatePicker) {
+            if (showDatePicker) {
+                val datePickerDialog = DatePickerDialog(
+                    context,
+                    { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                        selectedCalendar = Calendar.getInstance().apply {
+                            set(year, month, dayOfMonth)
+                        }
+                        activeMode = "calendar"
+                        showDatePicker = false
+
+                    },
+                    year,
+                    month,
+                    day
+                )
+
+                datePickerDialog.setOnCancelListener {
+                    showDatePicker = false
+                    activeMode = "days"
+                    selectedCalendar = null
                 }
-                activeMode = "calendar"
-                showDatePicker = false
-
-            },
-            year,
-            month,
-            day
-        )
-
-        datePickerDialog.setOnCancelListener {
-            showDatePicker = false
-            activeMode = "days"
-            selectedCalendar = null
+                datePickerDialog.show()
+            }
         }
-
-        datePickerDialog.setOnDismissListener {
-            showDatePicker = false
-        }
-
-        datePickerDialog.show()
     }
 }
 
