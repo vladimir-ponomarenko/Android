@@ -62,7 +62,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -393,31 +392,38 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 .background(Color(0xFFF8FAFC)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 1.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = {
-                    (context as? Activity)?.finish()
-                }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Закрыть", tint = Color(0xFF0E141B))
-                }
-            }
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF1980E6))
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.start_image),
-                    contentDescription = "Стартовое изображение",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 1.dp, end = 16.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = {
+                            (context as? Activity)?.finish()
+                        }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Закрыть", tint = Color(0xFFF8FAFC))
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.start_image),
+                            contentDescription = "Стартовое изображение",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
             }
 
             Text(

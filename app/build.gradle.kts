@@ -64,7 +64,7 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
     implementation("com.github.maddevsio:mad-location-manager:0.1.16")
     implementation ("fr.bmartel:jspeedtest:1.32.1")
     implementation("androidx.test.ext:junit-ktx:1.2.1")
