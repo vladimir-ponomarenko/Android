@@ -30,8 +30,8 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -113,9 +113,10 @@ object DataManager {
         }
 
         val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
+        val cancellationTokenSource = CancellationTokenSource()
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let {
+            location?.let it@{
                 Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}, Alt=${location.altitude}")
                 state.Altitude = location.altitude.toString()
                 if (isOrientationReady) {
@@ -133,10 +134,9 @@ object DataManager {
 
         if (locationUpdatesCount < MAX_LOCATION_UPDATES) {
             locationUpdatesCount++
-            fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    super.onLocationResult(locationResult)
-                    locationResult.lastLocation?.let { location ->
+            fusedLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
+                .addOnSuccessListener { location: Location? ->
+                    location?.let {
                         if (isOrientationReady) {
                             val adjustedLocation = adjustLocationWithOrientation(location)
                             state.Latitude = adjustedLocation.latitude.toString()
@@ -157,7 +157,9 @@ object DataManager {
                         }
                     }
                 }
-            }, null)
+                .addOnFailureListener { e ->
+                    Log.e(MainActivity.TAG, "Failed to get current location", e)
+                }
         } else {
             Log.w(TAG, "Maximum number of location updates reached.")
         }
