@@ -26,17 +26,32 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
+import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,8 +63,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
@@ -122,14 +143,19 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         networkManager = NetworkManager(this, SERVER_URL, "/api/sockets/thermalmap")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         DataManager.getLocation(this, state)
-        startForegroundService()
+//        startForegroundService()
+        permissionsGranted = checkAllPermissions(this)
+
         setContent {
             Box(modifier = Modifier.fillMaxSize()) {
                 SendingIndicator(isSendingData)
-                MainScreen(isSendingData)
+                MainScreen(isSendingData, permissionsGranted)
             }
         }
-        PermissionUtils.checkAndRequestPermissions(this)
+
+        if (permissionsGranted) {
+            startForegroundService()
+        }
         state.loadLoginData()
         if (intent?.action == ForegroundService.ACTION_STOP_SERVICE) {
             stopForegroundService()
@@ -295,65 +321,239 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private var permissionsGranted by mutableStateOf(false)
     @RequiresApi(Build.VERSION_CODES.O)
     @Composable
-    fun MainScreen(isSendingData: Boolean) {
+    fun MainScreen(isSendingData: Boolean, permissionsGranted: Boolean) {
         val context = LocalContext.current
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
         var selectedTabIndex by remember { mutableStateOf(5) }
 
-        permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            checkPermissionsForAndroid13(context)
-        } else {
-            checkPermissionsForAndroid12(context)
-        }
-
         if (!permissionsGranted) {
-            PermissionUtils.checkAndRequestPermissions(this@MainActivity)
-        }
-
-        LaunchedEffect(isWebSocketConnected) {
-            if (isWebSocketConnected) {
-                showConnectionSnackbar = true
-                scaffoldState.snackbarHostState.showSnackbar(
-                    message = "WebSocket connected!",
-                    duration = SnackbarDuration.Short
-                )
-                delay(2000)
-                showConnectionSnackbar = false
+            PermissionRequestButtons(context) { allGranted ->
+                this@MainActivity.permissionsGranted = allGranted
+                if (allGranted) {
+                    selectedTabIndex = 5
+                }
             }
-        }
+        } else {
+            LaunchedEffect(isWebSocketConnected) {
+                if (isWebSocketConnected) {
+                    showConnectionSnackbar = true
+                    scaffoldState.snackbarHostState.showSnackbar(
+                        message = "WebSocket connected!",
+                        duration = SnackbarDuration.Short
+                    )
+                    delay(2000)
+                    showConnectionSnackbar = false
+                }
+            }
 
-        Scaffold(
-            scaffoldState = scaffoldState
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
-                    if (permissionsGranted && isDataCollectionEnabled) {
-                        while (true) {
-                            DataManager.getLocation(this@MainActivity, state)
-                            DataManager.getSignalStrength(state)
-                            delay(UPDATE_INTERVAL)
+            Scaffold(scaffoldState = scaffoldState) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    LaunchedEffect(key1 = permissionsGranted, key2 = isDataCollectionEnabled) {
+                        if (permissionsGranted && isDataCollectionEnabled) {
+                            while (true) {
+                                DataManager.getLocation(this@MainActivity, state)
+                                DataManager.getSignalStrength(state)
+                                delay(UPDATE_INTERVAL)
+                            }
                         }
                     }
-                }
-                MainContent(
-                    state,
-                    selectedTabIndex = selectedTabIndex,
-                    onTabSelected = { newTabIndex -> selectedTabIndex = newTabIndex }
-                )
+                    MainContent(
+                        state,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { newTabIndex -> selectedTabIndex = newTabIndex }
+                    )
 
-                LaunchedEffect(isSendingData) {
-                    delay(500)
+                    LaunchedEffect(isSendingData) {
+                        delay(500)
+                    }
+                    SendingIndicator(isSendingData)
                 }
-                SendingIndicator(isSendingData)
             }
         }
     }
+
+    // Предварительный просмотр UI
+    @Preview(showBackground = true)
+    @Composable
+    fun PreviewPermissionRequestButtons() {
+        PermissionRequestButtons(context = androidx.compose.ui.platform.LocalContext.current) {
+
+        }
+    }
+    @Composable
+    fun PermissionRequestButtons(context: Context, onPermissionsResult: (Boolean) -> Unit) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8FAFC)),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF132C86))
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 1.dp, end = 16.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = {
+                            (context as? Activity)?.finish()
+                        }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Закрыть", tint = Color(0xFFF8FAFC))
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.start_image),
+                            contentDescription = "Стартовое изображение",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = stringResource(id = R.string.get_information),
+                modifier = Modifier.padding(top = 14.dp, start = 16.dp, end = 16.dp),
+                color = Color(0xFF34204C),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 26.sp
+            )
+
+            Text(
+                text = stringResource(id = R.string.grant_permissions),
+                modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                color = Color(0xCC34204C),
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PermissionItem(
+                title = stringResource(id = R.string.location),
+                description = stringResource(id = R.string.coordinates),
+                onClick = {
+                    ActivityCompat.requestPermissions(
+                        context as Activity,
+                        arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                        LOCATION_PERMISSION_REQUEST_CODE
+                    )
+                }
+            )
+
+            Divider(color = Color.LightGray, thickness = 1.dp)
+
+            PermissionItem(
+                title = stringResource(id = R.string.phone_status),
+                description = stringResource(id = R.string.network_data),
+                onClick = {
+                    ActivityCompat.requestPermissions(
+                        context as Activity,
+                        arrayOf(android.Manifest.permission.READ_PHONE_STATE),
+                        LOCATION_PERMISSION_REQUEST_CODE
+                    )
+                }
+            )
+
+            Divider(color = Color.LightGray, thickness = 1.dp)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                PermissionItem(
+                    title = stringResource(id = R.string.background_location),
+                    description = stringResource(id = R.string.work_background),
+                    onClick = {
+                        ActivityCompat.requestPermissions(
+                            context as Activity,
+                            arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                            LOCATION_PERMISSION_REQUEST_CODE
+                        )
+                    }
+                )
+                Divider(color = Color.LightGray, thickness = 1.dp)
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Button(
+                onClick = { onPermissionsResult(MainActivity().checkAllPermissions(context)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF132C86)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.confirm_permissions), // Используем строку "Confirm permissions"
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+
+    @Composable
+    fun PermissionItem(title: String, description: String, onClick: () -> Unit) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = title,
+                    color = Color(0xD934204C),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 24.sp
+                )
+                Text(
+                    text = description,
+                    color = Color(0x9934204C),
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            }
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .width(130.dp)
+                    .height(36.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE7EDF3)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.allow), // Используем строку "Allow" из ресурсов
+                    color = Color(0xCC34204C),
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -361,19 +561,58 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PermissionUtils.REQUEST_CODE_PERMISSIONS) {
-            val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             permissionsGranted = allPermissionsGranted
 
+            setContent {
+                MainScreen(isSendingData, permissionsGranted)
+            }
+
             if (allPermissionsGranted) {
-                lifecycleScope.launch {
-                    delay(100)
-                    setContent {
-                        MainScreen(isSendingData)
-                    }
-                }
+                Log.d(TAG, "All permissions granted")
+                startForegroundService()
+            } else {
+                Log.d(TAG, "Permissions not granted")
             }
         }
+    }
+
+    private fun checkAllPermissions(context: Context): Boolean {
+//        Если приложения, предназначенные для Android 14, используют службу переднего плана,
+//        они должны объявить определенное разрешение на основе типа службы переднего плана,
+//        которое представлено в Android 14.
+//        https://developer.android.com/about/versions/14/changes/fgs-types-required?hl=ru
+        val hasForegroundServiceLocationPermission =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.FOREGROUND_SERVICE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // На версиях ниже Android 14 разрешение не требуется
+            }
+
+        val hasBackgroundLocationPermission =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+
+        return ActivityCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.READ_PHONE_STATE
+                ) == PackageManager.PERMISSION_GRANTED &&
+                hasBackgroundLocationPermission &&
+                hasForegroundServiceLocationPermission
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -465,7 +704,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                             state.isSendingCellInfoData = false
                                         }
                                     }
-                                }
+                                },
+                                onBackClick = { onTabSelected(5) }
                             )
                             1 -> DataScreen(state, onNavigateTo = onTabSelected)
 //                         2 -> RSRPGraph(state)
@@ -476,60 +716,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             7 -> DataSendingScreen(state, onNavigateTo = onTabSelected, onCellInfoDataClick  = {})
                         }
                     }
-                } else {
-                    Text("Waiting for permissions...")
                 }
-            }
-        }
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun connectWebSocket(jwt: String) {
-        if (webSocket != null) {
-            return
-        }
-        webSocket = networkManager.connectWebSocket(
-            jwt,
-            onOpen = { webSocket, _ ->
-                Log.d(TAG, "WebSocket connection established")
-                isWebSocketConnected = true
-                lifecycleScope.launch {
-                    while (true) {
-                        delay(UPDATE_INTERVAL)
-                        val jsonString = DataManager.generateJSON(state)
-                        webSocket.send(jsonString)
-                        isSendingData = true
-                        if (isSendingData == true){
-                            Log.d(TAG, "SendingIndicator = TRUE")
-                        }
-                        delay(2000)
-                        isSendingData = false
-                        if (isSendingData == false){
-                            Log.d(TAG, "SendingIndicator = FALSE")
-                        }
-                        Log.d(TAG, "Sent JSON to server: $jsonString")
+                else {
+                    PermissionRequestButtons(context) { allGranted ->
+                        permissionsGranted = allGranted
                     }
                 }
-            },
-            onMessage = { _, text ->
-                Log.d(TAG, "Received message from server: $text")
-            },
-            onClosed = { webSocket, code, reason ->
-                Log.d(TAG, "WebSocket connection closed: $code, $reason")
-                isWebSocketConnected = false
-                this@MainActivity.webSocket = null
-            },
-            onFailure = { _, t, response ->
-                Log.e(TAG, "WebSocket connection failure", t)
-                if (response != null) {
-                    Log.e(TAG, "Response message: ${response.message}")
-                    Log.e(TAG, "Response code: ${response.code}")
-                }
-                isWebSocketConnected = false
-                this@MainActivity.webSocket = null
             }
-        )
+        }
     }
 
     @Composable
@@ -677,7 +871,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @RequiresApi(Build.VERSION_CODES.O)
     fun startForegroundService() {
         val serviceIntent = Intent(this, ForegroundService::class.java)
-        startForegroundService(serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.FOREGROUND_SERVICE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                startForegroundService(serviceIntent)
+            } else {
+                Log.e(TAG, "Foreground service location permission not granted")
+            }
+        } else {
+            startForegroundService(serviceIntent)
+        }
     }
 
     fun stopForegroundService() {

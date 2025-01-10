@@ -564,32 +564,54 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
             )
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+                val subscriptionManager =
+                    context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
                 val subscriptions = subscriptionManager.activeSubscriptionInfoList
-                for (subscription in subscriptions) {
+
+                if (subscriptions.isNullOrEmpty()) {
                     Text(
-                        text = stringResource(id = R.string.sim_info, subscription.simSlotIndex + 1),
+                        text = stringResource(id = R.string.no_sim_card),
                         style = MaterialTheme.typography.bodyMedium,
                         color = textColor
                     )
-                    Text(
-                        text = stringResource(id = R.string.carrier_name, subscription.carrierName ?: "Unknown"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
-                    )
-                    Text(
-                        text = stringResource(id = R.string.country_iso, subscription.countryIso ?: "Unknown"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
-                    )
-                    Text(
-                        text = stringResource(id = R.string.number, subscription.number ?: "Unknown"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        modifier = Modifier.padding(start = 16.dp)  // Сдвигаем текст вправо
-                    )
+                } else {
+                    for (subscription in subscriptions) {
+                        Text(
+                            text = stringResource(
+                                id = R.string.sim_info,
+                                subscription.simSlotIndex + 1
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.carrier_name,
+                                subscription.carrierName ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.country_iso,
+                                subscription.countryIso ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                id = R.string.number,
+                                subscription.number ?: "Unknown"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textColor,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    }
                 }
             }
         }

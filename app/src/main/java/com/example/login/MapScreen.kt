@@ -59,13 +59,15 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         position = CameraPosition.fromLatLngZoom(LatLng(55.0415, 82.9346), 10f)
     }
 
-    val locations = when (state.selectedNetworkType) {
-        "LTE" -> state.lteLocations
-        "GSM" -> state.gsmLocations
-        "WCDMA" -> state.wcdmaLocations
-        "CDMA" -> state.cdmaLocations
-        "NR" -> state.nrLocations
-        else -> emptyList()
+    val locations = remember(state.selectedNetworkType) {
+        when (state.selectedNetworkType) {
+            "LTE" -> state.lteLocations
+            "GSM" -> state.gsmLocations
+            "WCDMA" -> state.wcdmaLocations
+            "CDMA" -> state.cdmaLocations
+            "NR" -> state.nrLocations
+            else -> emptyList()
+        }
     }
 
     val lastUpdateTime = remember { mutableStateOf(getCurrentTime()) }
@@ -86,14 +88,14 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState) {
-                for (i in 1 until locations.size) {
-                    val (location1, color1) = locations[i - 1]
-                    val (location2, color2) = locations[i]
-                    Polyline(
-                        points = listOf(location1, location2),
-                        color = color1,
-                        width = 10f
-                    )
+                if (locations.size > 1) {
+                    locations.windowed(2).forEach { (location1, location2) ->
+                        Polyline(
+                            points = listOf(location1.first, location2.first),
+                            color = location1.second,
+                            width = 15f
+                        )
+                    }
                 }
             }
 
@@ -330,7 +332,7 @@ fun ColorScaleColumn(state: MainActivity.MainActivityState) {
             ColorScaleItemData(color = Color(0xFF000033), text = "-156")
         )
         else -> emptyList()
-        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier

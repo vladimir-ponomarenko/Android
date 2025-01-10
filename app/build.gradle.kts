@@ -19,8 +19,8 @@ android {
         applicationId = "com.example.login"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 22
+        versionName = "2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -64,10 +64,10 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
     implementation("com.github.maddevsio:mad-location-manager:0.1.16")
     implementation ("fr.bmartel:jspeedtest:1.32.1")
-    implementation("androidx.test.ext:junit-ktx:1.1.5")
+    implementation("androidx.test.ext:junit-ktx:1.2.1")
     implementation("com.google.ar:core:1.44.0")
     implementation("androidx.test:runner:1.5.2")
     implementation("androidx.palette:palette-ktx:1.0.0")

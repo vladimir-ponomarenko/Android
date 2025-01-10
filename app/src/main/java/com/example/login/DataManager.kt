@@ -11,7 +11,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Build
-import android.os.Environment
 import android.telephony.CellIdentityNr
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
@@ -24,15 +23,17 @@ import android.telephony.TelephonyManager
 import android.telephony.cdma.CdmaCellLocation
 import android.telephony.gsm.GsmCellLocation
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -43,12 +44,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
-
-import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -61,7 +58,7 @@ object DataManager {
 
     private var fileCounter = 1
     private val maxFileCount = 10
-    private var fileName = "Signal_data_$fileCounter.txt"
+    internal var fileName = "Signal_data_$fileCounter.txt"
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
@@ -72,6 +69,12 @@ object DataManager {
     private var lastMagnetometerReading: FloatArray? = null
     private var lastRotationVectorReading: FloatArray? = null
 
+    private const val PREFS_NAME = "FileUploadPrefs"
+    private const val KEY_PENDING_COUNT = "pending_count"
+    private const val KEY_SUCCESS_COUNT = "success_count"
+    private const val RECORDING_PREFS_NAME = "app_prefs"
+    private const val KEY_IS_RECORDING = "is_recording"
+
     var isOrientationReady = false
     val rotationMatrix = FloatArray(9)
     val orientationAngles = FloatArray(3)
@@ -81,43 +84,49 @@ object DataManager {
         val context = activity.applicationContext
         Log.d(MainActivity.TAG, "getLocation() called")
 
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-
-            ActivityCompat.requestPermissions(
-                activity as Activity,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
-            return
-        }
+//        if (ContextCompat.checkSelfPermission(
+//                context,
+//                Manifest.permission.ACCESS_FINE_LOCATION
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            ActivityCompat.requestPermissions(
+//                activity as Activity,
+//                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+//                LOCATION_PERMISSION_REQUEST_CODE
+//            )
+//            return
+//        }
 
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d(MainActivity.TAG, "No permission to write to external storage")
+            Log.d(MainActivity.TAG, "No permission to access coarse location")
             return
         }
 
         val locationRequest = LocationRequest.create().apply {
-            interval = 0
-            fastestInterval = 0
+            interval = 10000
+            fastestInterval = 5000
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            smallestDisplacement = 0f
-            numUpdates = Int.MAX_VALUE
         }
 
         val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
+        val cancellationTokenSource = CancellationTokenSource()
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let {
+            location?.let it@{
                 Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}, Alt=${location.altitude}")
                 state.Altitude = location.altitude.toString()
+                if (isOrientationReady) {
+                    val adjustedLocation = adjustLocationWithOrientation(location)
+                    state.Latitude = adjustedLocation.latitude.toString()
+                    state.Longtitude = adjustedLocation.longitude.toString()
+                } else {
+                    state.Latitude = location.latitude.toString()
+                    state.Longtitude = location.longitude.toString()
+                }
             }
         }.addOnFailureListener { e ->
             Log.e(MainActivity.TAG, "Failed to get last known location", e)
@@ -125,21 +134,19 @@ object DataManager {
 
         if (locationUpdatesCount < MAX_LOCATION_UPDATES) {
             locationUpdatesCount++
-            fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    super.onLocationResult(locationResult)
-                    locationResult.lastLocation?.let { location ->
+            fusedLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
+                .addOnSuccessListener { location: Location? ->
+                    location?.let {
                         if (isOrientationReady) {
                             val adjustedLocation = adjustLocationWithOrientation(location)
                             state.Latitude = adjustedLocation.latitude.toString()
                             state.Longtitude = adjustedLocation.longitude.toString()
-                            state. Altitude = adjustedLocation.altitude.toString()
+                            state.Altitude = adjustedLocation.altitude.toString()
                             Log.d(
                                 MainActivity.TAG,
                                 "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}, Alt=${state.Altitude}"
                             )
                         } else {
-                            // если ориентация еще не доступна
                             state.Latitude = location.latitude.toString()
                             state.Longtitude = location.longitude.toString()
                             state.Altitude = location.altitude.toString()
@@ -150,11 +157,12 @@ object DataManager {
                         }
                     }
                 }
-            }, null)
+                .addOnFailureListener { e ->
+                    Log.e(MainActivity.TAG, "Failed to get current location", e)
+                }
         } else {
             Log.w(TAG, "Maximum number of location updates reached.")
         }
-
 
         sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -177,6 +185,7 @@ object DataManager {
             SensorManager.SENSOR_DELAY_NORMAL
         )
     }
+
 
     internal val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
@@ -228,20 +237,37 @@ object DataManager {
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d(MainActivity.TAG, "No READ_PHONE_STATE or ACCESS_COARSE_LOCATION permission for cell info")
-            ActivityCompat.requestPermissions(
-                context as Activity,
-                arrayOf(
-                    android.Manifest.permission.READ_PHONE_STATE,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
-                1
-            )
+            Log.d(MainActivity.TAG, "Нет разрешений READ_PHONE_STATE или ACCESS_COARSE_LOCATION для получения cell info")
+
+            if (context is Activity) {
+                ActivityCompat.requestPermissions(
+                    context,
+                    arrayOf(
+                        android.Manifest.permission.READ_PHONE_STATE,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    ),
+                    1
+                )
+            } else {
+                Log.e(MainActivity.TAG, "Контекст не является экземпляром Activity, невозможно запросить разрешения")
+                Toast.makeText(context, "Нет доступных данных, проверьте настройки GPS", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
+        if (state.Latitude.isEmpty() || state.Longtitude.isEmpty()) {
+            Log.d(MainActivity.TAG, "Location data is missing, cannot get cell info.")
             return
         }
 
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        processCellInfo(telephonyManager.allCellInfo, state)
+        val cellInfoList = telephonyManager.allCellInfo
+
+        if (cellInfoList != null) {
+            processCellInfo(cellInfoList, state)
+        } else {
+            Log.d(MainActivity.TAG, "cellInfoList is null, GPS может быть отключен или нет доступных данных cell info")
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -264,7 +290,6 @@ object DataManager {
                 is CellInfoGsm -> extractGsmCellInfoToJson(cellInfo)
                 is CellInfoWcdma -> extractWcdmaCellInfoToJson(cellInfo)
                 is CellInfoCdma -> extractCdmaCellInfoToJson(cellInfo)
-
                 else -> {
                     Log.d(TAG, "Unknown cell info type: ${cellInfo.javaClass.simpleName}")
                     null
@@ -272,12 +297,10 @@ object DataManager {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                for (cellInfo in cellInfoList) {
-                    if (cellInfo is CellInfoNr) {
-                        val cellData = extractNrCellInfoToJson(cellInfo)
-                        if (cellData != null) {
-                            cellInfoDataByType["NR"]?.add(cellData)
-                        }
+                if (cellInfo is CellInfoNr) {
+                    val cellData = extractNrCellInfoToJson(cellInfo)
+                    if (cellData != null) {
+                        cellInfoDataByType["NR"]?.add(cellData)
                     }
                 }
             }
@@ -288,7 +311,7 @@ object DataManager {
                     is CellInfoGsm -> "GSM"
                     is CellInfoWcdma -> "WCDMA"
                     is CellInfoCdma -> "CDMA"
-                    else ->  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo is CellInfoNr) {
+                    else -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo is CellInfoNr) {
                         "NR"
                     } else {
                         "Unknown"
@@ -300,7 +323,6 @@ object DataManager {
 
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
         val currentDateAndTime = sdf.format(Date())
-
 
         val messageToData2 = MessageToData2(
             jwt = state.JwtToken,
@@ -319,20 +341,27 @@ object DataManager {
 
         state.messageToData2 = messageToData2
 
-        val jsonMessageToData2 = Json.encodeToString(messageToData2)
-        val maxLogLength = 4000
-        for (i in jsonMessageToData2.indices step maxLogLength) {
-            val chunk = jsonMessageToData2.substring(i, minOf(i + maxLogLength, jsonMessageToData2.length))
-            Log.d(TAG, "CellInfo JSON (part ${i / maxLogLength}): $chunk")
-        }
-        if (state.isSendingCellInfoData) {
-            MainActivity.networkManager.sendMessageToData2ToServer(messageToData2) { success ->
-                if (success) {
-                    Log.d(TAG, "CellInfo SENT TO SERVER")
-                } else {
-                    Log.e(TAG, "FAILED TO SEND CellInfo")
+        val hasLocationData = messageToData2.latitude != 0.0 && messageToData2.longitude != 0.0
+        val hasCellInfoData = cellInfoDataByType.values.any { it.isNotEmpty() }
+
+        if (hasLocationData && hasCellInfoData) {
+            val jsonMessageToData2 = Json.encodeToString(messageToData2)
+            val maxLogLength = 4000
+            for (i in jsonMessageToData2.indices step maxLogLength) {
+                val chunk = jsonMessageToData2.substring(i, minOf(i + maxLogLength, jsonMessageToData2.length))
+                Log.d(TAG, "CellInfo JSON (part ${i / maxLogLength}): $chunk")
+            }
+            if (state.isSendingCellInfoData) {
+                MainActivity.networkManager.sendMessageToData2ToServer(messageToData2) { success ->
+                    if (success) {
+                        Log.d(TAG, "CellInfo SENT TO SERVER")
+                    } else {
+                        Log.e(TAG, "FAILED TO SEND CellInfo")
+                    }
                 }
             }
+        } else {
+            Log.d(TAG, "No cell info data to send to server or location data is missing")
         }
     }
 
@@ -343,7 +372,7 @@ object DataManager {
             val signalStrength = info.cellSignalStrength
             val identity = info.cellIdentity
             val timestamp = System.currentTimeMillis()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
                 CellInfoData(
                     type = "LTE",
                     timestamp = timestamp,
@@ -368,7 +397,11 @@ object DataManager {
                     earfcn = identity.earfcn.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
                     bandwidth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) identity.bandwidth.takeIf { it != CellInfo.UNAVAILABLE }?.toLong() else null,
                     rsrp = signalStrength.rsrp.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    rssi = signalStrength.rssi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                    rssi= if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        signalStrength.rssi.takeIf {it != Integer.MAX_VALUE }?.toLong()
+                    } else {
+                        null
+                    },
                     rsrq = signalStrength.rsrq.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     rssnr = signalStrength.rssnr.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     cqi = signalStrength.cqi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
@@ -377,9 +410,7 @@ object DataManager {
                     level = signalStrength.level.takeIf { it != Integer.MAX_VALUE }?.toLong(),
                     asuLevel = signalStrength.asuLevel.takeIf { it != Integer.MAX_VALUE } ?: 0
                 )
-            } else {
-                TODO("VERSION.SDK_INT < Q")
-            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error encoding LTE cell info to JSON: ", e)
             null
@@ -681,54 +712,23 @@ object DataManager {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun generateJSON(state: MainActivity.MainActivityState): String {
-        val currentTimestamp = Instant.now().toString()
-        val formattedTimestamp = String.format(
-            DateTimeFormatter.ISO_INSTANT.format(
-                Instant.parse(currentTimestamp)
-            )
-        )
-
-        val rsrp = state.Rsrp.replace(" dBm", "").toLongOrNull() ?: 0L
-        val rssi = state.Rssi.replace(" dBm", "").toLongOrNull() ?: 0L
-        val rsrq = state.Rsrq.replace(" dB", "").toLongOrNull() ?: 0L
-        val rssnr = state.Rssnr.replace(" dB", "").toLongOrNull() ?: 0L
-        val cqi = state.Cqi.toLongOrNull() ?: 0L
-        val bandwidth = state.Bandwidth.toLongOrNull() ?: 0L
-        val cellid = state.Cellid.toLongOrNull() ?: 0L
-        val physcellid = state.Pci.toLongOrNull() ?: 0L
-
-        val messageData = MessageData(
-            state.JwtToken,
-            state.Uuid,
-            formattedTimestamp,
-            state.Latitude.toDoubleOrNull() ?: 0.0,
-            state.Longtitude.toDoubleOrNull() ?: 0.0,
-            rsrp,
-            rssi,
-            rsrq,
-            rssnr,
-            cqi,
-            bandwidth,
-            cellid,
-            physcellid
-        )
-
-        return Json.encodeToString(messageData)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun saveCellInfoToJsonFile(context: Context, messageToData2: MessageToData2) {
         withContext(Dispatchers.IO) {
             try {
-                // Директория для хранения файлов
-                val signalDataDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Signal_data")
+                val sharedPreferences = context.getSharedPreferences(RECORDING_PREFS_NAME, Context.MODE_PRIVATE)
+                val isRecording = sharedPreferences.getBoolean(KEY_IS_RECORDING, true)
+
+                if (!isRecording) {
+                    Log.d(TAG, "Recording is paused, skipping save")
+                    return@withContext
+                }
+
+                val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
                 if (!signalDataDir.exists() && !signalDataDir.mkdirs()) {
                     Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
                     return@withContext
                 }
 
-                // Создание или открытие файла
                 val file = File(signalDataDir, fileName)
                 val hasData = messageToData2.cdma.cellInfoList.isNotEmpty() ||
                         messageToData2.gsm.cellInfoList.isNotEmpty() ||
@@ -736,8 +736,14 @@ object DataManager {
                         messageToData2.lte.cellInfoList.isNotEmpty() ||
                         messageToData2.nr.cellInfoList.isNotEmpty()
 
-                if (hasData) {
-                    // Создание JSON-объекта
+                val hasLocationData = messageToData2.latitude != 0.0 && messageToData2.longitude != 0.0
+
+                if (messageToData2.jwt.isEmpty() || messageToData2.UUID.isEmpty()) {
+                    Log.d(TAG, "Skipping save: jwt or UUID is empty")
+                    return@withContext
+                }
+
+                if (hasData && hasLocationData) {
                     val modifiedJson = buildJsonObject {
                         put("jwt", messageToData2.jwt)
                         put("UUID", messageToData2.UUID)
@@ -764,7 +770,6 @@ object DataManager {
                         }
                     }
 
-                    // Запись в файл
                     val outputStream = FileOutputStream(file, true)
                     val jsonMessageToData2 = modifiedJson.toString() + "\n"
                     outputStream.write(jsonMessageToData2.toByteArray())
@@ -775,11 +780,15 @@ object DataManager {
                     val fileSize = file.length()
                     Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
 
-                    // Автоматическая отправка файла, если размер больше 1 МБ
                     if (fileSize >= 1_048_576) { // 1 МБ
-                        sendFileWithRetry(context, file)
+                        sendFileWithRetry(context, file) { success ->
+                            if (success) {
+                                Log.d(TAG, "File sent successfully (from save function)")
+                            } else {
+                                Log.e(TAG, "Failed to send file (from save function)")
+                            }
+                        }
 
-                        // Переименование файла для дальнейших записей
                         fileCounter = (fileCounter % maxFileCount) + 1
                         fileName = "Signal_data_$fileCounter.txt"
                     }
@@ -794,11 +803,10 @@ object DataManager {
         }
     }
 
-    // Отправка файла на сервер с повторной попыткой
-    private suspend fun sendFileWithRetry(context: Context, file: File) {
+    internal suspend fun sendFileWithRetry(context: Context, file: File, onComplete: (Boolean) -> Unit) {
         var success = false
         var attempts = 0
-        while (!success && attempts < 5) { // Повторить максимум 5 раз
+        while (!success && attempts < 5) {
             success = try {
                 sendFileToServer(file)
             } catch (e: Exception) {
@@ -808,19 +816,22 @@ object DataManager {
 
             if (!success) {
                 attempts++
-                delay(60000) // Задержка 60 секунд между попытками
+                delay(5000)
             }
         }
 
+        val (pendingCount, successCount) = getFileCounters(context)
         if (success) {
             Log.d(TAG, "File sent successfully: ${file.absolutePath}")
             file.delete()
+            updateFileCounters(context, pendingCount, successCount + 1)
         } else {
             Log.e(TAG, "Failed to send file after 5 attempts: ${file.absolutePath}")
+            updateFileCounters(context, pendingCount + 1, successCount)
         }
+        onComplete(success)
     }
 
-    // Отправка файла на сервер
     private suspend fun sendFileToServer(file: File): Boolean {
         return suspendCoroutine { continuation ->
             MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
@@ -829,14 +840,27 @@ object DataManager {
         }
     }
 
-    // Утилита для преобразования размера файла в удобный формат
     private fun getReadableFileSize(size: Long): String {
         if (size <= 0) return "0 B"
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
         val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
         return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
     }
+    fun updateFileCounters(context: Context, pendingCount: Int, successCount: Int) {
+        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putInt(KEY_PENDING_COUNT, pendingCount)
+            putInt(KEY_SUCCESS_COUNT, successCount)
+            apply()
+        }
+    }
 
+    fun getFileCounters(context: Context): Pair<Int, Int> {
+        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val pendingCount = sharedPreferences.getInt(KEY_PENDING_COUNT, 0)
+        val successCount = sharedPreferences.getInt(KEY_SUCCESS_COUNT, 0)
+        return Pair(pendingCount, successCount)
+    }
 
     private fun getBandFromEarfcn(earfcn: Int): String {
         return when (earfcn) {

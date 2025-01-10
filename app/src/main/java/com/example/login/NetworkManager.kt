@@ -2,6 +2,10 @@ package com.example.login
 
 import android.app.Activity
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -12,7 +16,6 @@ import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -20,8 +23,6 @@ import okhttp3.WebSocketListener
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-
-import okhttp3.MultipartBody
 
 
 class NetworkManager<Context>(private val context: Context, private val serverUrl: String, private val webSocketEndpoint: String) {
@@ -163,7 +164,8 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
     }
 
-    fun authenticateForTraffic(email: String, password: String): AuthResponse? {
+    fun authenticateForTraffic(email: String, password: String): Deferred<AuthResponse?> = CoroutineScope(
+        Dispatchers.IO).async {
         var authResponse: AuthResponse? = null
         val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
@@ -193,10 +195,17 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             Log.e(TAG, "Failed to authenticate for traffic data", e)
         }
 
-        return authResponse
+        authResponse
     }
 
     fun sendTrafficDataToServer(jwt: String, trafficData: List<AppTrafficData>) {
+        val state = MainActivity.state
+
+        if (state.Uuid.isNullOrEmpty() || jwt.isNullOrEmpty()) {
+            Log.e(TAG, "Cannot send traffic data: UUID or JWT is missing.")
+            return
+        }
+
         val top10TrafficData = trafficData.sortedByDescending { it.totalBytes }.take(10)
 
         val modifiedJson = buildJsonObject {
@@ -335,117 +344,115 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         }
     }
 
-//    fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
-//        val endpoint = "/api/sockets/thermalmap"
-//
-//        val jsonBody = try {
-//            File(filePath).readText()
-//        } catch (e: IOException) {
-//            Log.e(TAG, "Error reading JSON from file: $filePath", e)
-//            onComplete?.invoke(false)
-//            return
-//        }
-
-//        if (webSocket == null) {
-//            Log.e(TAG, "WebSocket is not initialized, attempting to connect...")
-
-//            val request = Request.Builder()
-//                .url("$serverUrl$endpoint")
-//                .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
-//                .build()
-
-//            this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
-//                override fun onOpen(webSocket: WebSocket, response: Response) {
-//                    Log.d(TAG, "WebSocket connected successfully for CellInfo (from file)")
-//                    this@NetworkManager.webSocket?.send(jsonBody)
-//                    Log.d(TAG, "Sent MessageToData2 (from file): $jsonBody")
-//                    onComplete?.invoke(true)
-//                    (context as? MainActivity)?.showSendingIndicator()
-//                }
-
-//                override fun onMessage(webSocket: WebSocket, text: String) {
-//                    Log.d(TAG, "Received message from server CellInfo: $text")
-//                }
-
-//                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-//                    Log.d(TAG, "WebSocket connection closing CellInfo: $code $reason")
-//                    this@NetworkManager.webSocket = null
-//                    this@NetworkManager.isWebSocketConnected = false
-//                }
-
-//                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-//                    Log.d(TAG, "WebSocket connection closed (CellInfo): $code $reason")
-//                    this@NetworkManager.webSocket = null
-//                    this@NetworkManager.isWebSocketConnected = false
-//                }
-
-//                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-//                    Log.e(TAG, "Failed to connect WebSocket for CellInfo", t)
-//                    onComplete?.invoke(false)
-//                }
-//            })
-//            this.isWebSocketConnected = this.webSocket != null
-//        } else if (this.isWebSocketConnected) {
-//            Log.d(TAG, "Sending CellInfo (from file) through existing WebSocket connection")
-//            this.webSocket?.send(jsonBody)
-//            Log.d(TAG, "Sent CellInfo (from file): $jsonBody")
-//            onComplete?.invoke(true)
-//            (context as? MainActivity)?.showSendingIndicator()
-//        } else {
-//            Log.e(TAG, "WebSocket is not connected, cannot send CellInfo (from file)")
-//            onComplete?.invoke(false)
-//        }
-//    }
-
-    /* Способ отправки JSON на сервер с помощью multipart/form-data   */
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
-        val endpoint = "/api/sockets/thermalmap/file"
-        val file = File(filePath)
+        val endpoint = "/api/sockets/thermalmap"
 
-        // Проверка, существует ли файл
-        if (!file.exists()) {
-            Log.e(TAG, "File not found: $filePath")
+        val jsonBody = try {
+            File(filePath).readText()
+        } catch (e: IOException) {
+            Log.e(TAG, "Error reading JSON from file: $filePath", e)
             onComplete?.invoke(false)
             return
         }
 
-        // Использование правильного MIME-типа для передачи файла
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaTypeOrNull()))  // Более общий тип
-            .build()
+        if (webSocket == null || !isWebSocketConnected) {
+            Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
 
-        val request = Request.Builder()
-            .url("$serverUrl$endpoint")
-            .post(requestBody)
-            .build()
+            val request = Request.Builder()
+                .url("$serverUrl$endpoint")
+                .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
+                .build()
 
-        // Отправка запроса
-        httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                // Логируем ошибку при отправке
-                Log.e(TAG, "Failed to send file to server", e)
-                // Убедитесь, что onComplete вызывается в случае ошибки
-                onComplete?.invoke(false)
-            }
+            this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    Log.d(TAG, "WebSocket connected successfully for CellInfo (from file)")
+                    sendJsonBody(jsonBody, onComplete)
+                }
 
-            override fun onResponse(call: Call, response: Response) {
-                // Проверка кода ответа
-                if (response.isSuccessful) {
-                    Log.d(TAG, "File sent to server successfully")
-                    onComplete?.invoke(true)
-                    (context as? MainActivity)?.showSendingIndicator()
-                } else {
-                    // Логируем ошибку сервера
-                    Log.e(TAG, "Failed to send file to server: ${response.code} ${response.message}")
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    Log.d(TAG, "Received message from server CellInfo: $text")
+
+                }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closing CellInfo: $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket connection closed (CellInfo): $code $reason")
+                    this@NetworkManager.webSocket = null
+                    this@NetworkManager.isWebSocketConnected = false
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    Log.e(TAG, "Failed to connect WebSocket for CellInfo", t)
                     onComplete?.invoke(false)
                 }
-                // Закрытие ответа для освобождения ресурсов
-                response.close()
-            }
-        })
+            })
+            this.isWebSocketConnected = this.webSocket != null
+        } else {
+            Log.d(TAG, "Sending CellInfo through existing WebSocket connection")
+            sendJsonBody(jsonBody, onComplete)
+        }
     }
 
+    private fun sendJsonBody(jsonBody: String, onComplete: ((Boolean) -> Unit)?) {
+        this.webSocket?.send(jsonBody)
+        Log.d(TAG, "Sent CellInfo (from networkmanager): $jsonBody")
+        onComplete?.invoke(true)
+        (context as? MainActivity)?.showSendingIndicator()
+    }
+
+    /* Способ отправки JSON на сервер с помощью multipart/form-data   */
+//    fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
+//        val endpoint = "/api/sockets/thermalmap"
+//        val file = File(filePath)
+//
+//        // Проверка, существует ли файл
+//        if (!file.exists()) {
+//            Log.e(TAG, "File not found: $filePath")
+//            onComplete?.invoke(false)
+//            return
+//        }
+//
+//        // Использование правильного MIME-типа для передачи файла
+//        val requestBody = MultipartBody.Builder()
+//            .setType(MultipartBody.FORM)
+//            .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaTypeOrNull()))  // Более общий тип
+//            .build()
+//
+//        val request = Request.Builder()
+//            .url("$serverUrl$endpoint")
+//            .post(requestBody)
+//            .build()
+//
+//        // Отправка запроса
+//        httpClient.newCall(request).enqueue(object : Callback {
+//            override fun onFailure(call: Call, e: IOException) {
+//                // Логируем ошибку при отправке
+//                Log.e(TAG, "Failed to send file to server", e)
+//                // Убедитесь, что onComplete вызывается в случае ошибки
+//                onComplete?.invoke(false)
+//            }
+//
+//            override fun onResponse(call: Call, response: Response) {
+//                // Проверка кода ответа
+//                if (response.isSuccessful) {
+//                    Log.d(TAG, "File sent to server successfully")
+//                    onComplete?.invoke(true)
+//                    (context as? MainActivity)?.showSendingIndicator()
+//                } else {
+//                    // Логируем ошибку сервера
+//                    Log.e(TAG, "Failed to send file to server: ${response.code} ${response.message}")
+//                    onComplete?.invoke(false)
+//                }
+//                // Закрытие ответа для освобождения ресурсов
+//                response.close()
+//            }
+//        })
+//    }
 
     fun connectWebSocket(
         jwt: String,

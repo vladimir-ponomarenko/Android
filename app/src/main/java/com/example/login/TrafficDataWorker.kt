@@ -8,6 +8,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -17,12 +19,12 @@ class TrafficDataWorker(appContext: Context, workerParams: WorkerParameters) :
     private val notificationManager =
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    override suspend fun doWork(): Result {
-        return try {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
             val email = inputData.getString("Email") ?: ""
             val password = inputData.getString("Password") ?: ""
 
-            val authResponse = MainActivity.networkManager.authenticateForTraffic(email, password)
+            val authResponse = MainActivity.networkManager.authenticateForTraffic(email, password).await()
 
             if (authResponse != null) {
                 val calendar = Calendar.getInstance()
