@@ -946,7 +946,7 @@ fun DetailedChartContent(
                             )
 
                             val textOffset = if (index % 2 == 0) {
-                                Offset(x, y - 10.dp.toPx())
+                                Offset(x, (y - 10.dp.toPx()).coerceAtLeast(10.dp.toPx()))
                             } else {
                                 Offset(x, y + 10.dp.toPx())
                             }
