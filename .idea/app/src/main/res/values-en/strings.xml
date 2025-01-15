@@ -1,0 +1,110 @@
+<resources>
+    <string name="app_logo_desc">Application Logo</string>
+    <string name="registration_title">Registration</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Password</string>
+    <string name="uuid_label">UUID</string>
+    <string name="jwt_token_label">JWT Token</string>
+    <string name="remember_me">Remember me</string>
+    <string name="send_cell_info">Send file</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="resume_recording">Recording to a file</string>
+    <string name="resume_recording_description">Start or stop recording</string>
+    <string name="delete_file">Delete file</string>
+    <string name="register">Register</string>
+    <string name="login">Login</string>
+    <string name="registration_success">Registration successful! Your JWT token is: %1$s</string>
+    <string name="registration_failure">Registration failed. Please try again.</string>
+    <string name="or">or</string>
+    <string name="go_to">go to the website</string>
+
+    <!-- Разрешение -->
+    <string name="get_information">Get information about network quality</string>
+    <string name="grant_permissions">Grant permissions on your phone location and status to get more accurate results</string>
+    <string name="location">Location</string>
+    <string name="coordinates">For coordinates</string>
+    <string name="phone_status">Phone status</string>
+    <string name="network_data">For network data</string>
+    <string name="background_location">Background location</string>
+    <string name="work_background">To work in the background</string>
+    <string name="confirm_permissions">Confirm permissions</string>
+    <string name="allow">Allow</string>
+
+    <!-- Меню -->
+    <string name="menu_title">Menu</string>
+    <string name="map_button_text">Map</string>
+    <string name="traffic_button_text">Traffic</string>
+    <string name="data_button_text">Data</string>
+    <string name="settings_button_text">Settings</string>
+
+    <!-- Карта -->
+    <string name="map_screen_title">Map</string>
+    <string name="last_update_time">Last updated</string>
+    <string name="network_selector">network</string>
+    <string name="signal_distribution_title">Signal strength distribution</string>
+    <string name="no_data_message">No data to display</string>
+
+    <!-- Трафик -->
+    <string name="traffic">Traffic</string>
+    <string name="days_count">Number of days</string>
+    <string name="incorrect_days_count">Invalid number of days</string>
+    <string name="grant_permission">Provide access to statistics</string>
+    <string name="total_traffic">Total Traffic</string>
+    <string name="send_data">Send Data</string>
+    <string name="total">Total Traffic:</string>
+    <string name="mobile">Mobile:</string>
+    <string name="wifi">Wi-Fi:</string>
+    <string name="downlink">Downlink:</string>
+    <string name="uplink">Uplink:</string>
+    <string name="hourly_traffic_for_app">Hourly Traffic for %1$s</string> <!-- %1$s - это placeholder для имени приложения -->
+    <string name="total_hourly_traffic">Total Hourly Traffic</string>
+    <string name="show_chart">Show Chart</string>
+    <string name="show_diagram">Show Diagram</string>
+
+    <!-- Данные -->
+    <string name="data">Data</string>
+    <string name="phone_info">Phone Information</string>
+    <string name="device_model">Device Model:: %1$s</string>
+    <string name="manufacturer">Manufacturer: %1$s</string>
+    <string name="brand">Brand %1$s</string>
+    <string name="android_version">Android Version: %1$s (SDK: %2$d)</string>
+    <string name="board">Board: %1$s</string>
+    <string name="bootloader">Bootloader: %1$s</string>
+    <string name="device">Device: %1$s</string>
+    <string name="hardware">Hardware: %1$s</string>
+    <string name="product">Product: %1$s</string>
+    <string name="operator">Operator: %1$s</string>
+    <string name="network_type">Network Type: %1$s</string>
+    <string name="sim_operator">SIM Operator: %1$s</string>
+    <string name="sim_state">SIM State: %1$s</string>
+    <string name="phone_type">Phone Type: %1$s</string>
+    <string name="data_network_type">Data Network Type: %1$s</string>
+    <string name="latitude">Latitude: %1$s</string>
+    <string name="longitude">Longitude: %1$s</string>
+    <string name="altitude">Altitude: %1$s</string>
+    <string name="sim_info">SIM %1$d Info: %1$d:</string>
+    <string name="carrier_name">Carrier Name: %1$s</string>
+    <string name="country_iso">Country ISO: %1$s</string>
+    <string name="number">Number: %1$s</string>
+    <string name="no_sim_card">No active SIM cards found</string>
+
+    <!-- Настройки -->
+    <string name="app_name">SIGNAL</string>
+    <string name="settings_title">Settings</string>
+    <string name="interface_language">Interface language</string>
+    <string name="notifications">Notifications</string>
+    <string name="enabled">On</string>
+    <string name="appearance">Customization</string>
+    <string name="help_and_feedback">Help and feedback</string>
+    <string name="sending_collected_data">Sending collected data</string>
+    <string name="reset_app">Reset App</string>
+    <string name="not_specified">Not specified</string>
+    <string name="failed_to_send">Failed to send: %1$d</string>
+    <string name="successfully_sent">Successfully Sent: %1$d</string>
+    <string name="resumed_recording">Writing to the file has resumed</string>
+    <string name="stopped_recording">Writing to the file has been stopped</string>
+    <string name="file_deleted">The file was deleted successfully</string>
+    <string name="file_delete_error">Error when deleting a file</string>
+    <string name="file_not_exist">The file does not exist</string>
+
+</resources>
