@@ -2,61 +2,90 @@
 
 package com.example.login
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
-import androidx.compose.material3.*
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
 import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.ui.res.stringResource
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ButtonDefaults
+import java.util.Date
+import java.util.Locale
 
 
 @Composable
 fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
+    val isDarkTheme = isSystemInDarkTheme()
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(55.0415, 82.9346), 10f)
+    }
+
+    val context = LocalContext.current
+    val mapStyleOptions = remember(context, isDarkTheme) {
+        if (isDarkTheme) {
+            try {
+                val mapStyleJson = context.resources.openRawResource(R.raw.map_style_d)
+                    .bufferedReader()
+                    .use { it.readText() }
+                MapStyleOptions(mapStyleJson)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } else {
+            null
+        }
     }
 
     val locations = remember(state.selectedNetworkType) {
@@ -86,8 +115,19 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
             })
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF8F8F8))
+        ) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = com.google.maps.android.compose.MapProperties(
+                    mapStyleOptions = mapStyleOptions
+                )
+            ) {
                 if (locations.size > 1) {
                     locations.windowed(2).forEach { (location1, location2) ->
                         Polyline(
@@ -106,15 +146,22 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
                     .offset(y = 315.dp, x = 5.dp)
-                    .background(Color.White, shape = CircleShape)
-                    .border(1.dp, Color(0x809E9E9E), shape = CircleShape)
+                    .background(
+                        if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF),
+                        shape = CircleShape
+                    )
+                    .border(
+                        1.dp,
+                        if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E),
+                        shape = CircleShape
+                    )
                     .clickable { showChartDialog.value = !showChartDialog.value }
                     .padding(12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.BarChart,
                     contentDescription = "Показать график",
-                    tint = Color(0x809E9E9E),
+                    tint = if (isDarkTheme) Color(0xFF9E9E9E) else Color(0x809E9E9E),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -131,7 +178,10 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .background(
+                        if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFE2E2E2),
+                        shape = RoundedCornerShape(8.dp)
+                    )
                     .padding(8.dp)
             ) {
                 Column(
@@ -140,7 +190,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                 ) {
                     Text(
                         text = stringResource(id = R.string.last_update_time) + ": ${lastUpdateTime.value} ${getCurrentDate()}",
-                        color = Color(0xFF34204C),
+                        color = if (isDarkTheme) Color.White else Color(0xFF34204C),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal
                     )
@@ -149,7 +199,6 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         }
     }
 }
-
 
 fun getCurrentTime(): String {
     val currentTime = System.currentTimeMillis()
@@ -164,6 +213,7 @@ fun getCurrentDate(): String {
 
 @Composable
 fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit, onNetworkTypeChanged: (String) -> Unit) {
+    val isDarkTheme = isSystemInDarkTheme()
     var expanded by remember { mutableStateOf(false) }
     val networkSelectorText = stringResource(id = R.string.network_selector)
     val selectedNetworkText = remember { mutableStateOf(networkSelectorText) }
@@ -176,8 +226,8 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(Color(0xFFF8F8F8))
-            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+            .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+            .border(width = 2.dp, color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -185,7 +235,7 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         ) {
             IconButton(onClick = { onNavigateTo(5) }) {
                 Image(
-                    painter = painterResource(id = R.drawable.transition_light),
+                    painter = painterResource(id = if (isDarkTheme) R.drawable.transition_dark else R.drawable.transition_light),
                     contentDescription = "Назад",
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -195,7 +245,7 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(id = R.string.map_screen_title),
-                color = Color(0xFF34204C),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -204,8 +254,10 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
             Box {
                 Button(
                     onClick = { expanded = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0x809E9E9E)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF)
+                    ),
+                    border = BorderStroke(1.dp, if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)),
                     shape = RoundedCornerShape(5.dp),
                     modifier = Modifier
                         .width(130.dp)
@@ -214,7 +266,7 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                 ) {
                     Text(
                         text = selectedNetworkText.value,
-                        color = Color(0xB334204C),
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         maxLines = 1
@@ -226,38 +278,38 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     onDismissRequest = { expanded = false },
                     modifier = Modifier
                         .width(110.dp)
-                        .background(Color.White)
+                        .background(if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF))
                         .align(Alignment.CenterStart)
                 ) {
                     DropdownMenuItem(onClick = {
                         onNetworkTypeChanged("LTE")
                         expanded = false
                     }) {
-                        Text("LTE", color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("LTE", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     DropdownMenuItem(onClick = {
                         onNetworkTypeChanged("GSM")
                         expanded = false
                     }) {
-                        Text("GSM", color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("GSM", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     DropdownMenuItem(onClick = {
                         onNetworkTypeChanged("WCDMA")
                         expanded = false
                     }) {
-                        Text("WCDMA", color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("WCDMA", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     DropdownMenuItem(onClick = {
                         onNetworkTypeChanged("CDMA")
                         expanded = false
                     }) {
-                        Text("CDMA", color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("CDMA", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     DropdownMenuItem(onClick = {
                         onNetworkTypeChanged("NR")
                         expanded = false
                     }) {
-                        Text("NR", color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("NR", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -269,6 +321,7 @@ data class ColorScaleItemData(val color: Color, val text: String)
 
 @Composable
 fun ColorScaleColumn(state: MainActivity.MainActivityState) {
+    val isDarkTheme = isSystemInDarkTheme()
     val colorScaleItems = when (state.selectedNetworkType) {
         "LTE" -> listOf(
             ColorScaleItemData(color = Color(0xFF980000), text = "-40"),
@@ -339,8 +392,8 @@ fun ColorScaleColumn(state: MainActivity.MainActivityState) {
                 .align(Alignment.TopEnd)
                 .offset(y = 30.dp)
                 .padding(10.dp)
-                .background(Color.White, shape = RoundedCornerShape(15.dp))
-                .border(1.dp, Color(0x809E9E9E), shape = RoundedCornerShape(15.dp))
+                .background(if (isDarkTheme)  Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(15.dp))
+                .border(1.dp, if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(15.dp))
                 .padding(5.dp)
                 .width(IntrinsicSize.Max)
         ) {
@@ -362,7 +415,7 @@ fun ColorScaleColumn(state: MainActivity.MainActivityState) {
                 ) {
                     Text(
                         text = item.text,
-                        color = Color.White,
+                        color =  Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(0.dp)
                     )
@@ -535,6 +588,7 @@ fun SignalBarChart(
         return
     }
 
+    val isDarkTheme = isSystemInDarkTheme()
     val signalValues = when (selectedNetworkType) {
         "LTE" -> listOf("-140", "-130", "-120", "-110", "-100", "-90", "-80", "-70", "-60", "-50", "-40")
         "GSM" -> listOf("-113", "-110", "-100", "-90", "-80", "-70", "-60", "-51")
@@ -556,7 +610,7 @@ fun SignalBarChart(
     Column(
         modifier = Modifier
             .padding(10.dp)
-            .background(Color.White, shape = RoundedCornerShape(10.dp))
+            .background(if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
         Row(
@@ -569,7 +623,7 @@ fun SignalBarChart(
 
             Text(
                 text = stringResource(id = R.string.signal_distribution_title),
-                color = Color(0xFF34204C),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
@@ -583,7 +637,8 @@ fun SignalBarChart(
                 Icon(
                     imageVector = Icons.Filled.Close,
                     contentDescription = "Close",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                 )
             }
         }
@@ -608,7 +663,7 @@ fun SignalBarChart(
                             text = signalValues[index],
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Normal,
-                            color = Color.Black,
+                            color = if (isDarkTheme) Color.White else Color.Black,
                             modifier = Modifier
                                 .align(Alignment.CenterVertically)
                                 .padding(end = 8.dp)
@@ -626,7 +681,7 @@ fun SignalBarChart(
                                     .align(Alignment.Center)
                                     .padding(start = 8.dp),
                                 fontSize = 12.sp,
-                                color = Color.Black,
+                                color = if (isDarkTheme) Color.Black else Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -636,6 +691,7 @@ fun SignalBarChart(
         }
     }
 }
+
 
 fun getNetworkColor(networkType: String, signalStrength: String): Color {
     return when (networkType) {

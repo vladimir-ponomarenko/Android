@@ -73,6 +73,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import androidx.compose.foundation.isSystemInDarkTheme
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -93,17 +94,26 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
     var activeMode by remember { mutableStateOf("days") }
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
     var isLoading by remember { mutableStateOf(false) }
+    val isDarkTheme = isSystemInDarkTheme()
 
     fun onDaysChanged(newDays: String) {
         days = newDays
         activeMode = "days"
         selectedCalendar = null
     }
-    val shimmerColors = listOf(
-        Color(0xFFE0E0E0),
-        Color(0xFFF5F4F4),
-        Color(0xFFE0E0E0),
-    )
+    val shimmerColors = if (isDarkTheme) {
+        listOf(
+            Color(0xFF3C3C3E),
+            Color(0xFF4A4A4C),
+            Color(0xFF5A5A5C)
+        )
+    } else {
+        listOf(
+            Color(0xFFE5E4E4),
+            Color(0xFFF5F4F4),
+            Color(0xFFE0E0E0)
+        )
+    }
 
     val transition = rememberInfiniteTransition()
     val translateAnim by transition.animateFloat(
@@ -127,8 +137,8 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(Color.White)
-            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+            .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+            .border(width = 2.dp, color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -136,7 +146,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         ) {
             IconButton(onClick = { onNavigateTo(5) }) {
                 Image(
-                    painter = painterResource(id = R.drawable.transition_light),
+                    painter = painterResource(id = if (isDarkTheme) R.drawable.transition_dark else R.drawable.transition_light),
                     contentDescription = "back",
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -146,7 +156,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(id = R.string.traffic),
-                color = Color(0xFF34204C),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -193,94 +203,114 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (isDarkTheme) Color.Black else Color.White)
     ) {
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF8F8F8)),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            item {
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .border(
-                            1.5.dp,
-                            if (sortCriteria == SortCriteria.TOTAL) Color(0xFF132C86) else Color(0x809E9E9E),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { sortCriteria = SortCriteria.TOTAL }
-                        .padding(8.dp)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.total),
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF34204C)
-                    )
-                    Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
-                }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (isDarkTheme) Color(0xFF3C3C3E) else Color.White,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (sortCriteria == SortCriteria.TOTAL) {
+                                    if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)
+                                } else {
+                                    if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { sortCriteria = SortCriteria.TOTAL }
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.total),
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                        )
+                        Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
+                    }
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .border(
-                            1.5.dp,
-                            if (sortCriteria == SortCriteria.MOBILE) Color(0xFF132C86) else Color(0x809E9E9E),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { sortCriteria = SortCriteria.MOBILE }
-                        .padding(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.mobile),
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF34204C)
-                    )
-                    Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
-                }
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (isDarkTheme) Color(0xFF3C3C3E) else Color.White,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (sortCriteria == SortCriteria.MOBILE) {
+                                    if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)
+                                } else {
+                                    if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { sortCriteria = SortCriteria.MOBILE }
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.mobile),
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF34204C)
+                        )
+                        Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
+                    }
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            Color.White,
-                            shape = RoundedCornerShape(8.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (isDarkTheme) Color(0xFF3C3C3E) else Color.White,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (sortCriteria == SortCriteria.WIFI) {
+                                    if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)
+                                } else {
+                                    if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { sortCriteria = SortCriteria.WIFI }
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.wifi),
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF34204C)
                         )
-                        .border(
-                            1.5.dp,
-                            if (sortCriteria == SortCriteria.WIFI) Color(0xFF132C86) else Color(0x809E9E9E),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { sortCriteria = SortCriteria.WIFI }
-                        .padding(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.wifi),
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF34204C)
-                    )
-                    Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
+                        Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
+                    }
                 }
             }
-        }
         item {
             Row(
                 modifier = Modifier
@@ -298,7 +328,12 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     OutlinedTextField(
                         value = days,
                         onValueChange = { onDaysChanged(it) },
-                        label = { Text(stringResource(id = R.string.days_count), color = Color(0xFF7B7B7B)) },
+                        label = {
+                            Text(
+                                stringResource(id = R.string.days_count),
+                                color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF929292)
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -308,7 +343,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         .size(56.dp)
                         .offset(y = 4.dp)
                         .background(
-                            Color(0xCC132C86),
+                            if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
                             shape = RoundedCornerShape(8.dp)
                         )
                 ) {
@@ -346,7 +381,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             if (!PermissionUtils.hasUsageStatsPermission(context)) {
                 Button(
                     onClick = { PermissionUtils.requestUsageStatsPermission(context) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .padding(16.dp)
@@ -371,7 +406,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Button(
                         onClick = { showTotalChart = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .wrapContentWidth()
@@ -415,7 +450,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                                 isSendingTrafficData = false
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xCC132C86)),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .wrapContentWidth()
@@ -497,6 +532,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         }
     }
 }
+}
 
 @Composable
 fun ShimmerTrafficItem(brush: Brush) {
@@ -553,6 +589,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
     val coroutineScope = rememberCoroutineScope()
     var isSelected by remember { mutableStateOf(false) }
     var isHighlighted by remember { mutableStateOf(false) }
+    val isDarkTheme = isSystemInDarkTheme()
 
     LaunchedEffect(appData) {
         coroutineScope.launch(Dispatchers.IO) {
@@ -596,7 +633,7 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             }
 
             Column(modifier = Modifier.width(200.dp)) {
-                val textColor = Color(0xFF34204C)
+                val textColor = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C)
                 Text(
                     text = appData.appName,
                     color = textColor,
@@ -614,10 +651,15 @@ fun TrafficItem(appData: AppTrafficData, onShowChart: (String) -> Unit) {
             modifier = Modifier
                 .size(30.dp)
                 .background(
-                    if (isHighlighted) Color(0xCC132C86) else Color(0x809E9E9E).copy(alpha = 0.5f),
+                    if (isHighlighted) {
+                        if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)
+                    } else {
+                        if (isDarkTheme) Color(0xFF828282) else Color(0x809E9E9E)
+                    },
                     shape = CircleShape
                 )
                 .clickable {
+                    isHighlighted = !isHighlighted
                     isSelected = !isSelected
                     onShowChart(appData.appName)
                 },

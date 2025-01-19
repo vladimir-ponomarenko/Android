@@ -15,6 +15,20 @@
     <string name="login">Войти</string>
     <string name="registration_success">Регистрация успешна! Ваш JWT токен: %1$s</string>
     <string name="registration_failure">Регистрация не удалась. Пожалуйста, попробуйте снова.</string>
+    <string name="or">или</string>
+    <string name="go_to">перейдите на сайт</string>
+
+    <!-- Разрешение -->
+    <string name="get_information">Получайте информацию о качестве сети</string>
+    <string name="grant_permissions">Предоставьте разрешения на местоположение и состояние телефона, чтобы получать более точные результаты</string>
+    <string name="location">Местоположение</string>
+    <string name="coordinates">Для координат</string>
+    <string name="phone_status">Состояние телефона</string>
+    <string name="network_data">Для данных о сети</string>
+    <string name="background_location">Фоновое местоположение</string>
+    <string name="work_background">Для работы в фоне</string>
+    <string name="confirm_permissions">Подтвердить разрешения</string>
+    <string name="allow">Разрешить</string>
 
     <!-- Меню -->
     <string name="menu_title">Меню</string>
@@ -72,6 +86,7 @@
     <string name="carrier_name">Оператор: %1$s</string>
     <string name="country_iso">Код страны: %1$s</string>
     <string name="number">Номер: %1$s</string>
+    <string name="no_sim_card">Активных SIM-карт не найдено</string>
 
     <!-- Настройки -->
     <string name="app_name">SIGNAL</string>
@@ -84,4 +99,12 @@
     <string name="sending_collected_data">Отправка собранных данных</string>
     <string name="reset_app">Сбросить приложение</string>
     <string name="not_specified">Не указано</string>
+    <string name="failed_to_send">Не удалось отправить: %1$d</string>
+    <string name="successfully_sent">Успешно отправлено: %1$d</string>
+    <string name="resumed_recording">Запись в файл возобновлена</string>
+    <string name="stopped_recording">Запись в файл остановлена</string>
+    <string name="file_deleted">Файл успешно удалён</string>
+    <string name="file_delete_error">Ошибка при удалении файла</string>
+    <string name="file_not_exist">Файл не существует</string>
+
 </resources>

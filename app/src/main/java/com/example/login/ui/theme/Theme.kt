@@ -1,5 +1,6 @@
 package com.example.login.ui.theme
 
+import android.R.id.primary
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -10,37 +11,40 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+
+internal val DarkColorScheme = darkColorScheme(
+    primary = Color(0xCC567BFF), // Цвет кнопок
+    secondary = Color(0xFF567BFF), // Цвет кнопок (тот же, что и primary)
+    tertiary = Color(0xFF018786), // Цвет для третичных элементов (по желанию, можно изменить)
+    background = Color(0xFF1C1C1E), // Задний фон приложения
+    surface = Color(0xFF2C2C2E), // Верхняя плашка приложения
+    onPrimary = Color(0xFFFFFFFF).copy(alpha = 0.85f), // Цвет текста внутри кнопок
+    onSecondary = Color(0xFFFFFFFF).copy(alpha = 0.85f), // Цвет текста внутри кнопок
+    onBackground = Color(0xFFFFFFFF).copy(alpha = 0.7f), // Основной текст и интерактивные элементы
+    onSurface = Color(0xFFFFFFFF).copy(alpha = 0.8f),
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+internal val LightColorScheme = lightColorScheme(
+    primary = Color(0xFF6200EE), // Цвет кнопок для светлой темы
+    secondary = Color(0xFF03DAC6), // Вторичный цвет кнопок
+    tertiary = Color(0xFF018786), // Цвет для третичных элементов
+    background = Color(0xFFFFFFFF), // Цвет фона для светлой темы
+    surface = Color(0xFFFFFFFF), // Цвет поверхности для светлой темы
+    onPrimary = Color(0xFFFFFFFF), // Цвет текста внутри кнопок
+    onSecondary = Color(0xFF000000), // Цвет текста внутри вторичных кнопок
+    onBackground = Color(0xFF000000), // Цвет текста на светлом фоне
+    onSurface = Color(0xFF000000),
 )
 
 @Composable
 fun LoginTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -49,10 +53,10 @@ fun LoginTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

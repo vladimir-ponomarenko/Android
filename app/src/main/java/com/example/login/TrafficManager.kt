@@ -60,12 +60,15 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ButtonDefaults
 
 
 @Composable
 fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
     val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, Long>>() }
     val packageName = getPackageNameForApp(context, appName)
+    val isDarkTheme = isSystemInDarkTheme()
 
     LaunchedEffect(packageName, selectedDate) {
         launch(Dispatchers.IO) {
@@ -79,17 +82,25 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, s
     }
 
     Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFF9E9E9E)) ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)),
+            color = if (isDarkTheme) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = stringResource(id = R.string.hourly_traffic_for_app, appName),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF34204C)
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                    )
                 }
 
                 if (packageName != null) {
@@ -107,6 +118,7 @@ fun HourlyTrafficChart(appName: String, onClose: () -> Unit, context: Context, s
 fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate: Calendar? = null) {
     val hourlyTrafficData = remember { mutableStateListOf<Pair<Int, AppTrafficData>>() }
     var showChart by remember { mutableStateOf(false) }
+    val isDarkTheme = isSystemInDarkTheme()
 
     LaunchedEffect(Unit, selectedDate) {
         launch(Dispatchers.IO) {
@@ -118,17 +130,24 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
     }
 
     Dialog(onDismissRequest = onClose) {
-        Surface(shape = RoundedCornerShape(8.dp)) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = if (isDarkTheme) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = stringResource(id = R.string.total_hourly_traffic),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF34204C)
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                 )
 
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.End)) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                    )
                 }
 
                 if (showChart) {
@@ -146,13 +165,16 @@ fun TotalHourlyTrafficChart(onClose: () -> Unit, context: Context, selectedDate:
                 Button(
                     onClick = { showChart = !showChart },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color.Black
+                        contentColor = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                     ),
-                    border = BorderStroke(1.dp, Color(0xFF9E9E9E))
+                    border = BorderStroke(1.dp, if (isDarkTheme) Color(0xFF9E9E9E) else Color(0xFF4D9E9E9E))
                 ) {
-                    Text(text = stringResource(if (showChart) R.string.show_diagram else R.string.show_chart))
+                    Text(
+                        text = stringResource(if (showChart) R.string.show_diagram else R.string.show_chart),
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                    )
                 }
             }
         }

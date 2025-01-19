@@ -15,10 +15,14 @@ import android.os.Build
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,18 +37,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,9 +71,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
@@ -75,18 +89,6 @@ import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.reflect.full.declaredMemberProperties
-import androidx.compose.material3.*
-import androidx.compose.foundation.border
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.Text
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.res.stringResource
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -104,6 +106,9 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
     val cellIdToColorWCDMA = remember { mutableStateMapOf<String, Color>() }
     val cellIdToColorCDMA = remember { mutableStateMapOf<String, Color>() }
     val cellIdToColorNR = remember { mutableStateMapOf<String, Color>() }
+    val isDarkTheme = isSystemInDarkTheme()
+
+    val fullscreenColor = if (isDarkTheme) Color(0xFF000000) else Color(0xFFFFFFFF)
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -169,7 +174,7 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
             onFullscreenToggle = { state.isFullscreen = false },
             networkType = getNetworkTypeShortName(selectedTabIndex),
             cellIdToColor = currentCellIdToColor
-        )
+           )
     } else {
         Scaffold(
             topBar = {
@@ -187,6 +192,7 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
                 modifier = Modifier
                     .padding(innerPadding)
                     .fillMaxSize()
+                    .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5))
             ) {
                 item {
                     DetailedChartContent(
@@ -194,7 +200,9 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
                         state = state,
                         onDismiss = {},
                         networkType = getNetworkTypeShortName(selectedTabIndex),
-                        onFullscreenToggle = { state.isFullscreen = !state.isFullscreen },
+                        onFullscreenToggle = {
+                            state.isFullscreen = !state.isFullscreen
+                        },
                         cellIdToColor = currentCellIdToColor
                     )
                 }
@@ -213,6 +221,7 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
 
 @Composable
 fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Unit,  selectedTabIndex: Int,  onNetworkChange: (Int) -> Unit,  selectedChartType: String, onChartTypeChange: (String) -> Unit) {
+    val isDarkTheme = isSystemInDarkTheme()
     var expandedNetworkMenu by remember { mutableStateOf(false) }
     var expandedChartMenu by remember { mutableStateOf(false) }
     val networkNames = listOf("LTE", "GSM", "WCDMA", "CDMA", "NR")
@@ -229,8 +238,12 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(Color(0xFFF8F8F8))
-            .border(width = 2.dp, color = Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+            .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+            .border(
+                width = 2.dp,
+                color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
+                shape = RoundedCornerShape(0.dp)
+            )
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -238,7 +251,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
         ) {
             IconButton(onClick = { onNavigateTo(5) }) {
                 Image(
-                    painter = painterResource(id = R.drawable.transition_light),
+                    painter = painterResource(id = if (isDarkTheme) R.drawable.transition_dark else R.drawable.transition_light),
                     contentDescription = "Назад",
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -248,7 +261,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(id = R.string.data),
-                color = Color(0xFF34204C),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -257,8 +270,8 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
             Box {
                 Button(
                     onClick = { expandedNetworkMenu = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0x809E9E9E)),
+                    colors = ButtonDefaults.buttonColors(containerColor =  if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF)),
+                    border = BorderStroke(1.dp, if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)),
                     shape = RoundedCornerShape(5.dp),
                     modifier = Modifier
                         .width(110.dp)
@@ -267,7 +280,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                 ) {
                     Text(
                         text = networkNames[selectedTabIndex],
-                        color = Color(0xB334204C),
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center
                     )
@@ -278,7 +291,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                     onDismissRequest = { expandedNetworkMenu = false },
                     modifier = Modifier
                         .width(90.dp)
-                        .background(Color.White)
+                        .background(if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF))
                         .align(Alignment.CenterStart)
                 ) {
                     networkNames.forEachIndexed { index, name ->
@@ -286,7 +299,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                             onNetworkChange(index)
                             expandedNetworkMenu = false
                         }) {
-                            Text(name, color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                            Text(name, color =  if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -295,8 +308,8 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
             Box {
                 Button(
                     onClick = { expandedChartMenu = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0x809E9E9E)),
+                    colors = ButtonDefaults.buttonColors(containerColor =  if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF)),
+                    border = BorderStroke(1.dp, if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)),
                     shape = RoundedCornerShape(5.dp),
                     modifier = Modifier
                         .width(110.dp)
@@ -305,7 +318,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                 ) {
                     Text(
                         text = selectedChartType,
-                        color = Color(0xB334204C),
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center
                     )
@@ -316,7 +329,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                     onDismissRequest = { expandedChartMenu = false },
                     modifier = Modifier
                         .width(90.dp)
-                        .background(Color.White)
+                        .background(if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF))
                         .align(Alignment.CenterStart)
                 ) {
 
@@ -325,7 +338,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
                             onChartTypeChange(chartType)
                             expandedChartMenu = false
                         }) {
-                            Text(chartType, color = Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
+                            Text(chartType, color =  if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C), fontSize = 14.sp, textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -338,9 +351,10 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
-    val backgroundColor = Color(0xFFFFFFFFF)
-    val textColor = Color(0xCC34204C)
-    val borderColor = Color(0x809E9E9E)
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8)
+    val textColor =  if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C)
+    val borderColor = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
     val paddingModifier = Modifier.padding(horizontal = 15.dp)
 
     Card(
@@ -441,9 +455,10 @@ fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
 
 @Composable
 fun PhoneInfoCard(state: MainActivity.MainActivityState) {
-    val backgroundColor = Color(0xFFFFFFFFF)
-    val textColor = Color(0xCC34204C)
-    val borderColor = Color(0x809E9E9E)
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFF8F8F8)
+    val textColor =  if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C)
+    val borderColor = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
     val paddingModifier = Modifier.padding(horizontal = 15.dp)
     val context = LocalContext.current
     val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
@@ -569,7 +584,11 @@ fun PhoneInfoCard(state: MainActivity.MainActivityState) {
                 val subscriptions = subscriptionManager.activeSubscriptionInfoList
 
                 if (subscriptions.isNullOrEmpty()) {
-                    Text("No active SIM cards found.")
+                    Text(
+                        text = stringResource(id = R.string.no_sim_card),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor
+                    )
                 } else {
                     for (subscription in subscriptions) {
                         Text(
@@ -784,7 +803,6 @@ fun DetailedChartContent(
             }
         }
     }
-
     Column {
         Row(
             horizontalArrangement = Arrangement.End,
@@ -792,19 +810,18 @@ fun DetailedChartContent(
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
+            val isDarkTheme = isSystemInDarkTheme()
+            val iconColor = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C)
+
             if (state.isFullscreen) {
-                IconButton(onClick = {
-                    coroutineScope.launch {
-                        scrollState.animateScrollTo(scrollState.maxValue)
-                    }
-                }) {
+                IconButton(onClick = onDismiss) {
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Scroll to End"
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = iconColor
                     )
                 }
-            }
-            if (!state.isFullscreen) {
+            } else {
                 IconButton(onClick = {
                     coroutineScope.launch {
                         scrollState.animateScrollTo(scrollState.maxValue)
@@ -812,21 +829,20 @@ fun DetailedChartContent(
                 }) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Scroll to End"
+                        contentDescription = "Scroll to End",
+                        tint = iconColor
                     )
                 }
                 IconButton(onClick = onFullscreenToggle) {
                     Icon(
                         imageVector = Icons.Default.Fullscreen,
-                        contentDescription = "Fullscreen"
+                        contentDescription = "Fullscreen",
+                        tint = iconColor
                     )
-                }
-            } else {
-                IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
             }
         }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -980,6 +996,7 @@ fun DetailedChartContent(
                     .height(40.dp)
             ) {
                 Row {
+                    val isDarkTheme = isSystemInDarkTheme()
                     cellIdToColor.forEach { (cellId, color) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -991,7 +1008,11 @@ fun DetailedChartContent(
                                     .background(color)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Cell ID: $cellId", fontSize = 8.sp)
+                            Text(
+                                text = "Cell ID: $cellId",
+                                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C),
+                                fontSize = 8.sp
+                            )
                         }
                     }
                 }
@@ -1012,10 +1033,12 @@ fun FullscreenChartContent(
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
 
+    val isDarkTheme = isSystemInDarkTheme()
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5))
             .pointerInput(Unit) {
                 detectTransformGestures { centroid, pan, zoom, rotation ->
                     scale *= zoom

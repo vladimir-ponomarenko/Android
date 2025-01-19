@@ -28,6 +28,7 @@ import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -386,16 +388,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
     @Composable
     fun PermissionRequestButtons(context: Context, onPermissionsResult: (Boolean) -> Unit) {
+        val isDarkTheme = isSystemInDarkTheme()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8FAFC)),
+                .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1980E6))
+                    .background(if (isDarkTheme) Color(0xFF567BFF) else Color(0xFF132C86))
             ) {
                 Column {
                     Row(
@@ -417,7 +420,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             .height(220.dp)
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.start_image),
+                            painter = painterResource(id = if (isDarkTheme) R.drawable.start_image_d else R.drawable.start_image),
                             contentDescription = "Стартовое изображение",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit
@@ -427,18 +430,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             }
 
             Text(
-                text = "Получайте информацию о качестве сети",
+                text = stringResource(id = R.string.get_information),
                 modifier = Modifier.padding(top = 14.dp, start = 16.dp, end = 16.dp),
-                color = Color(0xFF0E141B),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 26.sp
             )
 
             Text(
-                text = "Предоставьте разрешения на местоположение и состояние телефона, чтобы получать более точные результаты",
+                text = stringResource(id = R.string.grant_permissions),
                 modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp),
-                color = Color(0xFF0E141B),
+                color = if (isDarkTheme) Color(0x99FFFFFF) else Color(0xCC34204C),
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )
@@ -446,8 +449,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Spacer(modifier = Modifier.height(16.dp))
 
             PermissionItem(
-                title = "Местоположение",
-                description = "Для координат",
+                title = stringResource(id = R.string.location),
+                description = stringResource(id = R.string.coordinates),
                 onClick = {
                     ActivityCompat.requestPermissions(
                         context as Activity,
@@ -460,8 +463,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Divider(color = Color.LightGray, thickness = 1.dp)
 
             PermissionItem(
-                title = "Состояние телефона",
-                description = "Для данных о сети",
+                title = stringResource(id = R.string.phone_status),
+                description = stringResource(id = R.string.network_data),
                 onClick = {
                     ActivityCompat.requestPermissions(
                         context as Activity,
@@ -475,8 +478,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 PermissionItem(
-                    title = "Фоновое местоположение",
-                    description = "Для работы в фоне",
+                    title = stringResource(id = R.string.background_location),
+                    description = stringResource(id = R.string.work_background),
                     onClick = {
                         ActivityCompat.requestPermissions(
                             context as Activity,
@@ -496,10 +499,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     .fillMaxWidth()
                     .padding(6.dp)
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1980E6)),
+                colors = ButtonDefaults.buttonColors(backgroundColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Подтвердить разрешения", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(id = R.string.confirm_permissions),
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -508,6 +516,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     @Composable
     fun PermissionItem(title: String, description: String, onClick: () -> Unit) {
+        val isDarkTheme = isSystemInDarkTheme()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -518,14 +527,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Column {
                 Text(
                     text = title,
-                    color = Color(0xFF0E141B),
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xD934204C),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     lineHeight = 24.sp
                 )
                 Text(
                     text = description,
-                    color = Color(0xFF4E7397),
+                    color = if (isDarkTheme) Color(0x99FFFFFF) else Color(0x9934204C),
                     fontSize = 14.sp,
                     lineHeight = 20.sp
                 )
@@ -535,10 +544,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 modifier = Modifier
                     .width(130.dp)
                     .height(36.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE7EDF3)),
+                colors = ButtonDefaults.buttonColors(backgroundColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFF5F5F5)),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Разрешить", color = Color(0xFF0E141B), fontSize = 14.sp)
+                Text(
+                    text = stringResource(id = R.string.allow),
+                    color = if (isDarkTheme) Color(0xFFF5F5F5)  else Color(0xD934204C),
+                    fontSize = 14.sp
+                )
             }
         }
     }
@@ -569,10 +582,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     private fun checkAllPermissions(context: Context): Boolean {
-//        Если приложения, предназначенные для Android 14, используют службу переднего плана,
-//        они должны объявить определенное разрешение на основе типа службы переднего плана,
-//        которое представлено в Android 14.
-//        https://developer.android.com/about/versions/14/changes/fgs-types-required?hl=ru
         val hasForegroundServiceLocationPermission =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 ActivityCompat.checkSelfPermission(
