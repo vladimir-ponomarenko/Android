@@ -51,6 +51,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,7 +85,6 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
@@ -108,7 +108,6 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
     var showSlider by remember { mutableStateOf(false) }
     val intervalOptions = listOf(1, 1800, 3600, 21600, 43200, 86400)
     var selectedInterval by remember { mutableStateOf(intervalOptions[0]) }
-
 
     fun onDaysChanged(newDays: String) {
         days = newDays
@@ -241,7 +240,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Close",
                             tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
-                            )
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -277,7 +276,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF)
-            ),
+                    ),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .border(1.dp, color = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E), RoundedCornerShape(8.dp))
@@ -375,7 +374,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                             fontWeight = FontWeight.SemiBold,
                             color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                         )
-                        Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb")
+                        Text(text = "${(totalTrafficData.value.totalBytes / 1024)} Kb", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -403,9 +402,9 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         Text(
                             text = stringResource(id = R.string.mobile),
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF34204C)
+                            color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                         )
-                        Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb")
+                        Text(text = "${(totalTrafficData.value.mobileBytes / 1024)} Kb", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -433,9 +432,9 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                         Text(
                             text = stringResource(id = R.string.wifi),
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF34204C)
+                            color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                         )
-                        Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb")
+                        Text(text = "${(totalTrafficData.value.wifiBytes / 1024)} Kb", color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C))
                     }
                 }
             }
@@ -462,7 +461,13 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                                     color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF929292)
                                 )
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                                unfocusedTextColor = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                                focusedBorderColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
+                                unfocusedBorderColor = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
+                            )
                         )
                     }
 
