@@ -74,6 +74,15 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.*
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.work.WorkManager
+import com.example.login.MainActivity.FileUploadScheduler
+
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -95,6 +104,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
     var isLoading by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
+
+    var showSlider by remember { mutableStateOf(false) }
+    val intervalOptions = listOf(1, 1800, 3600, 21600, 43200, 86400)
+    var selectedInterval by remember { mutableStateOf(intervalOptions[0]) }
+
 
     fun onDaysChanged(newDays: String) {
         days = newDays
@@ -156,11 +170,126 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(id = R.string.traffic),
-                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                color = if (isDarkTheme) Color.White else Color.Black,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { showSlider = true }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = if (isDarkTheme)  Color(0xFFFFFFFF) else Color(0xFF3C3C3E)
+                )
+            }
+        }
+    }
+
+    // Функция для отображения интервала в виде строк
+    fun formatInterval(intervalInSeconds: Int): String {
+        return when (intervalInSeconds) {
+            1 -> "1 секунда"
+            1800 -> "30 минут"
+            3600 -> "1 час"
+            21600 -> "6 часов"
+            43200 -> "12 часов"
+            86400 -> "24 часа"
+            else -> "$intervalInSeconds секунд"
+        }
+    }
+
+    if (showSlider) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (isDarkTheme) Color.Black.copy(alpha = 0.9f) else Color.Black.copy(alpha = 0.6f))
+                .clickable(
+                    onClick = { showSlider = false },
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 32.dp)
+                    .background(if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(10.dp))
+                    .padding(16.dp)
+            ) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Интервал\nмежду отправкой данных",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(start = 50.dp)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    IconButton(
+                        onClick = { showSlider = false },
+                        modifier = Modifier
+                            .size(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Close",
+                            tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                            )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Интервал: ${formatInterval(selectedInterval)}",
+                    fontSize = 16.sp,
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Slider(
+                    value = intervalOptions.indexOf(selectedInterval).toFloat(),
+                    onValueChange = { index ->
+                        selectedInterval = intervalOptions[index.toInt()]
+                    },
+                    valueRange = 0f..(intervalOptions.size - 1).toFloat(),
+                    steps = intervalOptions.size - 2,
+                    colors = SliderDefaults.colors(
+                        thumbColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
+                        activeTrackColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xB3132C86),
+                        inactiveTrackColor = if (isDarkTheme) Color(0xB31C40C6) else Color(0xCC567BFF)
+                    )
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        WorkManager.getInstance(context).cancelAllWork() // Cancel existing worker
+                        FileUploadScheduler.scheduleFileUpload(selectedInterval.toLong(), context)
+                        showSlider = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF)
+            ),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .border(1.dp, color = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                ) {
+                    Text(
+                        text = "Сохранить изменения",
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                    )
+                }
+            }
         }
     }
 
