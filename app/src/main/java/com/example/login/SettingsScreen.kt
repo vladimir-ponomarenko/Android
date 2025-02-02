@@ -44,26 +44,26 @@ import java.util.Locale
 fun TopPanel(onNavigateTo: (Int, String?, String?) -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
-                    .border(width = 2.dp, color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { onNavigateTo(5, null, null) }) {
-                        Image(
-                            painter = painterResource(id = if (isDarkTheme) R.drawable.transition_dark else R.drawable.transition_light),
-                            contentDescription = "back",
-                            modifier = Modifier
-                                .padding(start = 16.dp)
-                                .size(24.dp)
-                        )
-                    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+            .border(width = 2.dp, color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(0.dp))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onNavigateTo(5, null, null) }) {
+                Image(
+                    painter = painterResource(id = if (isDarkTheme) R.drawable.transition_dark else R.drawable.transition_light),
+                    contentDescription = "back",
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .size(24.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(R.string.settings_title),
@@ -95,7 +95,7 @@ fun SettingsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isDarkMode) Color(0xFF1C1C1E) else Color(0xFFF5F5F5))
+            .background(if (isDarkMode) Color(0xFF1C1C1E) else Color(0xFFFFFFFF))
     ) {
         Column(
             modifier = Modifier

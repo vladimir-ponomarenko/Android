@@ -126,28 +126,29 @@ fun DataSendingScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5))
+        color = if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
+    )
     {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
-                        .border(
-                            width = 1.5.dp,
-                            color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(16.dp)
-                ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+                    .border(
+                        width = 1.5.dp,
+                        color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(16.dp)
+            ) {
                     Column {
                         Text(
                             text = stringResource(id = R.string.uuid_label),
@@ -165,16 +166,16 @@ fun DataSendingScreen(
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
-                        .border(
-                            width = 1.5.dp,
-                            color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
-                            shape = RoundedCornerShape(8.dp)
-                        )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+                    .border(
+                        width = 1.5.dp,
+                        color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
+                        shape = RoundedCornerShape(8.dp)
+                    )
                         .padding(16.dp)
                 ) {
                     Column {
@@ -195,30 +196,30 @@ fun DataSendingScreen(
                     }
                 }
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            val signalDataDir =
-                                File(context.getExternalFilesDir(null), "Signal_data")
-                            val file = File(signalDataDir, DataManager.fileName)
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val signalDataDir =
+                            File(context.getExternalFilesDir(null), "Signal_data")
+                        val file = File(signalDataDir, DataManager.fileName)
 
-                            DataManager.sendFileWithRetry(context, file) { success ->
-                                if (success) {
-                                    Toast.makeText(
-                                        context,
-                                        "Данные успешно отправлены",
-                                        Toast.LENGTH_SHORT
-                                    )
-                                        .show()
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Ошибка при отправке данных",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                        DataManager.sendFileWithRetry(context, file) { success ->
+                            if (success) {
+                                Toast.makeText(
+                                    context,
+                                    "Данные успешно отправлены",
+                                    Toast.LENGTH_SHORT
+                                )
+                                    .show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Ошибка при отправке данных",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
+                    }
                     },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
@@ -239,44 +240,44 @@ fun DataSendingScreen(
                     )
                 }
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            val signalDataDir =
-                                File(context.getExternalFilesDir(null), "Signal_data")
-                            val file = File(signalDataDir, DataManager.fileName)
-                            if (file.exists()) {
-                                val isDeleted = file.delete()
-                                if (isDeleted) {
-                                    Log.d(MainActivity.TAG, "File deleted: ${file.absolutePath}")
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.file_deleted),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    Log.e(
-                                        MainActivity.TAG,
-                                        "Failed to delete file: ${file.absolutePath}"
-                                    )
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.file_delete_error),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            } else {
-                                Log.d(MainActivity.TAG, "File does not exist: ${file.absolutePath}")
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val signalDataDir =
+                            File(context.getExternalFilesDir(null), "Signal_data")
+                        val file = File(signalDataDir, DataManager.fileName)
+                        if (file.exists()) {
+                            val isDeleted = file.delete()
+                            if (isDeleted) {
+                                Log.d(MainActivity.TAG, "File deleted: ${file.absolutePath}")
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.file_not_exist),
+                                    context.getString(R.string.file_deleted),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Log.e(
+                                    MainActivity.TAG,
+                                    "Failed to delete file: ${file.absolutePath}"
+                                )
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.file_delete_error),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
+                        } else {
+                            Log.d(MainActivity.TAG, "File does not exist: ${file.absolutePath}")
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.file_not_exist),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                    },
+                    }
+                },
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8),
+                        backgroundColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(0x26567BFF),
                         contentColor = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E)
                     ),
                     shape = RoundedCornerShape(10.dp),
@@ -294,27 +295,27 @@ fun DataSendingScreen(
                     )
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(id = R.string.resume_recording),
-                            color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xCC34204C),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(id = R.string.resume_recording_description),
-                            color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0x9934204C),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal
-                        )
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(id = R.string.resume_recording),
+                                color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF34204C),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(id = R.string.resume_recording_description),
+                                color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0x9934204C),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
                     Switch(
                         checked = isRecording,
                         onCheckedChange = {
@@ -345,7 +346,7 @@ fun DataSendingScreen(
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = if (isDarkTheme) Color(0xCC567BFF) else Color(
-                                0xFF132C86
+                    0xFF132C86
                             ),
                             uncheckedThumbColor = Color.White,
                             uncheckedTrackColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(
@@ -356,24 +357,23 @@ fun DataSendingScreen(
                     )
                 }
 
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(16.dp)
-                ) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = stringResource(id = R.string.failed_to_send, pendingCount),
-                        color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0xCC9E9E9E),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = stringResource(id = R.string.successfully_sent, successCount),
-                        color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0xCC9E9E9E),
-                        fontSize = 14.sp
-                    )
-                }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(16.dp)
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(id = R.string.failed_to_send, pendingCount),
+                    color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0xCC9E9E9E),
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = stringResource(id = R.string.successfully_sent, successCount),
+                    color = if (isDarkTheme) Color(0x80FFFFFF) else Color(0xCC9E9E9E),
+                    fontSize = 14.sp
+                )
             }
         }
     }
-
+}

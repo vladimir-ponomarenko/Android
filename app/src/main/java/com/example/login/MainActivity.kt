@@ -75,9 +75,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.work.ExistingPeriodicWorkPolicy
+//import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
+//import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.login.PermissionUtils.checkPermissions
@@ -92,6 +92,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
 import java.util.concurrent.TimeUnit
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.*
+import kotlinx.coroutines.*
 
 
 @Suppress("NAME_SHADOWING")
@@ -137,6 +141,54 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             isSendingData = false
         }
     }
+
+    object FileUploadScheduler {
+        private var resetIntervalJob: Job? = null
+
+        fun scheduleFileUpload(interval: Long, context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val data = workDataOf(
+                "Email" to state.Email,
+                "Password" to state.Password,
+                "JwtToken" to state.JwtToken
+            )
+
+//        val dailyWorkRequest = PeriodicWorkRequestBuilder<TrafficDataWorker>(
+//            1, TimeUnit.DAYS // Каждые 24 часа отправляем статистику о трафике
+//        )
+            val uploadWorkRequest = OneTimeWorkRequestBuilder<TrafficDataWorker>()
+                .setConstraints(constraints)
+                .setInputData(data)
+                .setInitialDelay(interval, TimeUnit.SECONDS)
+                .build()
+
+// Отменяем существующую задачу (для дебага)
+//        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
+//        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+//            "TrafficDataWorker",
+//            ExistingPeriodicWorkPolicy.KEEP,
+//            dailyWorkRequest
+//        )
+
+            WorkManager.getInstance(context).enqueue(uploadWorkRequest)
+
+            WorkManager.getInstance(context).getWorkInfoByIdLiveData(uploadWorkRequest.id).observeForever { workInfo ->
+                if (workInfo?.state == WorkInfo.State.SUCCEEDED) {
+                    scheduleFileUpload(interval, context)
+                }
+            }
+            // Запускаем таймер на сброс интервала до 24 часов (86400 секунд)
+            resetIntervalJob?.cancel()
+            resetIntervalJob = CoroutineScope(Dispatchers.IO).launch {
+                delay(86400000)
+                scheduleFileUpload(86400, context)
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,30 +215,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             finish()
         }
 
-        val constraints = androidx.work.Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val data = workDataOf(
-            "Email" to state.Email,
-            "Password" to state.Password,
-            "JwtToken" to state.JwtToken
-        )
-
-        val dailyWorkRequest = PeriodicWorkRequestBuilder<TrafficDataWorker>(
-            1, TimeUnit.DAYS // Каждые 24 часа отправляем статистику о трафике
-        )
-            .setConstraints(constraints)
-            .setInputData(data)
-            .build()
-
-// Отменяем существующую задачу (для дебага)
-//        WorkManager.getInstance(this).cancelUniqueWork("TrafficDataWorker")
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "TrafficDataWorker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            dailyWorkRequest
-        )
 //        val broadcastReceiver = object : BroadcastReceiver() {
 //            override fun onReceive(context: Context?, intent: Intent?) {
 //                if (intent?.action == ACTION_STOP_MAIN_ACTIVITY) {

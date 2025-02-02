@@ -373,43 +373,43 @@ object DataManager {
             val identity = info.cellIdentity
             val timestamp = System.currentTimeMillis()
 
-                CellInfoData(
-                    type = "LTE",
-                    timestamp = timestamp,
-                    registered = info.isRegistered,
-                    mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        identity.mccString?.toIntOrNull()?.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
-                    } else {
-                        identity.mcc.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
-                    },
-                    mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        identity.mncString?.toIntOrNull()?.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
-                    } else {
-                        identity.mnc.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
-                    },
-                    ci = identity.ci.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
-                    pci = identity.pci.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
-                    tac = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                        identity.tac.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
-                    } else {
-                        null
-                    },
-                    earfcn = identity.earfcn.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
-                    bandwidth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) identity.bandwidth.takeIf { it != CellInfo.UNAVAILABLE }?.toLong() else null,
-                    rsrp = signalStrength.rsrp.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    rssi= if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        signalStrength.rssi.takeIf {it != Integer.MAX_VALUE }?.toLong()
-                    } else {
-                        null
-                    },
-                    rsrq = signalStrength.rsrq.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    rssnr = signalStrength.rssnr.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    cqi = signalStrength.cqi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    timingAdvance = signalStrength.timingAdvance.takeIf { it != Integer.MAX_VALUE }
-                        ?.toLong(),
-                    level = signalStrength.level.takeIf { it != Integer.MAX_VALUE }?.toLong(),
-                    asuLevel = signalStrength.asuLevel.takeIf { it != Integer.MAX_VALUE } ?: 0
-                )
+            CellInfoData(
+                type = "LTE",
+                timestamp = timestamp,
+                registered = info.isRegistered,
+                mcc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    identity.mccString?.toIntOrNull()?.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
+                } else {
+                    identity.mcc.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
+                },
+                mnc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    identity.mncString?.toIntOrNull()?.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
+                } else {
+                    identity.mnc.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
+                },
+                ci = identity.ci.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
+                pci = identity.pci.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
+                tac = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    identity.tac.takeIf { it != CellInfo.UNAVAILABLE }?.toLong()
+                } else {
+                    null
+                },
+                earfcn = identity.earfcn.takeIf { it != CellInfo.UNAVAILABLE }?.toLong(),
+                bandwidth = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) identity.bandwidth.takeIf { it != CellInfo.UNAVAILABLE }?.toLong() else null,
+                rsrp = signalStrength.rsrp.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                rssi= if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    signalStrength.rssi.takeIf {it != Integer.MAX_VALUE }?.toLong()
+                } else {
+                    null
+                },
+                rsrq = signalStrength.rsrq.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                rssnr = signalStrength.rssnr.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                cqi = signalStrength.cqi.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                timingAdvance = signalStrength.timingAdvance.takeIf { it != Integer.MAX_VALUE }
+                    ?.toLong(),
+                level = signalStrength.level.takeIf { it != Integer.MAX_VALUE }?.toLong(),
+                asuLevel = signalStrength.asuLevel.takeIf { it != Integer.MAX_VALUE } ?: 0
+            )
 
         } catch (e: Exception) {
             Log.e(TAG, "Error encoding LTE cell info to JSON: ", e)

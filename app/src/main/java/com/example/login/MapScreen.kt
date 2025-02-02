@@ -179,7 +179,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
                     .background(
-                        if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFE2E2E2),
+                        if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF),
                         shape = RoundedCornerShape(8.dp)
                     )
                     .padding(8.dp)

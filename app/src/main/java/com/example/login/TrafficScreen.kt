@@ -18,6 +18,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,9 +38,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -62,18 +69,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
+import androidx.work.WorkManager
+import com.example.login.MainActivity.FileUploadScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
-import androidx.compose.foundation.isSystemInDarkTheme
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -95,6 +104,11 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
     var sortCriteria by remember { mutableStateOf<SortCriteria>(SortCriteria.TOTAL) }
     var isLoading by remember { mutableStateOf(false) }
     val isDarkTheme = isSystemInDarkTheme()
+
+    var showSlider by remember { mutableStateOf(false) }
+    val intervalOptions = listOf(1, 1800, 3600, 21600, 43200, 86400)
+    var selectedInterval by remember { mutableStateOf(intervalOptions[0]) }
+
 
     fun onDaysChanged(newDays: String) {
         days = newDays
@@ -156,11 +170,125 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(id = R.string.traffic),
-                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                color = if (isDarkTheme) Color.White else Color.Black,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { showSlider = true }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = if (isDarkTheme)  Color(0xFFFFFFFF) else Color(0xFF3C3C3E)
+                )
+            }
+        }
+    }
+
+    fun formatInterval(intervalInSeconds: Int): String {
+        return when (intervalInSeconds) {
+            1 -> "1 секунда"
+            1800 -> "30 минут"
+            3600 -> "1 час"
+            21600 -> "6 часов"
+            43200 -> "12 часов"
+            86400 -> "24 часа"
+            else -> "$intervalInSeconds секунд"
+        }
+    }
+
+    if (showSlider) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (isDarkTheme) Color.Black.copy(alpha = 0.9f) else Color.Black.copy(alpha = 0.6f))
+                .clickable(
+                    onClick = { showSlider = false },
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 32.dp)
+                    .background(if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(10.dp))
+                    .padding(16.dp)
+            ) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Интервал\nмежду отправкой данных",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(start = 50.dp)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    IconButton(
+                        onClick = { showSlider = false },
+                        modifier = Modifier
+                            .size(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Close",
+                            tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                            )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Интервал: ${formatInterval(selectedInterval)}",
+                    fontSize = 16.sp,
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Slider(
+                    value = intervalOptions.indexOf(selectedInterval).toFloat(),
+                    onValueChange = { index ->
+                        selectedInterval = intervalOptions[index.toInt()]
+                    },
+                    valueRange = 0f..(intervalOptions.size - 1).toFloat(),
+                    steps = intervalOptions.size - 2,
+                    colors = SliderDefaults.colors(
+                        thumbColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
+                        activeTrackColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xB3132C86),
+                        inactiveTrackColor = if (isDarkTheme) Color(0xB31C40C6) else Color(0xCC567BFF)
+                    )
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        WorkManager.getInstance(context).cancelAllWork()
+                        FileUploadScheduler.scheduleFileUpload(selectedInterval.toLong(), context)
+                        showSlider = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF)
+            ),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .border(1.dp, color = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                ) {
+                    Text(
+                        text = "Сохранить изменения",
+                        color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                    )
+                }
+            }
         }
     }
 
@@ -211,7 +339,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF8F8F8)),
+                .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
@@ -311,227 +439,227 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     }
                 }
             }
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
+            item {
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f)
-                        .padding(8.dp)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
-                        value = days,
-                        onValueChange = { onDaysChanged(it) },
-                        label = {
-                            Text(
-                                stringResource(id = R.string.days_count),
-                                color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF929292)
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .offset(y = 4.dp)
-                        .background(
-                            if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
-                            shape = RoundedCornerShape(8.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f)
+                            .padding(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = days,
+                            onValueChange = { onDaysChanged(it) },
+                            label = {
+                                Text(
+                                    stringResource(id = R.string.days_count),
+                                    color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF929292)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                ) {
-                    IconButton(
-                        onClick = {
-                            showDatePicker = true
-                        },
+                    }
+
+                    Box(
                         modifier = Modifier
                             .size(56.dp)
-                            .align(Alignment.Center)
-                            .zIndex(1f)
+                            .offset(y = 4.dp)
+                            .background(
+                                if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
+                                shape = RoundedCornerShape(8.dp)
+                            )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = "Select date",
-                            tint = Color.White,
-                            modifier = Modifier.size(30.dp)
-                        )
+                        IconButton(
+                            onClick = {
+                                showDatePicker = true
+                            },
+                            modifier = Modifier
+                                .size(56.dp)
+                                .align(Alignment.Center)
+                                .zIndex(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Select date",
+                                tint = Color.White,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        item {
-            if (showError) {
-                Text(
-                    text = stringResource(id = R.string.incorrect_days_count),
-                    color = Color(0xCCAF1027),
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
-
-        item {
-            if (!PermissionUtils.hasUsageStatsPermission(context)) {
-                Button(
-                    onClick = { PermissionUtils.requestUsageStatsPermission(context) },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                ) {
+            item {
+                if (showError) {
                     Text(
-                        text = stringResource(id = R.string.grant_permission),
-                        color = Color.White,
-                        fontSize = 16.sp
+                        text = stringResource(id = R.string.incorrect_days_count),
+                        color = Color(0xCCAF1027),
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
-        }
 
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            item {
+                if (!PermissionUtils.hasUsageStatsPermission(context)) {
                     Button(
-                        onClick = { showTotalChart = true },
+                        onClick = { PermissionUtils.requestUsageStatsPermission(context) },
                         colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
-                            .wrapContentWidth()
-                            .wrapContentHeight()
-                            .padding(2.dp)
+                            .padding(16.dp)
+                            .fillMaxWidth()
                     ) {
                         Text(
-                            text = stringResource(id = R.string.total_traffic),
+                            text = stringResource(id = R.string.grant_permission),
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                isSendingTrafficData = true
-
-                                val authResponse = try {
-                                    MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password).await()
-                                } catch (e: Exception) {
-                                    Log.e(MainActivity.TAG, "Authentication failed: ${e.message}", e)
-                                    null
-                                }
-
-                                if (authResponse != null) {
-                                    val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
-                                    val top10Apps = sortedApps.take(10)
-                                    try {
-                                        MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top10Apps)
-                                        Log.d(MainActivity.TAG, "Traffic data sent successfully!")
-                                    } catch (e: Exception) {
-                                        Log.e(MainActivity.TAG, "Failed to send traffic data: ${e.message}", e)
-                                    }
-                                } else {
-                                    Log.e(MainActivity.TAG, "Authentication for traffic data failed")
-                                }
-                                isSendingTrafficData = false
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .wrapContentWidth()
-                            .wrapContentHeight()
-                            .padding(2.dp)
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.send_data),
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 16.sp
                         )
                     }
                 }
             }
-        }
 
-        if (isLoading) {
-            items(10) {
-                ShimmerTrafficItem(brush = shimmerBrush)
-            }
-        } else {
-            items(appTrafficData.value, key = { it.appName }) { appData ->
-                TrafficItem(appData) { appName ->
-                    selectedAppName = appName
-                    showAppChart = true
-                }
-            }
-        }
-    }
-
-    if (showAppChart) {
-        HourlyTrafficChart(
-            appName = selectedAppName,
-            onClose = { showAppChart = false },
-            context = context,
-            selectedDate = selectedCalendar
-        )
-    }
-
-    if (showTotalChart) {
-        TotalHourlyTrafficChart(
-            onClose = { showTotalChart = false },
-            context = context,
-            selectedDate = if (activeMode == "calendar") selectedCalendar else null
-        )
-    }
-
-    if (showDatePicker) {
-        val calendar = Calendar.getInstance()
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-        LaunchedEffect(key1 = showDatePicker) {
-            if (showDatePicker) {
-                val datePickerDialog = DatePickerDialog(
-                    context,
-                    { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-                        selectedCalendar = Calendar.getInstance().apply {
-                            set(year, month, dayOfMonth)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Button(
+                            onClick = { showTotalChart = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .wrapContentHeight()
+                                .padding(2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.total_traffic),
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
-                        activeMode = "calendar"
-                        showDatePicker = false
+                    }
 
-                    },
-                    year,
-                    month,
-                    day
-                )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isSendingTrafficData = true
 
-                datePickerDialog.setOnCancelListener {
-                    showDatePicker = false
-                    activeMode = "days"
-                    selectedCalendar = null
+                                    val authResponse = try {
+                                        MainActivity.networkManager.authenticateForTraffic(state.Email, state.Password).await()
+                                    } catch (e: Exception) {
+                                        Log.e(MainActivity.TAG, "Authentication failed: ${e.message}", e)
+                                        null
+                                    }
+
+                                    if (authResponse != null) {
+                                        val sortedApps = appTrafficData.value.sortedByDescending { it.totalBytes }
+                                        val top10Apps = sortedApps.take(10)
+                                        try {
+                                            MainActivity.networkManager.sendTrafficDataToServer(authResponse.jwt, top10Apps)
+                                            Log.d(MainActivity.TAG, "Traffic data sent successfully!")
+                                        } catch (e: Exception) {
+                                            Log.e(MainActivity.TAG, "Failed to send traffic data: ${e.message}", e)
+                                        }
+                                    } else {
+                                        Log.e(MainActivity.TAG, "Authentication for traffic data failed")
+                                    }
+                                    isSendingTrafficData = false
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .wrapContentHeight()
+                                .padding(2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.send_data),
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
-                datePickerDialog.show()
+            }
+
+            if (isLoading) {
+                items(10) {
+                    ShimmerTrafficItem(brush = shimmerBrush)
+                }
+            } else {
+                items(appTrafficData.value, key = { it.appName }) { appData ->
+                    TrafficItem(appData) { appName ->
+                        selectedAppName = appName
+                        showAppChart = true
+                    }
+                }
+            }
+        }
+
+        if (showAppChart) {
+            HourlyTrafficChart(
+                appName = selectedAppName,
+                onClose = { showAppChart = false },
+                context = context,
+                selectedDate = selectedCalendar
+            )
+        }
+
+        if (showTotalChart) {
+            TotalHourlyTrafficChart(
+                onClose = { showTotalChart = false },
+                context = context,
+                selectedDate = if (activeMode == "calendar") selectedCalendar else null
+            )
+        }
+
+        if (showDatePicker) {
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            LaunchedEffect(key1 = showDatePicker) {
+                if (showDatePicker) {
+                    val datePickerDialog = DatePickerDialog(
+                        context,
+                        { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                            selectedCalendar = Calendar.getInstance().apply {
+                                set(year, month, dayOfMonth)
+                            }
+                            activeMode = "calendar"
+                            showDatePicker = false
+
+                        },
+                        year,
+                        month,
+                        day
+                    )
+
+                    datePickerDialog.setOnCancelListener {
+                        showDatePicker = false
+                        activeMode = "days"
+                        selectedCalendar = null
+                    }
+                    datePickerDialog.show()
+                }
             }
         }
     }
-}
 }
 
 @Composable

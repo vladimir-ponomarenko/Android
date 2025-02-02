@@ -33,7 +33,7 @@ fun NavigationScreen(onNavigateTo: (Int) -> Unit) {
 
     val exitIcon = if (isDarkTheme) R.drawable.exit_dark else R.drawable.exit_light
     val menuIcon = if (isDarkTheme) R.drawable.menu_dark1 else R.drawable.menu_light1
-    val backgroundColor = if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF8F8F8)
+    val backgroundColor = if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
 
     Scaffold(
         containerColor = backgroundColor,

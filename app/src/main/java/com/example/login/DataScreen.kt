@@ -108,8 +108,6 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
     val cellIdToColorNR = remember { mutableStateMapOf<String, Color>() }
     val isDarkTheme = isSystemInDarkTheme()
 
-    val fullscreenColor = if (isDarkTheme) Color(0xFF000000) else Color(0xFFFFFFFF)
-
     LaunchedEffect(Unit) {
         while (true) {
             state.messageToData2?.let { messageToData2 ->
@@ -192,7 +190,7 @@ fun DataScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Uni
                 modifier = Modifier
                     .padding(innerPadding)
                     .fillMaxSize()
-                    .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5))
+                    .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF))
             ) {
                 item {
                     DetailedChartContent(
@@ -352,7 +350,7 @@ fun DataTopBar(state: MainActivity.MainActivityState,  onNavigateTo: (Int) -> Un
 @Composable
 fun CellInfoCard(cellType: String, cellInfo: CellInfoData) {
     val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8)
+    val backgroundColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFF8F8F8)
     val textColor =  if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xB334204C)
     val borderColor = if (isDarkTheme) Color(0x809E9E9E) else Color(0x4D9E9E9E)
     val paddingModifier = Modifier.padding(horizontal = 15.dp)
@@ -883,7 +881,7 @@ fun DetailedChartContent(
                                 textMeasurer = textMeasurer,
                                 text = String.format("%.0f", yAxisMinValue + i * stepSize),
                                 topLeft = Offset(5.dp.toPx(), y - 5.dp.toPx()),
-                                style = TextStyle(color = Color.Black, fontSize = 8.sp)
+                                style = TextStyle(color = Color.Gray, fontSize = 8.sp)
                             )
                         }
                     }
@@ -957,7 +955,7 @@ fun DetailedChartContent(
                                     textMeasurer = textMeasurer,
                                     text = String.format("%.0f", dataPoint.value),
                                     topLeft = textOffset,
-                                    style = TextStyle(color = Color.Black, fontSize = 8.sp)
+                                    style = TextStyle(color = Color.Gray, fontSize = 8.sp)
                                 )
                             }
 
@@ -976,7 +974,7 @@ fun DetailedChartContent(
                                     textMeasurer = textMeasurer,
                                     text = formattedTime,
                                     topLeft = Offset(x - 15.dp.toPx(), chartHeight.toPx() - 10.dp.toPx()),
-                                    style = TextStyle(color = Color.Black, fontSize = 6.sp)
+                                    style = TextStyle(color = Color.Gray, fontSize = 6.sp)
                                 )
                             }
 
@@ -1034,7 +1032,7 @@ fun FullscreenChartContent(
     var offsetY by remember { mutableStateOf(0f) }
 
     val isDarkTheme = isSystemInDarkTheme()
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()

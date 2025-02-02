@@ -99,7 +99,7 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFF5F5F5)),
+            .background(if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
@@ -214,7 +214,7 @@ fun RegistrationForm(
         Text(
             text = stringResource(id = R.string.registration_title),
             style = TextStyle(
-                color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xCC34204C),
+                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -245,7 +245,7 @@ fun RegistrationForm(
                 keyboardActions = KeyboardActions(
                     onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
                 ),
-                textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878)
+                textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565)
                 ),
                 decorationBox = { innerTextField ->
                     Column {
@@ -297,7 +297,7 @@ fun RegistrationForm(
                         }
                     }
                 ),
-                textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878)),
+                textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565)),
                 decorationBox = { innerTextField ->
                     Column {
                         Box(
@@ -402,7 +402,7 @@ fun LoginForm(
             Text(
                 text = stringResource(id = R.string.registration_title),
                 style = TextStyle(
-                    color = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xCC34204C),
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -428,7 +428,7 @@ fun LoginForm(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
                     ),
-                    textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878)),
+                    textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565)),
                     decorationBox = { innerTextField ->
                         Column {
                             Box(
@@ -474,7 +474,7 @@ fun LoginForm(
                             }
                         }
                     ),
-                    textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878)),
+                    textStyle = TextStyle(color = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565)),
                     decorationBox = { innerTextField ->
                         Column {
                             Box(
@@ -503,9 +503,9 @@ fun LoginForm(
                     onValueChange = onUuidChange,
                     label = {
                         Text(
-                        text = stringResource(id = R.string.uuid_label),
-                        style = headerTextStyle
-                    ) },
+                            text = stringResource(id = R.string.uuid_label),
+                            style = headerTextStyle
+                        ) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
@@ -514,9 +514,9 @@ fun LoginForm(
                         onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
                     ),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878),
+                        textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565),
                         focusedBorderColor = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF9E9E9E),
-                        unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF9E9E9E)
+                        unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0x809E9E9E)
                     )
                 )
             }
@@ -529,9 +529,9 @@ fun LoginForm(
                     onValueChange = onJwtTokenChange,
                     label = {
                         Text(
-                        text = stringResource(id = R.string.jwt_token_label),
-                        style = headerTextStyle
-                    ) },
+                            text = stringResource(id = R.string.jwt_token_label),
+                            style = headerTextStyle
+                        ) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Done
@@ -543,9 +543,9 @@ fun LoginForm(
                         }
                     ),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF787878),
-                        focusedBorderColor = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF34204C),
-                        unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xFF9E9E9E)
+                        textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565),
+                        focusedBorderColor = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF9E9E9E),
+                        unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0x809E9E9E)
                     )
                 )
             }
