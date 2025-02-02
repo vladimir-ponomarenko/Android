@@ -94,6 +94,8 @@ import okhttp3.WebSocket
 import java.util.concurrent.TimeUnit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
+import androidx.work.*
+import kotlinx.coroutines.*
 
 
 @Suppress("NAME_SHADOWING")
@@ -141,8 +143,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     object FileUploadScheduler {
+        private var resetIntervalJob: Job? = null
+
         fun scheduleFileUpload(interval: Long, context: Context) {
-            val constraints = androidx.work.Constraints.Builder()
+            val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
@@ -171,11 +175,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
             WorkManager.getInstance(context).enqueue(uploadWorkRequest)
 
-                WorkManager.getInstance(context).getWorkInfoByIdLiveData(uploadWorkRequest.id).observeForever { workInfo ->
-                    if (workInfo?.state == WorkInfo.State.SUCCEEDED) {
-                        scheduleFileUpload(interval, context)
-                    }
+            WorkManager.getInstance(context).getWorkInfoByIdLiveData(uploadWorkRequest.id).observeForever { workInfo ->
+                if (workInfo?.state == WorkInfo.State.SUCCEEDED) {
+                    scheduleFileUpload(interval, context)
                 }
+            }
+            // Запускаем таймер на сброс интервала до 24 часов (86400 секунд)
+            resetIntervalJob?.cancel()
+            resetIntervalJob = CoroutineScope(Dispatchers.IO).launch {
+                delay(86400000)
+                scheduleFileUpload(86400, context)
+            }
         }
     }
 
