@@ -99,6 +99,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    val libsuVersion = "6.0.0"
+    implementation("com.github.topjohnwu.libsu:core:$libsuVersion")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:4.8.0")
     testImplementation("io.mockk:mockk:1.13.12")
