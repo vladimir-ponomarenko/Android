@@ -1,8 +1,11 @@
+import com.android.tools.build.bundletool.flags.Flag.path
+
 plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.7.20"
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
+    id("com.chaquo.python")
 }
 
 android {
@@ -26,9 +29,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
+        }
+
         externalNativeBuild {
             cmake {
-                abiFilters.add("arm64-v8a")
+                version = "3.18.1"
+                path ("src/main/jni/CMakeLists.txt")
             }
         }
     }
@@ -108,6 +117,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation ("com.jakewharton.timber:timber:5.0.1")
+    implementation ("com.google.guava:guava:32.1.3-android")
 
     val libsuVersion = "6.0.0"
     implementation("com.github.topjohnwu.libsu:core:$libsuVersion")

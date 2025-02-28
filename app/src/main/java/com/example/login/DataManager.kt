@@ -34,6 +34,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -47,7 +48,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 object DataManager {
     private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
@@ -845,9 +845,28 @@ object DataManager {
     }
 
     private suspend fun sendFileToServer(file: File): Boolean {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
+            var isCallbackHandled = false
+
+            val callback = { success: Boolean ->
+                if (!isCallbackHandled) {
+                    isCallbackHandled = true
+                    if (continuation.isActive) {
+                        continuation.resume(success)
+                    }
+                }
+            }
+
             MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
-                continuation.resume(success)
+                callback(success)
+            }
+
+            continuation.invokeOnCancellation {
+                if (!isCallbackHandled) {
+                    isCallbackHandled = true
+                    MainActivity.networkManager.webSocket?.close(1000, "Cancelled")
+                    callback(false)
+                }
             }
         }
     }
