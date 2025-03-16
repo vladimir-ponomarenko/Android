@@ -113,7 +113,6 @@ const ValueName ValueNamePruneStatus[] = {
 
         {202, "PDCCH_DEBUG_SUCCESS_DCI62"},
         {216, "PDCCH_DEBUG_SUCCESS_DCI62_EARLY_TERMINATION"},
-
 };
 
 const ValueName ValueNameFrameStructure[] = {
@@ -820,6 +819,167 @@ const Fmt LteRlcUlConfigLogPacket_Subpkt_ActiveRB_Fmt_v3[] = {
 };
 
 
+const Fmt LtePhyPuschCsf_Fmt[] = {
+        {UINT, "Version", 1},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v22[] = {
+        {UINT, "Start System Sub-frame Number", 2},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {UINT, "PUSCH Reporting Mode", 1},
+        {PLACEHOLDER, "Rank Index", 0},
+        {UINT, "Number of Subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 27},
+        {UINT, "Carrier Index", 1},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v23[] = {
+        {UINT, "Start System Sub-frame Number", 2},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {UINT, "PUSCH Reporting Mode", 1},
+        {PLACEHOLDER, "Rank Index", 0},
+        {UINT, "Number of Subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 27},
+        {UINT, "Carrier Index", 1},
+        {PLACEHOLDER, "Num CSIrs Ports", 0},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v42[] = {
+        {UINT, "Start System Sub-frame Number", 2},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {UINT, "PUSCH Reporting Mode", 1},
+        {PLACEHOLDER, "Rank Index", 0},
+        {PLACEHOLDER, "Csi Meas Set Index", 0},
+        {UINT, "Number of Subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 27},
+        {UINT, "Carrier Index", 1},
+        {PLACEHOLDER, "Num CSIrs Ports", 0},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v101[] = {
+        {UINT, "Start System Sub-frame Number", 2},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {UINT, "PUSCH Reporting Mode", 1},
+        {PLACEHOLDER, "Csi Meas Set Index", 0},
+        {PLACEHOLDER, "Rank Index", 0},
+        {UINT, "Number of Subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 27},
+        {UINT, "Carrier Index", 1},
+        {PLACEHOLDER, "Num CSIrs Ports", 0},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v102[] = {
+        {UINT, "Start System Sub-frame Number", 2},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {UINT, "PUSCH Reporting Mode", 1},
+        {PLACEHOLDER, "Csi Meas Set Index", 0},
+        {PLACEHOLDER, "Rank Index", 0},
+        {UINT, "Number of Subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 27},
+        {UINT, "Carrier Index", 1},
+        {PLACEHOLDER, "Num CSIrs Ports", 0},
+};
+
+
+
+const Fmt LtePhyPuschCsf_Payload_v103[] = {
+        {UINT, "Start System Sub-frame Number", 4},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {PLACEHOLDER, "PUSCH Reporting Mode", 0},
+        {PLACEHOLDER, "Csi Meas Set Index", 0},
+        {PLACEHOLDER, "Rank Index", 0},
+        {PLACEHOLDER, "Wideband PMI1", 0},
+        {PLACEHOLDER, "Number of subbands", 0},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {UINT, "WideBand CQI CW1", 2},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Size M", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {UINT, "Single MB PMI", 1},
+        {PLACEHOLDER, "CSF Tx Mode", 0},
+        {SKIP, NULL, 14},
+        {UINT, "Forced Max RI", 1},
+        {SKIP, NULL, 5},
+        {UINT, "Alt Cqi Table Data", 1},
+        {SKIP, NULL, 7},
+        {UINT, "Carrier Index", 1},
+        {PLACEHOLDER, "Num Csirs Ports", 0},
+};
+
+
+const Fmt LtePhyPuschCsf_Payload_v142[] = {
+        {UINT, "Start System Sub-frame Number", 4},
+        {PLACEHOLDER, "Start System Frame Number", 0},
+        {PLACEHOLDER, "Carrier Index", 0},
+        {PLACEHOLDER, "Scell Index", 0},
+        {PLACEHOLDER, "PUSCH Reporting Mode", 0},
+        {PLACEHOLDER, "Csi Meas Set Index", 0},
+        {PLACEHOLDER, "Rank Index", 0},
+        {PLACEHOLDER, "Wideband PMI1", 0},
+        {UINT, "Number of subbands", 4},
+        {PLACEHOLDER, "WideBand CQI CW0", 0},
+        {PLACEHOLDER, "WideBand CQI CW1", 0},
+        {PLACEHOLDER, "SubBand Size (k)", 0},
+        {PLACEHOLDER, "Size M", 0},
+        {PLACEHOLDER, "Single WB PMI", 0},
+        {PLACEHOLDER, "Single MB PMI", 0},
+        {UINT, "CSF Tx Mode", 1},
+        {SKIP, NULL, 25},
+        {UINT, "Num Csirs Ports", 1},
+        {UINT, "CRI", 4},
+        {PLACEHOLDER, "UL Frame Number", 0},
+        {PLACEHOLDER, "UL Subframe Number", 0},
+        {PLACEHOLDER, "UL Payload Length", 0},
+};
+
+
+const ValueName ValueNamePuschReportingMode[] = {
+        {0, "MODE_APERIODIC_RM12"},
+        {1, "MODE_APERIODIC_RM20"},
+        {2, "MODE_APERIODIC_RM22"},
+        {3, "MODE_APERIODIC_RM30"},
+        {4, "MODE_APERIODIC_RM31"},
+        {5, "MODE_PERIODIC_RM10"},
+        {6, "MODE_PERIODIC_RM11"},
+        {7, "MODE_PERIODIC_RM20"},
+        {8, "MODE_PERIODIC_RM21"}
+};
+
 const Fmt LtePuschPowerControl_Fmt[] = {
         {UINT, "Version", 1},
 };
@@ -1481,6 +1641,169 @@ const Fmt LtePhyPdcchDecodingResult_Hypothesis_v141 [] = {
         {UINT, "Norm Energy Metric", 4},    // x/65535.0
         {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
 };
+
+
+const Fmt LtePhyPucchCsf_Fmt [] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePhyPucchCsf_Payload_v22 [] = {
+        {UINT, "Start System Sub-frame Number", 2}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {UINT, "PUCCH Reporting Mode", 1},  // last 2 bits in previous byte + 1 bit
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {PLACEHOLDER, "Size BWP",0},
+        {UINT, "Number of Subbands", 4},    // 4 bits
+        {PLACEHOLDER, "BWP Index",0},
+        {PLACEHOLDER, "Rank Index", 0}, // skip 3 bits, 1 bit
+        {PLACEHOLDER, "SubBand Label",0},
+        {PLACEHOLDER, "CQI CW0", 0},   // skip 2 bits, 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "CSF Tx Mode", 0},    // 4 bits
+};
+
+const Fmt LtePhyPucchCsf_Payload_v24 [] = {
+        {UINT, "Start System Sub-frame Number", 2}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {UINT, "PUCCH Reporting Mode", 1},  // last 2 bits in previous byte + 1 bit
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {PLACEHOLDER, "Size BWP",0},
+        {UINT, "Number of Subbands", 4},    // 4 bits
+        {PLACEHOLDER, "BWP Index",0},
+        {PLACEHOLDER, "Rank Index", 0}, // skip 3 bits, 1 bit
+        {PLACEHOLDER, "SubBand Label",0},
+        {PLACEHOLDER, "CQI CW0", 0},   // skip 2 bits, 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "CSF Tx Mode", 0},    // 4 bits
+        {UINT, "Num Csirs Ports", 1},
+        {PLACEHOLDER, "Wideband PMI1", 0},
+        {UINT,"Pti",1},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchCsf_Payload_v43 [] = {
+        {UINT, "Start System Sub-frame Number", 2}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {UINT, "PUCCH Reporting Mode", 1},  // last 2 bits in previous byte + 1 bit
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {UINT, "Number of Subbands", 4},    // 4 bits
+        {PLACEHOLDER, "Rank Index", 0}, // skip 3 bits, 1 bit
+        {PLACEHOLDER, "CQI CW0", 0},   // skip 2 bits, 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "CSF Tx Mode", 0},    // 4 bits
+        {SKIP, NULL, 4},
+};
+
+const Fmt LtePhyPucchCsf_Payload_v102 [] = {
+        {UINT, "Start System Sub-frame Number", 2}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {UINT, "PUCCH Reporting Mode", 1},  // last 2 bits in previous byte + 1 bit
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {UINT, "Number of Subbands", 4},    // 4 bits
+        {PLACEHOLDER,"Alt Cqi Table Data",0},
+        {PLACEHOLDER, "CQI CW0", 0},   // skip 2 bits, 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "CSF Tx Mode", 0},    // 4 bits
+        {UINT,"Num Csirs Ports",1},
+        {UINT, "Csi Meas Set Index",1},
+        {PLACEHOLDER, "Rank Index",0},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchCsf_Payload_v103 [] = {
+        {UINT, "Start System Sub-frame Number", 2}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {UINT, "PUCCH Reporting Mode", 1},  // last 2 bits in previous byte + 1 bit
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {UINT, "Number of Subbands", 4},    // 4 bits
+        {PLACEHOLDER,"Alt Cqi Table Data",0},
+        {PLACEHOLDER, "CQI CW0", 0},   // skip 2 bits, 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "CSF Tx Mode", 0},    // 4 bits
+        {UINT,"Num Csirs Ports",1},
+        {UINT, "Csi Meas Set Index",1},
+        {PLACEHOLDER, "Rank Index",0},
+        {UINT, "Forced Max RI",1},
+        {SKIP, NULL, 1},
+};
+
+const Fmt LtePhyPucchCsf_Payload_v142 [] = {
+        {UINT, "Start System Sub-frame Number", 4}, // 4 bits
+        {PLACEHOLDER, "Start System Frame Number", 0},  // 10 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {PLACEHOLDER, "Scell Index",0},     // 5 bits
+        {PLACEHOLDER, "PUCCH Reporting Mode", 0},  //reserve 1 bit, size 2
+        {PLACEHOLDER, "PUCCH Report Type", 0},    // 4 bit
+        {PLACEHOLDER, "Size BWP",0}, //3 bits, 1 bit in next
+
+        {UINT, "Number of Subbands", 1},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "BWP Index",0}, //3 bits
+
+        {UINT,"Alt Cqi Table Data",2}, //1 bit
+        {PLACEHOLDER, "SubBand Label",0}, //2 bits
+        {PLACEHOLDER, "CQI CW0", 0},   // 4 bits
+        {PLACEHOLDER, "CQI CW1", 0},   // 4 bits
+        {PLACEHOLDER, "Wideband PMI", 0},   // 4 bits
+
+        {UINT, "CSF Tx Mode", 2},    // 4 bits
+        {PLACEHOLDER, "PUCCH Reporting Submode", 0},  //size 2
+        {PLACEHOLDER,"Num Csirs Ports",0}, //4 bits
+        {PLACEHOLDER, "Wideband PMI1",0},  //4 bits
+        {PLACEHOLDER, "Pti",0}, //1 bit
+        {PLACEHOLDER, "Csi Meas Set Index",0}, //1 bit
+
+        {UINT, "Rank Index",2}, //2 bits
+        {PLACEHOLDER, "CRI",0}, //3 bits
+        {PLACEHOLDER, "UL Frame Number",0}, //10 bits
+        {PLACEHOLDER, "UL Channel Type",0}, //1 bit
+
+        {UINT, "UL Subframe Number",4}, //4 bits
+        {PLACEHOLDER, "UL Payload Length",0}, //5 bits,
+};
+
+const ValueName ValueNameCSFTxMode[] = {
+        {0, "TM_Invalid"},
+        {1, "TM_Single_Ant_Port_0"},
+        {2, "TM_TD_Rank_1"},
+        {3, "TM_OL_SM"},
+        {4, "TM_CL_SM"},
+        {5, "TM_MU_MIMO"},
+        {6, "TM_CL_Rank_1_PC"},
+        {7, "TM_Single_Ant_Port_5"},
+};
+
+const ValueName ValueNamePucchReportingMode_v22[] = {
+        {1, "MODE_1_1"},
+};
+
+const ValueName ValueNamePucchReportingMode[] = {
+        {2, "MODE_1_1"},
+};
+
+const ValueName ValueNamePucchReportType_v22[] = {
+        {1, "Type 2, Wideband CQI, PMI Feedback"},
+        {2, "Type 3, RI Feedback"},
+};
+
+const ValueName ValueNamePucchReportType[] = {
+        {2, "Type 2, Wideband CQI, PMI Feedback"},
+        {3, "Type 3, RI Feedback"},
+};
+
+const ValueName ValueNameCsiMeasSetIndex[] = {
+        {0, "CSI0"},
+};
+
 
 const ValueName ValueNameRankIndex[] = {
         {0, "Rank 1"},

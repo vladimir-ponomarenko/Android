@@ -10,7 +10,6 @@
 #include "nlohmann/json.hpp"
 #include "gsm_rr_cell_reselection_meas.h"
 #include "lte/phy/lte_phy_serving_cell_meas_res.h"
-#include "lte/phy/lte_phy_pusch_csf.h"
 #include "lte/phy/lte_phy_serving_cell_com_loop.h"
 #include "lte/rrc/lte_rrc_mib_message_log_packet.h"
 #include "lte/rrc/lte_rrc_serv_cell_info.h"
@@ -28,7 +27,9 @@
 #include "lte/phy/lte_phy_system_scan_results.h"
 #include "lte/phy/lte_phy_cdrx_events_info.h"
 #include "lte/phy/lte_phy_interlog.h"
+#include "lte/phy/lte_phy_pucch_csf.h"
 #include "lte/phy/lte_phy_pusch_tx_report.h"
+#include "lte/phy/lte_phy_pusch_csf.h"
 #include "lte/phy/lte_phy_bplmn_cell_request.h"
 #include "lte/phy/lte_phy_bplmn_cell_confirm.h"
 #include "lte/phy/lte_phy_pdsch_demapper_configuration.h"
@@ -350,6 +351,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                 offset += _decode_lte_pusch_power_control_payload(b + offset, 0, length - offset, jj);
                 j["payload"]["LtePuschPowerControl"] = jj;
             }
+            break;
+        }
+        case LTE_PHY_PUCCH_CSF: {
+            LOGD("payload_decode: LTE_PHY_PUCCH_CSF\n");
+            offset += _decode_by_fmt(LtePhyPucchCsf_Fmt,
+                                     ARRAY_SIZE(LtePhyPucchCsf_Fmt, Fmt),
+                                     b, offset, length, jj);
+            offset += _decode_lte_phy_pucch_csf_payload(b, offset, length, jj);
+            j["payload"]["LtePhyPucchCsf"] = jj;
             break;
         }
         case LTE_PHY_PDSCH_Demapper_Configuration: {
