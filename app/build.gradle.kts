@@ -1,5 +1,3 @@
-import com.android.tools.build.bundletool.flags.Flag.path
-
 plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.7.20"
     id("com.android.application")
@@ -31,20 +29,23 @@ android {
         }
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a")
+            abiFilters += listOf( "x86_64", "armeabi-v7a")
         }
 
         externalNativeBuild {
             cmake {
-                version = "3.18.1"
-                path ("src/main/jni/CMakeLists.txt")
+                //version = "3.18.1"
+                //path ("src/main/jni/CMakeLists.txt")
+                cppFlags += ""
+                arguments += listOf("-DANDROID_STL=c++_shared")
             }
         }
     }
 
-    buildFeatures{
+    buildFeatures {
         dataBinding = true
         viewBinding = true
+        // compose = true
     }
 
     buildTypes {
@@ -80,6 +81,14 @@ android {
             jniLibs.srcDirs("src/main/jniLibs")
         }
     }
+    externalNativeBuild {
+        cmake {
+            path = file("CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    ndkVersion = "25.1.8937393"
 }
 
 dependencies {
