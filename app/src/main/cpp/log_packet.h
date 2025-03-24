@@ -1549,6 +1549,409 @@ const ValueName LtePuschPowerControl_Record_v5_TPC[] = {
 };
 
 
+const Fmt LtePhyPdschDecodingResult_Fmt [] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v24 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 10 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {SKIP, NULL, 1},
+        {UINT, "Carrier Index", 1}, // 3 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v44 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 10 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {SKIP, NULL, 4},
+        {UINT, "Carrier Index", 2}, //  right shift 7 bits, 4 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v106 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 11 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {SKIP,NULL,2},
+        {UINT, "Nir",4},
+        {PLACEHOLDER, "Carrier Index", 2}, //  right shift 7 bits, 4 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v124 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 10 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {UINT, "C_RNTI",2},
+        {SKIP,NULL,2},
+        {UINT, "Carrier Index", 2}, //  right shift 7 bits, 4 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP,NULL,4}
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v126 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 10 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {UINT, "C_RNTI",2},
+        {SKIP,NULL,2},
+        {UINT, "Carrier Index", 2}, //  right shift 7 bits, 4 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP,NULL,4}
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v24 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "Subframe Number",0 },
+        {UINT, "PDSCH Channel ID", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "System Information Msg Number", 2}, // 4 bits
+        {PLACEHOLDER, "System Information Mask", 0},    // 12 bits
+        {UINT, "HARQ Log Status", 1},   // right shift 3 bit, 2 bits
+        {PLACEHOLDER, "Codeword Swap", 0},  // 1 bit
+        {PLACEHOLDER, "Number of Streams", 0},  // 2 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v44 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "Subframe Number",0 },
+        {UINT, "PDSCH Channel ID", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "System Information Msg Number", 2}, // 4 bits
+        {PLACEHOLDER, "System Information Mask", 0},    // 12 bits
+        {UINT, "HARQ Log Status", 1},   // right shift 3 bit, 2 bits
+        {PLACEHOLDER, "Codeword Swap", 0},  // 1 bit
+        {PLACEHOLDER, "Number of Streams", 0},  // 2 bits
+        {BYTE_STREAM, "Demap Sic Status",2},
+        {SKIP, "Reserved",2},
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v105 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "Subframe Number",0 },
+        {UINT, "PDSCH Channel ID", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "System Information Msg Number", 2}, // 4 bits
+        {PLACEHOLDER, "System Information Mask", 0},    // 12 bits
+        {UINT, "HARQ Log Status", 1},   // right shift 3 bit, 2 bits
+        {PLACEHOLDER, "Codeword Swap", 0},  // 1 bit
+        {PLACEHOLDER, "Number of Streams", 0},  // 2 bits
+        {UINT, "Demap Sic Status",2},
+        {SKIP, "Reserved",2},
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v106 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "Subframe Number",0 },
+        {UINT, "PDSCH Channel ID",2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "System Information Msg Number",2},
+        {PLACEHOLDER,"System Information Mask",0},
+        {UINT, "HARQ Log Status",1},
+        {PLACEHOLDER,"Codeword Swap",0},
+        {PLACEHOLDER, "Number of Streams", 0},  // 2 bits
+        {UINT, "Demap Sic Status",2},
+        {PLACEHOLDER, "MVC Status",0},
+        {PLACEHOLDER, "MVC Clock Request",0},
+        {UINT, "MVC Req Margin Data",1},
+        {UINT, "MVC Rsp Margin",1},
+};
+const Fmt LtePhyPdschDecodingResult_Record_v124 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "Codeword Swap", 1},  // 1 bit
+        {PLACEHOLDER, "Number of Transport Blks", 0},  // 2 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v125 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "Subframe Number",0 },
+        {UINT, "System Subframe Number",0 },
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "Codeword Swap", 1},  // 1 bit
+        {PLACEHOLDER, "Number of Transport Blks", 0},  // 2 bits
+};
+
+
+const Fmt LtePhyPdschDecodingResult_Record_v126 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "Codeword Swap", 1},  // 1 bit
+        {PLACEHOLDER, "Number of Transport Blks", 0},  // 2 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Stream_v24 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max TDEC Iter", 0},  // 4 bits
+        {PLACEHOLDER, "Retransmission Number", 0},  // 3 bits
+        {PLACEHOLDER, "RVID", 0},   // 2 bits
+        {PLACEHOLDER, "Companding Stats", 0},   // 2 bits
+        {PLACEHOLDER, "HARQ Combining", 0}, // 1 bit
+        {PLACEHOLDER, "Decob TB CRC", 0},   // 1 bit
+        {UINT, "Num RE", 4},    // right shift 10 bits, 16 bits
+        {PLACEHOLDER, "Codeword Index", 0}, // right shift 27 bits, 4 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_Stream_v27 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max TDEC Iter", 0},  // 4 bits
+        {PLACEHOLDER, "RVID", 0},   // 2 bits
+        {PLACEHOLDER, "Companding Stats", 0},   // 2 bits
+        {PLACEHOLDER, "HARQ Combining", 0}, // 1 bit
+        {PLACEHOLDER, "Decob TB CRC", 0},   // 1 bit
+        {UINT, "Num RE", 4},    // right shift 10 bits, 16 bits
+        {PLACEHOLDER, "Codeword Index", 0}, // right shift 27 bits, 4 bits
+        {UINT, "Retransmission Number", 4},
+};
+
+const Fmt LtePhyPdschDecodingResult_Stream_v44 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max TDEC Iter", 0},  // 4 bits
+        {PLACEHOLDER, "Retransmission Number", 0},  // 3 bits
+        {PLACEHOLDER, "RVID", 0},   // 2 bits
+        {PLACEHOLDER, "Companding Stats", 0},   // 2 bits
+        {PLACEHOLDER, "HARQ Combining", 0}, // 1 bit
+        {PLACEHOLDER, "Decob TB CRC", 0},   // 1 bit
+        {UINT, "Num RE", 4},    // right shift 10 bits, 16 bits
+        {PLACEHOLDER, "Codeword Index", 0}, // right shift 27 bits, 1 bits
+        {UINT, "LLR Scale", 1}, // 4 bits
+        {SKIP, NULL, 3},
+};
+
+const Fmt LtePhyPdschDecodingResult_Stream_v106 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus Data", 0},
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max TDEC Iter", 0},  // 4 bits
+        {PLACEHOLDER, "Retransmission Number", 0},  // 3 bits
+        {PLACEHOLDER, "RVID", 0},   // 2 bits
+        {UINT, "Companding Stats", 4},   // 2 bits
+        {PLACEHOLDER, "HARQ Combining", 0}, // 1 bit
+        {PLACEHOLDER, "Decob TB CRC", 0},   // 1 bit
+        {PLACEHOLDER, "Effective Code Rate Data"},
+        {PLACEHOLDER, "Num RE", 0},    // 15 bits
+        {PLACEHOLDER, "Codeword Index", 0}, //  1 bits
+        {UINT, "LLR Scale", 1}, // 4 bits
+        {SKIP, NULL, 3},
+};
+
+const Fmt LtePhyPdschDecodingResult_TBlks_v124 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Retransmission Number", 0},    // 1 bit
+        {PLACEHOLDER, "RVID", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus Data", 0},    // 4 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max Half Iter Data", 0},    // 4 bits
+
+        {UINT, "Num Channel Bits",4},
+        {PLACEHOLDER, "CW Idx", 0},  // 4 bits
+        {PLACEHOLDER, "Llr Buf Valid", 0},  // 4 bits
+        {PLACEHOLDER, "First Decoded CB Index", 0},  // 4 bits
+
+        {UINT, "First Decoded CB Index Qed Iter2 Data",4},
+        {PLACEHOLDER, "Last Decoded CB Index Qed Iter2 Data", 0},  // 4 bits
+        {PLACEHOLDER, "Companding Format", 0},  // 4 bits
+        {SKIP, NULL, 1},
+        {UINT, "Effective Code Rate Data", 2},
+        {PLACEHOLDER,"Effective Code Rate", 0},
+        {UINT, "HARQ Combine Enable",1},
+};
+
+const Fmt LtePhyPdschDecodingResult_TBlks_v126 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Retransmission Number", 0},    // 1 bit
+        {PLACEHOLDER, "RVID", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus Data", 0},    // 4 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+        {PLACEHOLDER, "Max Half Iter Data", 0},    // 4 bits
+
+        {UINT, "Num Channel Bits",4},
+        {PLACEHOLDER, "CW Idx", 0},  // 4 bits
+        {PLACEHOLDER, "Llr Buf Valid", 0},  // 4 bits
+        {PLACEHOLDER, "First Decoded CB Index", 0},  // 4 bits
+
+        {UINT, "First Decoded CB Index Qed Iter2 Data",4},
+        {PLACEHOLDER, "Last Decoded CB Index Qed Iter2 Data", 0},  // 4 bits
+        {PLACEHOLDER, "Companding Format", 0},  // 4 bits
+
+        {SKIP, NULL, 1},
+
+        {UINT,"Effective Code Rate Data",2},
+        {PLACEHOLDER,"Effective Code Rate", 0},
+        {UINT, "HARQ Combine Enable",1},
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v24 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4}, // 21 bits
+        {PLACEHOLDER, "Iteration Number", 0},   // 4 bits
+        {PLACEHOLDER, "Code Block CRC Pass", 0},    // 1 bit
+        {PLACEHOLDER, "Early Termination", 0},  // 1 bit
+        {PLACEHOLDER, "HARQ Combine Enable", 0},    // 1 bit
+        {PLACEHOLDER, "Deint Decode Bypass", 0},    // 1 bit
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v44 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4}, // 21 bits
+        {PLACEHOLDER, "Iteration Number", 0},   // 4 bits
+        {PLACEHOLDER, "Code Block CRC Pass", 0},    // 1 bit
+        {PLACEHOLDER, "Early Termination", 0},  // 1 bit
+        {PLACEHOLDER, "HARQ Combine Enable", 0},    // 1 bit
+        {PLACEHOLDER, "Deint Decode Bypass", 0},    // 1 bit
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v106 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4},
+        {PLACEHOLDER, "Iteration Num", 0},
+        {PLACEHOLDER, "Code Block CRC Pass", 0},
+        {PLACEHOLDER, "Early Termination", 0},
+        {PLACEHOLDER, "HARQ Combine Enable", 0},
+        {PLACEHOLDER, "Deint Decode Bypass", 0},
+};
+
+const Fmt LtePhyPdschDecodingResult_Hidden_Energy_Metrics_v106 [] = {
+        {UINT, "Hidden Energy Metric First Half", 4},
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v124 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4}, // 21 bits
+        {PLACEHOLDER, "Min Abs LLR", 0},   // 4 bits
+
+        {UINT, "Half Iter Run Data", 4}, // 21 bits
+        {PLACEHOLDER, "Half Iter Run", 0},   // 4 bits
+        {PLACEHOLDER, "Code Block CRC Pass", 0},    // 1 bit
+};
+
+const Fmt LtePhyPdschDecodingResult_Hidden_Energy_Metrics_v124 [] = {
+        // totally 13
+        {UINT, "Hidden Energy Metric First Half", 4},
+        {UINT, "Hidden Energy Metric Second Half", 4},
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v126 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4}, // 21 bits
+        {PLACEHOLDER, "Min Abs LLR", 0},   // 4 bits
+
+        {UINT, "Half Iter Run Data", 4}, // 21 bits
+        {PLACEHOLDER, "Half Iter Run", 0},   // 4 bits
+        {PLACEHOLDER, "Code Block CRC Pass", 0},    // 1 bit
+};
+
+const Fmt LtePhyPdschDecodingResult_Hidden_Energy_Metrics_v126 [] = {
+        // totally 13
+        {UINT, "Hidden Energy Metric First Half", 4},
+        {UINT, "Hidden Energy Metric Second Half", 4},
+};
+
+const Fmt LtePhyPdschDecodingResult_Payload_v143 [] = {
+        {UINT, "Serving Cell ID", 4},   // 9 btis
+        {PLACEHOLDER, "Starting Subframe Number", 0},   // 4 bits
+        {PLACEHOLDER, "Starting System Frame Number", 0},   // 10 bits
+        {PLACEHOLDER, "UE Category", 0},    // right shift 1 bit, 4 bits
+        {PLACEHOLDER, "Num DL HARQ", 0},    // 4 bits
+        {UINT, "TM Mode", 1},   // right shift 4 bits, 4 bits
+        {UINT, "C_RNTI",2},
+        {SKIP,NULL,2},
+        {UINT, "Carrier Index", 2}, //  right shift 7 bits, 4 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP,NULL,4}
+};
+
+const Fmt LtePhyPdschDecodingResult_Record_v143 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "HARQ ID", 1},   // 4 bits
+        {PLACEHOLDER, "RNTI Type", 0},  // 4 bits
+        {UINT, "Codeword Swap", 1},  // 1 bit
+        {PLACEHOLDER, "Number of Transport Blks", 0},  // 2 bits
+};
+
+const Fmt LtePhyPdschDecodingResult_TBlks_v143 [] = {
+        {UINT, "Transport Block CRC", 4},   // 1 bit
+        {PLACEHOLDER, "NDI", 0},    // 1 bit
+        {PLACEHOLDER, "Retransmission Number", 0},    // 1 bit
+        {PLACEHOLDER, "RVID", 0},    // 1 bit
+        {PLACEHOLDER, "Code Block Size Plus", 0},   // 13 bits
+        {PLACEHOLDER, "Num Code Block Plus Data", 0},    // 4 bits
+        {PLACEHOLDER, "Num Code Block Plus", 0},    // 4 bits
+
+        {UINT, "Max Half Iter Data", 4},    // 4 bits
+        {PLACEHOLDER, "Num Channel Bits",4}, // 19 bits
+        {PLACEHOLDER, "CW Idx", 0},  // 1 bits
+        {PLACEHOLDER, "Llr Buf Valid", 0},  // 4 bits
+        {PLACEHOLDER, "First Decoded CB Index", 0},  // 4 bits
+
+        //{UINT, "First Decoded CB Index Qed Iter2 Data",4},
+        //{PLACEHOLDER, "Last Decoded CB Index Qed Iter2 Data", 0},  // 4 bits
+        //{PLACEHOLDER, "Companding Format", 0},  // 4 bits
+
+        {UINT, "Companding Format", 4},  // shift 18 bit 2 bits
+
+        {SKIP, NULL, 1},
+
+        {UINT,"Effective Code Rate Data",2},
+        {UINT, "HARQ Combine Enable",1},
+};
+
+const Fmt LtePhyPdschDecodingResult_EnergyMetric_v143 [] = {
+        // totally 13
+        {UINT, "Energy Metric", 4}, // 21 bits
+        {PLACEHOLDER, "Min Abs LLR", 0},   // 4 bits
+
+        {UINT, "Half Iter Run Data", 4}, // 21 bits
+        {PLACEHOLDER, "Half Iter Run", 0},   // 4 bits
+        {PLACEHOLDER, "Code Block CRC Pass", 0},    // 1 bit
+};
+
+const Fmt LtePhyPdschDecodingResult_Hidden_Energy_Metrics_v143 [] = {
+        // totally 13
+        {UINT, "Hidden Energy Metric First Half", 4},
+        {UINT, "Hidden Energy Metric Second Half", 4},
+};
+
 const Fmt LtePhyPdschDemapperConfigFmt[] = {
         {UINT, "Version", 1}
 };
@@ -1621,7 +2024,6 @@ const Fmt LtePhyPdschDemapperConfigFmt_v28[] = {
 };
 
 const Fmt LtePhyPdschDemapperConfigFmt_v103[] = {
-        // TODO: just copy from v23.
         {UINT,                      "Serving Cell ID",          1},
         {UINT,                      "System Frame Number",      2},
         {PLACEHOLDER,               "Subframe Number",          0},
@@ -1649,7 +2051,6 @@ const Fmt LtePhyPdschDemapperConfigFmt_v103[] = {
 
 
 const Fmt LtePhyPdschDemapperConfigFmt_v104[] = {
-        // TODO: just copy from v23.
         {UINT,                      "Serving Cell ID",          1},
         {UINT,                      "System Frame Number",      2},
         {PLACEHOLDER,               "Subframe Number",          0},
