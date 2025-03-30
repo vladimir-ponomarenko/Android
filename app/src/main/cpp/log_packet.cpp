@@ -11,6 +11,7 @@
 #include "gsm_rr_cell_reselection_meas.h"
 #include "lte_phy_serving_cell_meas_res.h"
 #include "lte_rrc_mib_message_log_packet.h"
+#include "lte_phy_idle_neighbor_cell_meas.h"
 #include "lte_nb1_ml1_gm_tx_report.h"
 #include "wcdma_signaling_messages.h"
 #include "srch_tng_1x_searcher_dump.h"
@@ -43,13 +44,23 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             j["payload"]["LteRrcMibMessageLogPacket"] = jj;
             break;
         }
+        case LTE_PHY_Idle_Neighbor_Cell_Meas: {
+            LOGD("payload_decode: LTE_PHY_Idle_Neighbor_Cell_Meas\n");
+            offset += _decode_by_fmt(LtePhyIncm_Fmt,
+                                     ARRAY_SIZE(LtePhyIncm_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePhyIncm"] = jj;
+            offset += _decode_lte_phy_idle_neighbor_cell_meas_payload(b, offset, length, j["payload"]["LtePhyIncm"]);
+
+            break;
+        }
         case LTE_NB1_ML1_GM_TX_Report: {
             LOGD("payload_decode: LTE_NB1_ML1_GM_TX_Report\n");
             offset += _decode_by_fmt(LteNb1Ml1GmTxReport,
                                      ARRAY_SIZE(LteNb1Ml1GmTxReport, Fmt),
                                      b, offset, length, jj);
             offset += _decode_lte_nb1_ml1_gm_tx_report_payload(b, offset, length, j["payload"]["LteNb1Ml1GmTxReport"]);
-            j["payload"]["LteNb1Ml1GmTxReport"] = jj; // Store the initial header
+            j["payload"]["LteNb1Ml1GmTxReport"] = jj;
             break;
         }
         case GSM_RR_Cell_Reselection_Meas: {

@@ -120,6 +120,7 @@ class RootManager(private val context: Context) {
     private fun updateSecurityPolicy(): Boolean {
         val cmds = listOf(
             "setenforce 0",
+            "chmod 777 /dev/diag",
             "supolicy --live \"allow untrusted_app diag_device chr_file {read write open ioctl}\"",
             "supolicy --live \"allow untrusted_app system_data_file file {read write}\"",
             "supolicy --live \"allow untrusted_app app_data_file file {rename}\"",

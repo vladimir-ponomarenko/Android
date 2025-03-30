@@ -41,7 +41,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
         val request = Request.Builder()
-            .url("$serverUrl/api/user/register")
+            .url("$serverUrl/signup")
             .post(requestBody)
             .addHeader("Accept", "application/json")
             .build()
@@ -118,7 +118,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
                 val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
                 val request = Request.Builder()
-                    .url("$serverUrl/api/user/auth")
+                    .url("$serverUrl/signin")
                     .header("Authorization", "Bearer $token")
                     .post(requestBody)
                     .build()
@@ -352,11 +352,14 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
         val endpoint = "/api/sockets/thermalmap"
-
         val jsonBody = try {
-            File(filePath).readText()
+            val fileContent = File(filePath).readText()
+            if (!fileContent.startsWith("[")) {
+                throw IOException("File content is not a valid JSON array")
+            }
+            fileContent
         } catch (e: IOException) {
-            Log.e(TAG, "Error reading JSON from file: $filePath", e)
+            Log.e(TAG, "Error reading or validating JSON from file: $filePath", e)
             onComplete?.invoke(false)
             return
         }
@@ -371,12 +374,10 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
-
             val request = Request.Builder()
                 .url("$serverUrl$endpoint")
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
-
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     Log.d(TAG, "WebSocket connected successfully for CellInfo (from file)")

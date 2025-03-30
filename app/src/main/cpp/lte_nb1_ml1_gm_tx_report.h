@@ -55,10 +55,6 @@ const ValueName ValueNameNPUSCHFormat[] = {
         {1, "Format 2"}
 };
 
-const ValueName ValueNameTrueOrFalse[] = {
-        {0, "False"},
-        {1, "True"}
-};
 
 const ValueName ValueNameNPUSCHFormat_1_TX_Type[] = {
         {0, "Data"},

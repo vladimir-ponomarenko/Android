@@ -34,8 +34,10 @@ const Fmt LogPacketHeaderFmt [] = {
         {QCDM_TIMESTAMP, "timestamp", 8}
 };
 
-
-
+const ValueName ValueNameTrueOrFalse[] = {
+        {0, "False"},
+        {1, "True"}
+};
 
 const ValueName ValueNameCellIndex [] = {
         // 4 bits

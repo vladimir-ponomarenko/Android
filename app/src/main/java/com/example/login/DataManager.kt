@@ -38,11 +38,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -723,91 +724,85 @@ object DataManager {
             try {
                 val sharedPreferences = context.getSharedPreferences(RECORDING_PREFS_NAME, Context.MODE_PRIVATE)
                 val isRecording = sharedPreferences.getBoolean(KEY_IS_RECORDING, true)
-
                 if (!isRecording) {
                     Log.d(TAG, "Recording is paused, skipping save")
                     return@withContext
                 }
-
                 val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
                 if (!signalDataDir.exists() && !signalDataDir.mkdirs()) {
                     Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
                     return@withContext
                 }
-
                 val file = File(signalDataDir, fileName)
-                val hasData = messageToData2.cdma.cellInfoList.isNotEmpty() ||
-                        messageToData2.gsm.cellInfoList.isNotEmpty() ||
-                        messageToData2.wcdma.cellInfoList.isNotEmpty() ||
-                        messageToData2.lte.cellInfoList.isNotEmpty() ||
-                        messageToData2.nr.cellInfoList.isNotEmpty()
 
-                val hasLocationData = messageToData2.latitude != 0.0 && messageToData2.longitude != 0.0
-
-                if (messageToData2.jwt.isEmpty() || messageToData2.UUID.isEmpty()) {
-                    Log.d(TAG, "Skipping save: jwt or UUID is empty")
-                    return@withContext
+                val jsonEntry = buildJsonObject {
+                    put("jwt", messageToData2.jwt)
+                    put("UUID", messageToData2.UUID)
+                    put("time", messageToData2.time)
+                    put("latitude", messageToData2.latitude)
+                    put("longitude", messageToData2.longitude)
+                    put("altitude", messageToData2.altitude)
+                    put("manufacturer", messageToData2.manufacturer)
+                    put("model", messageToData2.model)
+                    put("androidVersion", messageToData2.androidVersion)
+                    put("hardware", messageToData2.hardware)
+                    put("product", messageToData2.product)
+                    put("board", messageToData2.board)
+                    put("operator", messageToData2.operator)
+                    if (messageToData2.cdma.cellInfoList.isNotEmpty()) {
+                        put("cdma", Json.encodeToJsonElement(messageToData2.cdma.cellInfoList))
+                    }
+                    if (messageToData2.wcdma.cellInfoList.isNotEmpty()) {
+                        put("wcdma", Json.encodeToJsonElement(messageToData2.wcdma.cellInfoList))
+                    }
+                    if (messageToData2.gsm.cellInfoList.isNotEmpty()) {
+                        put("gsm", Json.encodeToJsonElement(messageToData2.gsm.cellInfoList))
+                    }
+                    if (messageToData2.lte.cellInfoList.isNotEmpty()) {
+                        put("lte", Json.encodeToJsonElement(messageToData2.lte.cellInfoList))
+                    }
+                    if (messageToData2.nr.cellInfoList.isNotEmpty()) {
+                        put("nr", Json.encodeToJsonElement(messageToData2.nr.cellInfoList))
+                    }
                 }
 
-                if (hasData && hasLocationData) {
-                    val modifiedJson = buildJsonObject {
-                        put("jwt", messageToData2.jwt)
-                        put("UUID", messageToData2.UUID)
-                        put("time", messageToData2.time)
-                        put("latitude", messageToData2.latitude)
-                        put("longitude", messageToData2.longitude)
-                        put("altitude", messageToData2.altitude)
-                        put("manufacturer", messageToData2.manufacturer)
-                        put("model", messageToData2.model)
-                        put("androidVersion", messageToData2.androidVersion)
-                        put("hardware", messageToData2.hardware)
-                        put("product", messageToData2.product)
-                        put("board", messageToData2.board)
-                        put("operator", messageToData2.operator)
-
-                        if (messageToData2.cdma.cellInfoList.isNotEmpty()) {
-                            put("cdma", Json.encodeToJsonElement(messageToData2.cdma.cellInfoList))
+                val existingData = if (file.exists()) {
+                    try {
+                        val fileContent = file.readText()
+                        if (fileContent.startsWith("[")) {
+                            Json.decodeFromString<JsonArray>(fileContent)
+                        } else {
+                            buildJsonArray { }
                         }
-                        if (messageToData2.wcdma.cellInfoList.isNotEmpty()) {
-                            put("wcdma", Json.encodeToJsonElement(messageToData2.wcdma.cellInfoList))
-                        }
-                        if (messageToData2.gsm.cellInfoList.isNotEmpty()) {
-                            put("gsm", Json.encodeToJsonElement(messageToData2.gsm.cellInfoList))
-                        }
-                        if (messageToData2.lte.cellInfoList.isNotEmpty()) {
-                            put("lte", Json.encodeToJsonElement(messageToData2.lte.cellInfoList))
-                        }
-                        if (messageToData2.nr.cellInfoList.isNotEmpty()) {
-                            put("nr", Json.encodeToJsonElement(messageToData2.nr.cellInfoList))
-                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing existing file content as JSON array", e)
+                        buildJsonArray { }
                     }
-
-                    val outputStream = FileOutputStream(file, true)
-                    val jsonMessageToData2 = modifiedJson.toString() + "\n"
-                    outputStream.write(jsonMessageToData2.toByteArray())
-                    outputStream.close()
-
-                    Log.d(TAG, "JSON to be saved:\n$jsonMessageToData2")
-
-                    val fileSize = file.length()
-                    Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
-
-                    if (fileSize >= 1_048_576) { // 1 МБ
-                        sendFileWithRetry(context, file) { success ->
-                            if (success) {
-                                Log.d(TAG, "File sent successfully (from save function)")
-                            } else {
-                                Log.e(TAG, "Failed to send file (from save function)")
-                            }
-                        }
-
-                        fileCounter = (fileCounter % maxFileCount) + 1
-                        fileName = "Signal_data_$fileCounter.txt"
-                    }
-
-                    Log.d(TAG, "CellInfo saved to file: ${file.absolutePath}")
                 } else {
-                    Log.d(TAG, "Skipping empty CellInfo data")
+                    buildJsonArray { }
+                }
+
+                val updatedData = buildJsonArray {
+                    addAll(existingData)
+                    add(jsonEntry)
+                }
+
+                file.writeText(updatedData.toString())
+
+                Log.d(TAG, "Updated JSON array saved to file: ${file.absolutePath}")
+
+                val fileSize = file.length()
+                Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
+                if (fileSize >= 1_048_576) { // 1 МБ
+                    sendFileWithRetry(context, file) { success ->
+                        if (success) {
+                            Log.d(TAG, "File sent successfully (from save function)")
+                        } else {
+                            Log.e(TAG, "Failed to send file (from save function)")
+                        }
+                    }
+                    fileCounter = (fileCounter % maxFileCount) + 1
+                    fileName = "Signal_data_$fileCounter.txt"
                 }
             } catch (e: IOException) {
                 Log.e(TAG, "Error saving CellInfo to file: ", e)

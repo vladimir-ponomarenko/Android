@@ -15,6 +15,8 @@ package com.example.login
 //noinspection UsingMaterialAndMaterial3Libraries
 //noinspection UsingMaterialAndMaterial3Libraries
 //noinspection UsingMaterialAndMaterial3Libraries
+//import androidx.work.ExistingPeriodicWorkPolicy
+//import androidx.work.PeriodicWorkRequestBuilder
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -75,9 +77,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
-//import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.Constraints
 import androidx.work.NetworkType
-//import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.login.PermissionUtils.checkPermissions
@@ -86,16 +89,14 @@ import com.example.login.PermissionUtils.checkPermissionsForAndroid13
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
 import java.util.concurrent.TimeUnit
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.*
-import kotlinx.coroutines.*
 
 
 @Suppress("NAME_SHADOWING")
@@ -107,7 +108,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val TAG = "com.example.login.MainActivity"
         const val ACTION_STOP_MAIN_ACTIVITY = "com.example.login.stop_main_activity"
         const val UPDATE_INTERVAL = 2000L
-        private const val SERVER_URL = "http://109.172.114.128:10000"  // "http://78.24.222.170:8080" //"http://45.90.218.73:8080"
+        private const val SERVER_URL = "http://109.172.114.128:8000"
 
         internal const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"
