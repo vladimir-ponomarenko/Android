@@ -170,6 +170,17 @@ const ValueName ValueNameYesOrNo [] = {
         {1, "Yes"},
 };
 
+const ValueName ValueNameSRSShortingfor2ndSlot[] = {
+        // 1 bit
+        {0, "Normal"},
+        {1, "Shorten 2nd"},
+};
+
+const ValueName ValueNameOnOrOff[] = {
+        {0, "Off"},
+        {1, "On"},
+};
+
 const ValueName RNTIType[] = {
 {0, "C-RNTI"},
 {2, "P-RNTI"},
@@ -818,6 +829,475 @@ const Fmt LteRlcUlConfigLogPacket_Subpkt_ActiveRB_Fmt_v3[] = {
         {UINT,        "AM SN Length",       1},
 };
 
+const Fmt LtePhyPuschTxReport_Fmt[] = {
+        {UINT, "Version", 1},
+};
+
+// --- Version 23 ---
+const Fmt LtePhyPuschTxReport_Payload_v23[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v23[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "Coding Rate Data", 2},
+        {UINT, "ACK", 4},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {UINT, "DMRS Root Slot 1", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Num ACK Bits", 2},
+        {PLACEHOLDER, "ACK Payload", 0},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "PUSCH Mod Order", 0},
+        {PLACEHOLDER, "RI Payload2", 0},
+        {UINT, "PUSCH Digital Gain (dB)", 1},
+        {UINT, "SRS Occasion", 1},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {SKIP, NULL, 2},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {BYTE_STREAM, "CQI Payload", 16},
+        {UINT, "Tx Resampler", 4},
+};
+
+// --- Version 24 ---
+const Fmt LtePhyPuschTxReport_Payload_v24[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v24[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "Coding Rate Data", 2},
+        {UINT, "ACK", 4},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {UINT, "DMRS Root Slot 1", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Num ACK Bits", 2},
+        {PLACEHOLDER, "ACK Payload", 0},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "PUSCH Mod Order", 0},
+        {PLACEHOLDER, "RI Payload2", 0},
+        {UINT, "PUSCH Digital Gain (dB)", 1},
+        {UINT, "SRS Occasion", 1},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {SKIP, NULL, 2},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {BYTE_STREAM, "CQI Payload", 16},
+        {UINT, "Tx Resampler", 4},
+};
+
+// --- Version 26 ---
+const Fmt LtePhyPuschTxReport_Payload_v26[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v26[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "Coding Rate Data", 2},
+        {UINT, "ACK", 4},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {UINT, "DMRS Root Slot 1", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Num ACK Bits", 2},
+        {PLACEHOLDER, "ACK Payload", 0},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "PUSCH Mod Order", 0},
+        {PLACEHOLDER, "RI Payload2", 0},
+        {UINT, "PUSCH Digital Gain (dB)", 1},
+        {UINT, "SRS Occasion", 1},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {SKIP, NULL, 2},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {BYTE_STREAM, "CQI Payload", 16},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Num Repetition", 4},
+        {PLACEHOLDER,"RB NB Start Index",0},
+};
+
+// --- Version 43 ---
+const Fmt LtePhyPuschTxReport_Payload_v43[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v43[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "Coding Rate Data", 2},
+        {UINT, "ACK", 4},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 0},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {UINT, "DMRS Root Slot 1", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Rate Matched ACK Bits", 2},
+        {UINT, "ACK Payload", 4},
+        {PLACEHOLDER, "ACK/NAK Inp Length 0", 0},
+        {PLACEHOLDER, "ACK/NAK Inp Length 1", 0},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {UINT, "RI Payload", 4},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "PUSCH Mod Order", 0},
+        {PLACEHOLDER, "PUSCH Digital Gain (dB)", 0},
+        {PLACEHOLDER, "SRS Occasion", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {SKIP, NULL, 4},
+        {BYTE_STREAM, "CQI Payload", 28},
+        {UINT, "Tx Resampler", 4},
+};
+
+// --- Version 102 ---
+const Fmt LtePhyPuschTxReport_Payload_v102[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v102[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "Carrier Index", 2},
+        {PLACEHOLDER, "ACK", 0},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {UINT, "Resource Allocation Type", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Coding Rate", 2},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {PLACEHOLDER, "SRS Occasion", 0},
+        {UINT, "ACK Payload", 4},
+        {PLACEHOLDER, "ACK/NAK Inp Length 0", 0},
+        {PLACEHOLDER, "ACK/NAK Inp Length 1", 0},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {UINT, "PUSCH Mod Order", 4},
+        {PLACEHOLDER, "PUSCH Digital Gain (dB)", 0},
+        {PLACEHOLDER, "Start RB Cluster1", 0},
+        {PLACEHOLDER, "Num RB Cluster1", 0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {UINT, "Num DL Carriers", 4},
+        {PLACEHOLDER, "Ack Nack Index", 0},
+        {PLACEHOLDER, "Ack Nack Late", 0},
+        {PLACEHOLDER, "CSF Late", 0},
+        {PLACEHOLDER, "Drop PUSCH", 0},
+        {BYTE_STREAM, "CQI Payload", 28},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 4},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "DMRS Root Slot 1", 0},
+};
+
+// --- Version 122 ---
+const Fmt LtePhyPuschTxReport_Payload_v122[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v122[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "UL Carrier Index", 2},
+        {PLACEHOLDER, "ACK", 0},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {UINT, "Start RB Slot 0", 4},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {PLACEHOLDER, "DL Carrier Index",0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Coding Rate", 2},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {PLACEHOLDER, "SRS Occasion", 0},
+        {UINT, "ACK Payload", 4},
+        {PLACEHOLDER, "ACK/NAK Inp Length 0", 0},
+        {PLACEHOLDER, "ACK/NAK Inp Length 1", 0},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {UINT, "PUSCH Mod Order", 4},
+        {PLACEHOLDER, "PUSCH Digital Gain (dB)", 0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {UINT, "Num DL Carriers", 4},
+        {PLACEHOLDER, "Ack Nack Index", 0},
+        {PLACEHOLDER, "Ack Nack Late", 0},
+        {PLACEHOLDER, "CSF Late", 0},
+        {PLACEHOLDER, "Drop PUSCH", 0},
+        {BYTE_STREAM, "CQI Payload", 28},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 4},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "DMRS Root Slot 1", 0},
+};
+
+// --- Version 124 ---
+const Fmt LtePhyPuschTxReport_Payload_v124[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v124[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "UL Carrier Index", 2},
+        {PLACEHOLDER, "ACK", 0},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {UINT, "Resource Allocation Type", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {PLACEHOLDER, "DL Carrier Index",0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Coding Rate", 2},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Rate Matched RI Bits", 0},
+        {PLACEHOLDER, "UE SRS", 0},
+        {PLACEHOLDER, "SRS Occasion", 0},
+        {UINT, "ACK Payload", 4},
+        {PLACEHOLDER, "ACK/NAK Inp Length 0", 0},
+        {PLACEHOLDER, "ACK/NAK Inp Length 1", 0},
+        {PLACEHOLDER, "Num RI Bits NRI (bits)", 0},
+        {UINT, "PUSCH Mod Order", 4},
+        {PLACEHOLDER, "PUSCH Digital Gain (dB)", 0},
+        {PLACEHOLDER, "Start RB Cluster1", 0},
+        {PLACEHOLDER, "Num RB Cluster1", 0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {UINT, "Num DL Carriers", 4},
+        {PLACEHOLDER, "Ack Nack Index", 0},
+        {PLACEHOLDER, "Ack Nack Late", 0},
+        {PLACEHOLDER, "CSF Late", 0},
+        {PLACEHOLDER, "Drop PUSCH", 0},
+        {BYTE_STREAM, "CQI Payload", 44},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 4},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+        {PLACEHOLDER, "DMRS Root Slot 0", 0},
+        {PLACEHOLDER, "DMRS Root Slot 1", 0},
+};
+
+// --- Version 144 ---
+const Fmt LtePhyPuschTxReport_Payload_v144[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+const Fmt LtePhyPuschTxReport_Record_v144[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "UL Carrier Index", 2},
+        {PLACEHOLDER, "ACK", 0},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {UINT, "Resource Allocation Type", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {PLACEHOLDER, "DL Carrier Index",0},
+        {PLACEHOLDER,"Enable UL DMRS OCC",0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Coding Rate", 2},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Num RI Bits NRI", 0},
+        {UINT, "ACK Payload", 16},
+        {UINT,"ACK/NAK Inp Length 0",4},
+        {PLACEHOLDER,"ACK/NAK Inp Length 1",0},
+        {PLACEHOLDER,"Rate Matched RI Bits",0},
+        {PLACEHOLDER,"Reserved",0},
+        {UINT,"UE SRS",4},
+        {PLACEHOLDER,"SRS Occasion",0},
+        {PLACEHOLDER,"PUSCH Mod Order",0},
+        {PLACEHOLDER,"PUSCH Digital Gain",0},
+        {PLACEHOLDER,"Start RB Cluster1",0},
+        {PLACEHOLDER,"Num RB Cluster1",0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {UINT, "Num DL Carriers", 4},
+        {PLACEHOLDER, "Ack Nack Index", 0},
+        {PLACEHOLDER, "Ack Nack Late", 0},
+        {PLACEHOLDER, "CSF Late", 0},
+        {PLACEHOLDER, "Drop PUSCH", 0},
+        {BYTE_STREAM, "CQI Payload", 44},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 4},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+};
+
+
+// --- Version 145 ---
+const Fmt LtePhyPuschTxReport_Payload_v145[] = {
+        {UINT, "Serving Cell ID", 2},
+        {PLACEHOLDER, "Number of Records", 0},
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPuschTxReport_Record_v145[] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "UL Carrier Index", 2},
+        {PLACEHOLDER, "ACK", 0},
+        {PLACEHOLDER, "CQI", 0},
+        {PLACEHOLDER, "RI", 0},
+        {PLACEHOLDER, "Frequency Hopping", 0},
+        {PLACEHOLDER, "Re-tx Index", 0},
+        {PLACEHOLDER, "Redund Ver", 0},
+        {PLACEHOLDER, "Mirror Hopping", 0},
+        {UINT, "Resource Allocation Type", 4},
+        {PLACEHOLDER, "Start RB Slot 0", 0},
+        {PLACEHOLDER, "Start RB Slot 1", 0},
+        {PLACEHOLDER, "Num of RB", 0},
+        {PLACEHOLDER, "DL Carrier Index",0},
+        {PLACEHOLDER,"Enable UL DMRS OCC",0},
+        {UINT, "PUSCH TB Size", 2},
+        {UINT, "Coding Rate", 2},
+        {UINT, "Rate Matched ACK Bits", 4},
+        {PLACEHOLDER, "RI Payload", 0},
+        {PLACEHOLDER, "Num RI Bits NRI", 0},
+        {UINT, "ACK Payload", 16},
+        {UINT,"ACK/NAK Inp Length 0",4},
+        {PLACEHOLDER,"ACK/NAK Inp Length 1",0},
+        {PLACEHOLDER,"Rate Matched RI Bits",0},
+        {PLACEHOLDER,"Reserved",0},
+        {UINT,"UE SRS",4},
+        {PLACEHOLDER,"SRS Occasion",0},
+        {PLACEHOLDER,"PUSCH Mod Order",0},
+        {PLACEHOLDER,"PUSCH Digital Gain",0},
+        {PLACEHOLDER,"Start RB Cluster1",0},
+        {PLACEHOLDER,"Num RB Cluster1",0},
+        {UINT, "PUSCH Tx Power (dBm)", 4},
+        {PLACEHOLDER, "Num CQI Bits", 0},
+        {PLACEHOLDER, "Rate Matched CQI Bits", 0},
+        {UINT, "Num DL Carriers", 4},
+        {PLACEHOLDER, "Ack Nack Index", 0},
+        {PLACEHOLDER, "Ack Nack Late", 0},
+        {PLACEHOLDER, "CSF Late", 0},
+        {PLACEHOLDER, "Drop PUSCH", 0},
+        {BYTE_STREAM, "CQI Payload", 44},
+        {UINT, "Tx Resampler", 4},
+        {UINT, "Cyclic Shift of DMRS Symbols Slot 0 (Samples)", 4},
+        {PLACEHOLDER, "Cyclic Shift of DMRS Symbols Slot 1 (Samples)", 0},
+};
+
+
+const ValueName ValueNameExistsOrNone[] = {
+        {0, "None"},
+        {1, "Exists"}
+};
+
+
+
+const ValueName ValueNameModulation[] = {
+        {0, "BPSK"},
+        {1, "QPSK"},
+        {2, "16QAM"},
+        {3, "64QAM"},
+        {4, "256QAM"}
+};
 
 const Fmt LtePhyPuschCsf_Fmt[] = {
         {UINT, "Version", 1},
@@ -1780,6 +2260,228 @@ const ValueName ValueNameCSFTxMode[] = {
         {5, "TM_MU_MIMO"},
         {6, "TM_CL_Rank_1_PC"},
         {7, "TM_Single_Ant_Port_5"},
+};
+
+const Fmt LtePhyPucchTxReport_Fmt [] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Payload_v21 [] = {
+        {UINT, "Serving Cell ID", 2},   // 9 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p1_v21 [] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "CQI Payload", 2},
+        {UINT, "Format", 4},    // 3 bits, LtePucchPowerControl_Record_v4_PUCCH_Format
+        {PLACEHOLDER, "Start RB Slot 0", 0},    // 7 bits
+        {PLACEHOLDER, "Start RB Slot 1", 0},    // 7 bits
+        {PLACEHOLDER, "SRS Shorting for 2nd Slot", 0},  // 1 bit
+        {PLACEHOLDER, "UE SRS", 0}, // 1 bit
+        {PLACEHOLDER, "DMRS Seq Slot 0", 0},    // 5 bits
+        {PLACEHOLDER, "DMRS Seq Slot 1", 0},    // 5 bits
+        {PLACEHOLDER, "ACK Payload", 0},    // 2 bits
+};
+
+const Fmt LtePhyPucchTxReport_Record_CyclicShift_v21 [] = {
+        {UINT, "Cyclic Shift Seq per Symbol", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v21 [] = {
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
+        {UINT, "n_1_pucch", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v22 [] = {
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
+        {UINT, "n_1_pucch", 2},
+        {SKIP, NULL, 2},
+
+        //added different from v21
+        {UINT, "Num Repetition",4},
+        {PLACEHOLDER, "RB NB Start Index",0},
+};
+
+const Fmt LtePhyPucchTxReport_Payload_v43 [] = {
+        {UINT, "Serving Cell ID", 2},   // 9 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p1_v43 [] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "CQI Payload", 2},
+        {UINT, "Format", 4},    // 3 bits, LtePucchPowerControl_Record_v4_PUCCH_Format
+        {PLACEHOLDER, "Start RB Slot 0", 0},    // 7 bits
+        {PLACEHOLDER, "Start RB Slot 1", 0},    // 7 bits
+        {PLACEHOLDER, "SRS Shorting for 2nd Slot", 0},  // 1 bit
+        {PLACEHOLDER, "UE SRS", 0}, // 1 bit
+        {PLACEHOLDER, "DMRS Seq Slot 0", 0},    // 5 bits
+        {PLACEHOLDER, "DMRS Seq Slot 1", 0},    // 5 bits
+};
+
+const Fmt LtePhyPucchTxReport_Record_CyclicShift_v43 [] = {
+        {UINT, "Cyclic Shift Seq per Symbol", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v43 [] = {
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+        {UINT, "ACK Payload", 4},   // 20 bits
+        {PLACEHOLDER, "ACK Payload Length", 0}, // 5 bits
+        {PLACEHOLDER, "SR Bit FMT3", 0},    // 1 bit
+        {PLACEHOLDER, "Num DL Carriers", 0},    // 4 bits
+        {UINT, "n_1_pucch", 2},
+        {UINT, "Ack Nak Index", 2}, // 12 bits
+        {PLACEHOLDER, "Ack Nak Late", 0},   // 1 bit
+        {PLACEHOLDER, "Csf Late", 0},   // 1 bit
+        {PLACEHOLDER, "Dropped Pucch", 0},  // 1 bit
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
+};
+
+const Fmt LtePhyPucchTxReport_Payload_v101 [] = {
+        {UINT, "Serving Cell ID", 2},   // 9 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p1_v101 [] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "CQI Payload", 2},
+        {UINT, "Carrier Index", 4}, // 2 bits
+        {PLACEHOLDER, "Format", 0}, // 3 bits, LtePucchPowerControl_Record_v4_PUCCH_Format
+        {PLACEHOLDER, "Start RB Slot 0", 0},    // 7 bits
+        {PLACEHOLDER, "Start RB Slot 1", 0},    // 7 bits
+        {PLACEHOLDER, "SRS Shorting for 2nd Slot", 0},  // 1 bit
+        {PLACEHOLDER, "UE SRS", 0}, // 1 bit
+        {PLACEHOLDER, "DMRS Seq Slot 0", 0},    // 5 bits
+        {PLACEHOLDER, "DMRS Seq Slot 1", 0},    // 5 bits
+};
+
+const Fmt LtePhyPucchTxReport_Record_CyclicShift_v101 [] = {
+        {UINT, "Cyclic Shift Seq per Symbol", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v101 [] = {
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+        {UINT, "ACK Payload", 4},   // 20 bits
+        {PLACEHOLDER, "ACK Payload Length", 0}, // 5 bits
+        {PLACEHOLDER, "SR Bit FMT3", 0},    // 1 bit
+        {PLACEHOLDER, "Num DL Carriers", 0},    // 4 bits
+        {UINT, "n_1_pucch", 2},
+        {UINT, "Ack Nak Index", 2}, // 12 bits
+        {PLACEHOLDER, "Ack Nak Late", 0},   // 1 bit
+        {PLACEHOLDER, "Csf Late", 0},   // 1 bit
+        {PLACEHOLDER, "Dropped Pucch", 0},  // 1 bit
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
+};
+
+const Fmt LtePhyPucchTxReport_Payload_v121 [] = {
+        {UINT, "Serving Cell ID", 2},   // 9 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p1_v121 [] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "CQI Payload", 2},
+        {UINT, "Carrier Index", 4}, // 2 bits
+        {PLACEHOLDER, "Format", 0}, // 3 bits, LtePucchPowerControl_Record_v4_PUCCH_Format
+        {PLACEHOLDER, "Start RB Slot 0", 0},    // 7 bits
+        {PLACEHOLDER, "Start RB Slot 1", 0},    // 7 bits
+        {PLACEHOLDER, "SRS Shorting for 2nd Slot", 0},  // 1 bit
+        {PLACEHOLDER, "UE SRS", 0}, // 1 bit
+        {PLACEHOLDER, "DMRS Seq Slot 0", 0},    // 5 bits
+        {PLACEHOLDER, "DMRS Seq Slot 1", 0},    // 5 bits
+};
+
+const Fmt LtePhyPucchTxReport_Record_CyclicShift_v121 [] = {
+        {UINT, "Cyclic Shift Seq per Symbol", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v121 [] = {
+//add DL Carrier Index
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+        {UINT, "ACK Payload", 4},   // 20 bits
+        {PLACEHOLDER, "ACK Payload Length", 0}, // 5 bits
+        {PLACEHOLDER, "SR Bit FMT3", 0},    // 1 bit
+        {PLACEHOLDER, "Num DL Carriers", 0},    // 4 bits
+        {PLACEHOLDER, "DL Carrier Index", 0},    // 4 bits
+        {UINT, "n_1_pucch", 2},
+        {UINT, "Ack Nak Index", 2}, // 12 bits
+        {PLACEHOLDER, "Ack Nak Late", 0},   // 1 bit
+        {PLACEHOLDER, "Csf Late", 0},   // 1 bit
+        {PLACEHOLDER, "Dropped Pucch", 0},  // 1 bit
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
+};
+
+const Fmt LtePhyPucchTxReport_Payload_v142 [] = {
+        {UINT, "Serving Cell ID", 2},   // 9 bits
+        {PLACEHOLDER, "Number of Records", 0},  // 5 bits
+        {SKIP, NULL, 1},
+        {UINT, "Dispatch SFN SF", 2},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p1_v142 [] = {
+        {UINT, "Current SFN SF", 2},
+        {UINT, "CQI Payload", 2},
+        {UINT, "Carrier Index", 4}, // 2 bits
+        {PLACEHOLDER, "Format", 0}, // 3 bits, LtePucchPowerControl_Record_v4_PUCCH_Format
+        {PLACEHOLDER, "Start RB Slot 0", 0},    // 7 bits
+        {PLACEHOLDER, "Start RB Slot 1", 0},    // 7 bits
+        {PLACEHOLDER, "SRS Shorting for 2nd Slot", 0},  // 1 bit
+        {PLACEHOLDER, "UE SRS", 0}, // 1 bit
+        {PLACEHOLDER, "DMRS Seq Slot 0", 0},    // 5 bits
+        {PLACEHOLDER, "DMRS Seq Slot 1", 0},    // 5 bits
+};
+
+const Fmt LtePhyPucchTxReport_Record_CyclicShift_v142 [] = {
+        {UINT, "Cyclic Shift Seq per Symbol", 1},
+};
+
+const Fmt LtePhyPucchTxReport_Record_p2_v142 [] = {
+//add DL Carrier Index
+        {UINT, "PUCCH Digital Gain (dB)", 1},
+        {UINT, "PUCCH Tx Power (dBm)", 1},  // 6 bits
+
+        {BYTE_STREAM, "ACK Payload[0]",4},
+        {BYTE_STREAM, "ACK Payload[1]",4},
+        {BYTE_STREAM, "ACK Payload[2]",4},
+        {BYTE_STREAM, "ACK Payload[3]",4},
+
+        {UINT, "ACK Payload Length", 1}, // 5 bits
+        {PLACEHOLDER, "SR Bit FMT3", 0},    // 1 bit
+
+        {UINT, "Num DL Carriers", 2},    // 4 bits
+        {PLACEHOLDER, "DL Carrier Index", 0},    // 4 bits
+        {PLACEHOLDER, "Num RB",0},
+        {PLACEHOLDER, "CDM Index",0},
+        {SKIP,NULL,1},
+
+        {UINT, "n_1_pucch", 2},
+        {UINT, "Ack Nak Index", 2}, // 12 bits
+        {PLACEHOLDER, "Ack Nak Late", 0},   // 1 bit
+        {PLACEHOLDER, "Csf Late", 0},   // 1 bit
+        {PLACEHOLDER, "Dropped Pucch", 0},  // 1 bit
+        {UINT, "Tx Resampler", 4},  // X / 4294967295
 };
 
 const ValueName ValueNamePucchReportingMode_v22[] = {

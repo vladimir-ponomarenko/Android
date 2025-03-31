@@ -30,6 +30,9 @@
 #include "lte/phy/lte_phy_pucch_csf.h"
 #include "lte/phy/lte_phy_pusch_tx_report.h"
 #include "lte/phy/lte_phy_pusch_csf.h"
+#include "lte/lte_pusch_power_control.h"
+#include "lte/phy/lte_phy_pucch_tx_report.h"
+#include "lte/lte_pucch_power_control.h"
 #include "lte/phy/lte_phy_bplmn_cell_request.h"
 #include "lte/phy/lte_phy_bplmn_cell_confirm.h"
 #include "lte/phy/lte_phy_pdsch_demapper_configuration.h"
@@ -42,8 +45,6 @@
 #include "lte/mac/lte_mac_ul_txstatistics.h"
 #include "lte/mac/lte_mac_ul_bufferstatusinternal.h"
 #include "lte/nas/lte_nas_emm_state.h"
-#include "lte/lte_pucch_power_control.h"
-#include "lte/lte_pusch_power_control.h"
 #include "lte/nb1/lte_nb1_ml1_gm_tx_report.h"
 #include "lte/lte_pdsch_stat_indication.h"
 #include "wcdma_signaling_messages.h"
@@ -286,8 +287,8 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             offset += _decode_by_fmt(LtePhyPuschTxReport_Fmt,
                                      ARRAY_SIZE(LtePhyPuschTxReport_Fmt, Fmt),
                                      b, offset, length, jj);
+            offset += _decode_lte_phy_pusch_tx_report_payload(b, offset, length, jj);
             j["payload"]["LtePhyPuschTxReport"] = jj;
-            offset += _decode_lte_phy_pusch_tx_report_payload(b, offset, length, j["payload"]["LtePhyPuschTxReport"]);
             break;
         }
         case LTE_PHY_Inter_Freq_Log:
@@ -336,6 +337,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             offset += _decode_lte_pucch_power_control_payload(b, offset, length, jj);
             j["payload"]["LtePucchPowerControl"] = jj;
+            break;
+        }
+        case LTE_PHY_PUCCH_Tx_Report: {
+            LOGD("payload_decode: LTE_PHY_PUCCH_Tx_Report\n");
+            offset += _decode_by_fmt(LtePhyPucchTxReport_Fmt,
+                                     ARRAY_SIZE(LtePhyPucchTxReport_Fmt, Fmt),
+                                     b, offset, length, jj);
+            offset += _decode_lte_phy_pucch_tx_report_payload(b, offset, length, jj);
+            j["payload"]["LtePhyPucchTxReport"] = jj;
             break;
         }
         case LTE_PUSCH_Power_Control: {
