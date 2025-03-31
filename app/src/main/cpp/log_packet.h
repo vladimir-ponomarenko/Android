@@ -69,7 +69,13 @@ const ValueName ValueNameYesOrNo [] = {
         {1, "Yes"},
 };
 
-
+const ValueName RNTIType[] = {
+{0, "C-RNTI"},
+{2, "P-RNTI"},
+{3, "RA-RNTI"},
+{4, "Temporary-C-RNTI"},
+{5, "SI-RNTI"}
+};
 
 const Fmt WcdmaCellIdFmt [] = {
         {UINT, "Uplink RF channel number", 4},    //Uplink RF channel number

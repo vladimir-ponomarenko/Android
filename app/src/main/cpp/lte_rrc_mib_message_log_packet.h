@@ -1,5 +1,5 @@
 //
-// Created by User on 23.03.2025.
+// Created by Vladimir Ponomarenko on 23.03.2025.
 //
 
 #pragma once

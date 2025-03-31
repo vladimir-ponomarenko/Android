@@ -13,6 +13,7 @@
 #include "lte_rrc_mib_message_log_packet.h"
 #include "lte_phy_idle_neighbor_cell_meas.h"
 #include "lte_nb1_ml1_gm_tx_report.h"
+#include "lte_pdsch_stat_indication.h"
 #include "wcdma_signaling_messages.h"
 #include "srch_tng_1x_searcher_dump.h"
 
@@ -52,6 +53,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             j["payload"]["LtePhyIncm"] = jj;
             offset += _decode_lte_phy_idle_neighbor_cell_meas_payload(b, offset, length, j["payload"]["LtePhyIncm"]);
 
+            break;
+        }
+        case LTE_PDSCH_Stat_Indication: {
+            LOGD("payload_decode: LTE_PDSCH_Stat_Indication\n");
+            offset += _decode_by_fmt(LtePdschStatIndication_Fmt,
+                                     ARRAY_SIZE(LtePdschStatIndication_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePdschStatIndication"] = jj;
+            offset += _decode_lte_pdsch_stat_indication_payload(b, offset, length, j["payload"]["LtePdschStatIndication"]);
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
