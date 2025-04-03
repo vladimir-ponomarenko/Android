@@ -34,6 +34,7 @@
 #include "lte_mac_dl_transportblock.h"
 #include "lte_mac_ul_transportblock.h"
 #include "lte_mac_ul_txstatistics.h"
+#include "lte_mac_ul_bufferstatusinternal.h"
 #include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
 #include "lte_pusch_power_control.h"
@@ -428,6 +429,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                         length - header_consumed,
                         j["payload"]["LteMacConfiguration"]);
                 offset += subpackets_consumed;
+            }
+            break;
+        }
+        case LTE_MAC_UL_Buffer_Status_Internal: {
+            LOGD("payload_decode: LTE_MAC_UL_Buffer_Status_Internal\n");
+            offset += _decode_by_fmt(LteMacULBufferStatusInternalFmt,
+                                     ARRAY_SIZE(LteMacULBufferStatusInternalFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Num SubPkt") != jj.end()) {
+                j["payload"]["LteMacUlBufferStatusInternal"] = jj;
+                offset += _decode_lte_mac_ul_bufferstatusinternal_subpkt(b, offset, length, j["payload"]["LteMacUlBufferStatusInternal"]);
+            } else {
+                LOGD("Error decoding LTE_MAC_UL_Buffer_Status_Internal base header.");
+                j["payload"]["LteMacUlBufferStatusInternal"] = {{"error", "Failed to decode base header"}};
             }
             break;
         }

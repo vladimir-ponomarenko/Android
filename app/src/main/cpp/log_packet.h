@@ -1482,6 +1482,67 @@ const Fmt LteMacConfigurationSubpkt_All_Rach_Config_Cell_Info[] = {
         {UINT,       "RA rsp win size",                  1},
 };
 
+const Fmt LteMacULBufferStatusInternalFmt[] = {
+        {UINT, "Version",    1},
+        {UINT, "Num SubPkt", 1},
+        {SKIP, NULL,         2}
+};
+
+const Fmt LteMacULBufferStatusInternal_SubpktHeaderFmt[] = {
+        {UINT, "SubPacket ID",   1},
+        {UINT, "Version",        1},
+        {UINT, "SubPacket Size", 2},
+        {UINT, "Num Samples",    1}
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_SampleFmt[] = {
+        {UINT,        "Sub FN",                2},
+        {PLACEHOLDER, "Sys FN",                0},
+        {UINT,        "Number of active LCID", 1}
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_LCIDFmt[] = {
+        {UINT, "Ld Id",      1},
+        {UINT, "Priority",   1},
+        {UINT, "New bytes",  4},
+        {UINT, "Retx bytes", 4},
+        {UINT, "Ctrl bytes", 2},
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_SampleFmt_v24[] = {
+        {UINT,        "Sub Id",                1},
+        {UINT,        "Sub FN",                2},
+        {PLACEHOLDER, "Sys FN",                0},
+        {UINT,        "Number of active LCID", 1}
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_LCIDFmt_v24[] = {
+        {UINT,        "Ld Id",                  1},
+        {UINT,        "Priority",               1},
+        {UINT,        "New Uncompressed Bytes", 4},
+        {UINT,        "New Compressed Bytes",   4},
+        {UINT,        "Retx bytes",             4},
+        {UINT,        "Ctrl bytes",             2},
+        {PLACEHOLDER, "Total Bytes",            0},
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_SampleFmt_v5[] = {
+        {UINT,        "Sub FN",                2},
+        {PLACEHOLDER, "Sys FN",                0},
+        {UINT,        "Number of active LCID", 1}
+};
+
+const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_LCIDFmt_v5[] = {
+        {UINT,        "Ld Id",                  1},
+        {UINT,        "Priority",               1},
+        {UINT,        "New Uncompressed Bytes", 4},
+        {UINT,        "New Compressed Bytes",   4},
+        {UINT,        "Retx bytes",             4},
+        {UINT,        "Ctrl bytes",             2},
+        {PLACEHOLDER, "Total Bytes",            0},
+};
+
+
 const Fmt LteRrcOtaPacketFmt[] = {
         {UINT, "Pkt Version", 1},
         {UINT, "RRC Release Number", 1},
