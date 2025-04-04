@@ -11,18 +11,14 @@
 #include <android/log.h>
 #include "nlohmann/json.hpp"
 #include "consts.h"
+#include "utils.h"
 #include "log_packet_utils.h"
 
 using json = nlohmann::json;
 using namespace std;
 
 
-template <typename T>
-std::string SSTR(T X) {
-    std::ostringstream oss;
-    oss << X;
-    return oss.str();
-}
+
 
 
 static int _decode_lte_rlc_ul_am_all_pdu_subpkt(const char* b, int offset, size_t length, json& j) {

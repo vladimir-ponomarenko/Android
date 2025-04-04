@@ -124,6 +124,73 @@ const ValueName ValueNameCompandingStats[] = {
 };
 
 
+const Fmt LteRlcDlAmAllPduFmt[] = {
+        {UINT, "Version",              1},
+        {UINT, "Number of Subpackets", 1},
+        {SKIP, NULL,                   2},
+};
+
+const Fmt LteRlcDlAmAllPdu_SubpktHeader[] = {
+        {UINT, "Subpacket ID",      1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size",    2},
+};
+
+const Fmt LteRlcDlAmAllPdu_SubpktPayload[] = {
+        {UINT, "RB Cfg Idx",              1},
+        {UINT, "RB Mode",                 1},
+        {UINT, "SN Length",               1},
+        {SKIP, NULL,                      1},
+        {UINT, "Enabled PDU Log Packets", 2},
+        {UINT, "VR(R)",                   2},
+        {UINT, "VR(X)",                   2},
+        {UINT, "VR(MS)",                  2},
+        {UINT, "VR(H)",                   2},
+        {UINT, "Number of PDUs",          2},
+};
+const ValueName LteRlcDlAmAllPdu_Subpkt_RBMode[] = {
+        {1, "AM"},
+};
+
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_Basic[] = {
+        {PLACEHOLDER, "PDU TYPE",      0},
+        {PLACEHOLDER, "rb_cfg_idx",    0},
+        {PLACEHOLDER, "Status",        0},
+        {UINT,        "sys_fn",        2},
+        {PLACEHOLDER, "sub_fn",        0},
+        {UINT,        "pdu_bytes",     2},
+        {UINT,        "logged_bytes",  2},
+        {SKIP,        NULL,            1},
+        {UINT,        "D/C LookAhead", 1},
+        {UINT,        "SN",            1},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_Control[] = {
+        {PLACEHOLDER, "cpt", 0},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_NACK_ALLIGN[] = {
+        {UINT, "NACK_SN", 2},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_NACK_PADDING[] = {
+        {UINT, "NACK_SN", 1},
+};
+
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_DATA[] = {
+        {PLACEHOLDER, "RF", 0},
+        {PLACEHOLDER, "P",  0},
+        {PLACEHOLDER, "FI", 0},
+        {PLACEHOLDER, "E",  0},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_LI_ALLIGN[] = {
+        {UINT, "LI", 2},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_LI_PADDING[] = {
+        {UINT, "LI", 1},
+};
+const Fmt LteRlcDlAmAllPdu_Subpkt_PDU_LSF_SO[] = {
+        {UINT, "LSF", 1},
+        {UINT, "SO",  1},
+};
+
 const Fmt LteRlcUlAmAllPduFmt[] = {
         {UINT, "Version",              1},
         {UINT, "Number of Subpackets", 1},
