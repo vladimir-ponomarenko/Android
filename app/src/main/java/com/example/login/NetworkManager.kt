@@ -41,39 +41,60 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
         val request = Request.Builder()
-            .url("$serverUrl/signup")
+            .url("$serverUrl/api/v1/auth/signup")
             .post(requestBody)
             .addHeader("Accept", "application/json")
             .build()
 
-        Log.d(TAG, "Sending register request: ${request.body?.toString()}")
+        Log.d(TAG, "Sending register request to ${request.url}")
 
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to register user", e)
-                onComplete(null)
+                Log.e(TAG, "Failed to register user - Network Error", e)
+                (context as? Activity)?.runOnUiThread {
+                    onComplete(null)
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
-                    if (response.isSuccessful) {
+                    val responseBodyString = try {
+                        it.body?.string()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error reading response body", e)
+                        null
+                    }
+
+                    Log.d(TAG, "Raw Register Response Received. Code: ${it.code}")
+                    if (!responseBodyString.isNullOrBlank()) {
+                        Log.d(TAG, "Raw Register Response Body: $responseBodyString")
+                    } else {
+                        Log.w(TAG, "Register Response Body is null or empty")
+                    }
+
+                    if (it.isSuccessful && !responseBodyString.isNullOrBlank()) {
                         try {
-                            val responseBody = response.body?.string() ?: ""
-                            val json = Json { ignoreUnknownKeys = true }
-                            val registerResponse = json.decodeFromString<RegisterResponse>(responseBody)
-                            Log.d(TAG, "Register response: $registerResponse")
+                            val json = Json {
+                                ignoreUnknownKeys = true
+                                isLenient = true
+                            }
+
+                            val registerResponse = json.decodeFromString<RegisterResponse>(responseBodyString)
+
+                            Log.d(TAG, "Successfully parsed Register Response (fields might be null): $registerResponse")
+
                             (context as? Activity)?.runOnUiThread {
                                 onComplete(registerResponse)
                             }
                         } catch (e: Exception) {
-                            Log.e(TAG, "Failed to parse register response: ${e.message}", e)
+                            Log.e(TAG, "Failed to parse register response JSON.", e)
+                            Log.e(TAG, "Response body that failed parsing: $responseBodyString")
                             (context as? Activity)?.runOnUiThread {
                                 onComplete(null)
                             }
                         }
                     } else {
-                        val errorBody = response.body?.string()
-                        Log.e(TAG, "Failed to register user: ${response.code} - $errorBody")
+                        Log.e(TAG, "Failed to register user - Server Error or empty body. Code: ${it.code}, Body: $responseBodyString")
                         (context as? Activity)?.runOnUiThread {
                             onComplete(null)
                         }
@@ -91,77 +112,115 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed to verify token", e)
-                onComplete(false)
+                Log.e(TAG, "Failed to verify token (Network Error)", e)
+                (context as? Activity)?.runOnUiThread { onComplete(false) }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
-                    if (!response.isSuccessful) {
-                        Log.e(TAG, "Failed to verify token: ${response.code}")
-                        onComplete(false)
+                    val responseBody = try { it.body?.string() } catch (e: Exception) { null }
+                    if (!it.isSuccessful || responseBody.isNullOrBlank()) {
+                        Log.e(TAG, "Failed to verify token - Server Error or empty body. Code: ${it.code}, Body: $responseBody")
+                        (context as? Activity)?.runOnUiThread { onComplete(false) }
                         return@use
                     }
-                    val responseBody = response.body?.string()
-                    val jsonResponse = Json.decodeFromString<Map<String, String>>(responseBody ?: "")
-                    val result = jsonResponse["result"]
-                    onComplete(result == "valid")
+                    try {
+                        val json = Json { ignoreUnknownKeys = true; isLenient = true }
+                        val jsonResponse = json.decodeFromString<Map<String, String>>(responseBody)
+                        val result = jsonResponse["result"]
+                        Log.d(TAG, "Token verification result: $result")
+                        (context as? Activity)?.runOnUiThread {
+                            onComplete(result == "valid")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse verify token response JSON.", e)
+                        Log.e(TAG, "Verify token response body: $responseBody")
+                        (context as? Activity)?.runOnUiThread {
+                            onComplete(false)
+                        }
+                    }
                 }
             }
         })
     }
 
-    fun authenticateUser(email: String, password: String, token: String, onComplete: (AuthResponse?) -> Unit) {
-        verifyToken(token) { isValid ->
-            if (isValid) {
-                val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
-                val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
+    fun authenticateUser(email: String, password: String, token: String?, onComplete: (AuthResponse?) -> Unit) {
+        Log.d(TAG, "Attempting authentication for email: $email. Token provided: ${!token.isNullOrBlank()}")
 
-                val request = Request.Builder()
-                    .url("$serverUrl/signin")
-                    .header("Authorization", "Bearer $token")
-                    .post(requestBody)
-                    .build()
+        val jsonBody = Json.encodeToString(mapOf("email" to email, "password" to password))
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
-                httpClient.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        Log.e(TAG, "Failed to authenticate user (1)", e)
-                        onComplete(null)
+        val requestBuilder = Request.Builder()
+            .url("$serverUrl/api/v1/auth/signin")
+            .post(requestBody)
+            .addHeader("Accept", "application/json")
+
+        if (!token.isNullOrBlank()) {
+            Log.d(TAG, "Adding Authorization header to signin request.")
+            requestBuilder.header("Authorization", "Bearer $token")
+        } else {
+            Log.d(TAG, "Skipping Authorization header (token is null or blank).")
+        }
+        val request = requestBuilder.build()
+
+        Log.d(TAG, "Sending signin request to ${request.url}")
+
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "Failed to authenticate user (Network Error)", e)
+                (context as? Activity)?.runOnUiThread { onComplete(null) }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val responseBody = try { it.body?.string() } catch (e: Exception) { null }
+                    if (!it.isSuccessful || responseBody.isNullOrBlank()) {
+                        Log.e(TAG, "Failed to authenticate user - Server Error or empty body. Code: ${it.code}, Body: $responseBody")
+                        if (it.code == 401) {
+                            Log.e(TAG, "Authentication failed: Unauthorized (401). Check credentials or token.")
+                        }
+                        (context as? Activity)?.runOnUiThread { onComplete(null) }
+                        return@use
                     }
 
-                    override fun onResponse(call: Call, response: Response) {
-                        response.use {
-                            if (!response.isSuccessful) {
-                                if (response.code == 401) {
-                                    Log.e(TAG, "Failed to authenticate user: Unauthorized")
-                                } else {
-                                    Log.e(TAG, "Failed to authenticate user (2): ${response.code}")
-                                }
-                                onComplete(null)
-                                return@use
+                    try {
+                        val json = Json { ignoreUnknownKeys = true }
+                        val actualAuthResponse = json.decodeFromString<ActualAuthResponse>(responseBody)
+                        Log.d(TAG, "Successfully parsed actual auth response: $actualAuthResponse")
+
+
+                        val firstLog = actualAuthResponse.logs.firstOrNull()
+                        if (firstLog != null) {
+                            val userUuid = firstLog.user_uuid
+                            val accessToken = firstLog.access_token
+
+                            val compatibleAuthResponse = AuthResponse(
+                                email = email,
+                                jwt = accessToken,
+                                uuid = userUuid
+                            )
+
+                            Log.d(TAG, "Authentication successful. Passing compatible AuthResponse to callback: $compatibleAuthResponse")
+                            (context as? Activity)?.runOnUiThread {
+                                onComplete(compatibleAuthResponse)
                             }
-                            val responseBody = response.body?.string()
-                            try {
-                                val json = Json { ignoreUnknownKeys = true }
-                                val authResponse = json.decodeFromString<AuthResponse>(responseBody ?: "")
-                                Log.d(TAG, "Auth response: $authResponse")
-                                (context as? Activity)?.runOnUiThread {
-                                    onComplete(authResponse)
-                                }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Failed to parse auth response: ${e.message}")
-                                (context as? Activity)?.runOnUiThread {
-                                    onComplete(null)
-                                }
+                        } else {
+                            Log.e(TAG, "Authentication response parsed, but 'logs' array is empty. Cannot extract credentials.")
+                            Log.e(TAG, "Auth response body: $responseBody")
+                            (context as? Activity)?.runOnUiThread {
+                                onComplete(null)
                             }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse successful auth response: ${e.message}", e)
+                        Log.e(TAG, "Auth response body: $responseBody")
+                        (context as? Activity)?.runOnUiThread {
+                            onComplete(null)
+                        }
                     }
-                })
-            } else {
-                Log.e(TAG, "Token is invalid, cannot authenticate user")
-                onComplete(null)
+                }
             }
-        }
+        })
     }
 
     fun authenticateForTraffic(email: String, password: String): Deferred<AuthResponse?> = CoroutineScope(
@@ -171,7 +230,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         val requestBody = jsonBody.toRequestBody("application/json".toMediaTypeOrNull())
 
         val request = Request.Builder()
-            .url("$serverUrl/api/user/auth")
+            .url("$serverUrl/api/v1/auth/signin")
             .post(requestBody)
             .build()
 
@@ -274,7 +333,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendMessageToData2ToServer(messageToData2: MessageToData2, onComplete: ((Boolean) -> Unit)? = null) {
-        val endpoint = "/api/sockets/thermalmap"
+        val endpoint = "/ws/putdata"
 
         val modifiedJson = buildJsonObject {
             put("jwt", messageToData2.jwt)
@@ -351,7 +410,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
-        val endpoint = "/api/sockets/thermalmap"
+        val endpoint = "/ws/putdata"
         val jsonBody = try {
             val fileContent = File(filePath).readText()
             if (!fileContent.startsWith("[")) {
@@ -375,7 +434,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
             val request = Request.Builder()
-                .url("$serverUrl$endpoint")
+                .url("ws://109.172.114.128:3000/ws/putdata")
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {

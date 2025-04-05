@@ -12,6 +12,9 @@
 #include "lte_phy_serving_cell_meas_res.h"
 #include "lte_rrc_mib_message_log_packet.h"
 #include "lte_phy_idle_neighbor_cell_meas.h"
+#include "lte_phy_system_scan_results.h"
+#include "lte_phy_interlog.h"
+#include "lte_phy_pusch_tx_report.h"
 #include "lte_nb1_ml1_gm_tx_report.h"
 #include "lte_pdsch_stat_indication.h"
 #include "wcdma_signaling_messages.h"
@@ -62,6 +65,42 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["LtePdschStatIndication"] = jj;
             offset += _decode_lte_pdsch_stat_indication_payload(b, offset, length, j["payload"]["LtePdschStatIndication"]);
+            break;
+        }
+        case LTE_PHY_System_Scan_Results: {
+            LOGD("payload_decode: LTE_PHY_System_Scan_Results\n");
+            offset += _decode_by_fmt(LtePhySystemScanResults_Fmt,
+                                     ARRAY_SIZE(LtePhySystemScanResults_Fmt, Fmt),
+                                     b, offset, length, jj);
+
+            j["payload"]["LtePhySysScanResults"] = jj;
+
+            offset += _decode_lte_phy_system_scan_results_payload(
+                    b, offset,
+                    length,
+                    j["payload"]["LtePhySysScanResults"]
+            );
+            break;
+        }
+        case LTE_PHY_PUSCH_Tx_Report: {
+            LOGD("payload_decode: LTE_PHY_PUSCH_Tx_Report\n");
+            offset += _decode_by_fmt(LtePhyPuschTxReport_Fmt,
+                                     ARRAY_SIZE(LtePhyPuschTxReport_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePhyPuschTxReport"] = jj;
+            offset += _decode_lte_phy_pusch_tx_report_payload(b, offset, length, j["payload"]["LtePhyPuschTxReport"]);
+            break;
+        }
+        case LTE_PHY_Inter_Freq_Log:
+        {
+            LOGD("payload_decode: LTE_PHY_InterFreq_Log\n");
+
+            offset += _decode_by_fmt(LtePhyInterlogFmt,
+                                     ARRAY_SIZE(LtePhyInterlogFmt, Fmt),
+                                     b, offset, length, jj);
+
+            j["payload"]["LtePhyInterFreqLog"] = jj;
+            offset += _decode_lte_phy_interlog(b, offset, length, j["payload"]["LtePhyInterFreqLog"]);
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {

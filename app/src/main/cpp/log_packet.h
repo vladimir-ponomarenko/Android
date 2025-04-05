@@ -77,6 +77,51 @@ const ValueName RNTIType[] = {
 {5, "SI-RNTI"}
 };
 
+const ValueName ValueNameNumber[] = {
+        {0, "First"},
+        {1, "Second"},
+        {2, "Third"},
+        {3, "Fourth"},
+        {4, "Fifth"},
+        {5, "Sixth"},
+        {6, "Seventh"},
+        {7, "Eighth"},
+};
+
+const ValueName ValueNameCarrierIndex[] = {
+        // 4 bits
+        {0, "PCC"},
+        {1, "SCC"},
+        {2, "SCC-2"},
+};
+
+const Fmt LtePhyInterlogFmt [] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePhyInterlogFmt_v2_Header[] = {
+        {SKIP, NULL, 3},
+        {UINT, "Serving Cell E-ARFCN", 4},
+        {UINT, "Serving Physical Cell ID", 2},
+        {UINT, "Sub-frame Number", 2},
+        {RSRP, "RSRP(dBm)", 2},
+        {SKIP, NULL, 2},
+        {RSRQ, "RSRQ(dB)", 2},
+        {SKIP, NULL, 2},
+        {UINT, "E-ARFCN", 4},
+        {UINT, "Number of Neighbor Cells", 1},
+        {UINT, "Number of Detected Cells", 1},
+        {UINT, "Meas BW", 2}
+};
+
+const Fmt LtePhyInterlogFmt_v2_Neighbor_Cell[] = {
+        {UINT, "Physical Cell ID", 2},
+        {RSRP, "RSRP(dBm)", 2},
+        {SKIP, NULL, 2},
+        {RSRQ, "RSRQ(dB)", 2},
+        {SKIP, NULL, 4}
+};
+
 const Fmt WcdmaCellIdFmt [] = {
         {UINT, "Uplink RF channel number", 4},    //Uplink RF channel number
         {UINT, "Download RF channel number", 4},    //Download RF channel number

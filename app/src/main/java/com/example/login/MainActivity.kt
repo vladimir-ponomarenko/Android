@@ -83,9 +83,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.example.login.PermissionUtils.checkPermissions
-import com.example.login.PermissionUtils.checkPermissionsForAndroid12
-import com.example.login.PermissionUtils.checkPermissionsForAndroid13
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
@@ -93,7 +90,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.WebSocket
 import java.util.concurrent.TimeUnit
@@ -108,7 +104,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         const val TAG = "com.example.login.MainActivity"
         const val ACTION_STOP_MAIN_ACTIVITY = "com.example.login.stop_main_activity"
         const val UPDATE_INTERVAL = 2000L
-        private const val SERVER_URL = "http://109.172.114.128:8000"
+        private const val SERVER_URL = "http://109.172.114.128:3000"
 
         internal const val SHARED_PREFS_NAME = "login_prefs"
         private const val EMAIL_KEY = "email"
@@ -194,7 +190,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         state = MainActivityState(applicationContext)
-        networkManager = NetworkManager(this, SERVER_URL, "/api/sockets/thermalmap")
+        networkManager = NetworkManager(this, SERVER_URL, "/api/ws/putdata")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         DataManager.getLocation(this, state)
 //        startForegroundService()
@@ -593,20 +589,24 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            val allPermissionsGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-            permissionsGranted = allPermissionsGranted
 
-            setContent {
+        val allGrantedNow = checkAllPermissions(this)
+        this.permissionsGranted = allGrantedNow
+
+        setContent {
+            Box(modifier = Modifier.fillMaxSize()) {
+                SendingIndicator(isSendingData)
                 MainScreen(isSendingData, permissionsGranted)
             }
+        }
 
-            if (allPermissionsGranted) {
-                Log.d(TAG, "All permissions granted")
-                startForegroundService()
-            } else {
-                Log.d(TAG, "Permissions not granted")
-            }
+        if (allGrantedNow) {
+            Log.d(TAG, "All required permissions are now granted.")
+            DataManager.resetLocationRequestState()
+            startForegroundService()
+        } else {
+            Log.w(TAG, "Not all required permissions were granted after request.")
+            stopForegroundService()
         }
     }
 
@@ -652,16 +652,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     ) {
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
-        var permissionsGranted by remember {
-            mutableStateOf(
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) checkPermissions(context)
-                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    checkPermissionsForAndroid13(context)
-                } else {
-                    checkPermissionsForAndroid12(context)
-                }
-            )
-        }
+        // val currentPermissionsGranted = this@MainActivity.permissionsGranted
+
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
 
@@ -678,12 +670,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
 
         LaunchedEffect(context) {
-            permissionsGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
-                checkPermissions(context)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                checkPermissionsForAndroid13(context)
-            } else {
-                checkPermissionsForAndroid12(context)
+            val checkedPermissions = checkAllPermissions(context)
+            if (this@MainActivity.permissionsGranted != checkedPermissions) {
+                this@MainActivity.permissionsGranted = checkedPermissions
             }
         }
 
@@ -691,16 +680,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Scaffold(
                 scaffoldState = scaffoldState
             ) { innerPadding ->
-                if (permissionsGranted) {
-                    LaunchedEffect(Unit, isDataCollectionEnabled) {
-                        while (isActive && isDataCollectionEnabled) {
-                            DataManager.getLocation(this@MainActivity, state)
-                            DataManager.getSignalStrength(state)
-                            DataManager.getCellInfo(context, state)
-                            delay(UPDATE_INTERVAL)
-                        }
-                    }
-
+                if (this@MainActivity.permissionsGranted) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -715,16 +695,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                     coroutineScope.launch {
                                         if (!state.isSendingCellInfoData) {
                                             state.isSendingCellInfoData = true
-
-                                            MainActivity.networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
+                                            networkManager.authenticateUser(state.Email, state.Password, state.JwtToken) { authResponse ->
                                                 if (authResponse != null) {
-                                                    (context as? Activity)?.runOnUiThread {
+                                                    runOnUiThread {
                                                         state.JwtToken = authResponse.jwt
                                                         state.Uuid = authResponse.uuid
                                                         state.saveLoginData()
                                                     }
                                                 } else {
-                                                    Log.e(MainActivity.TAG, "Authentication failed")
+                                                    Log.e(TAG, "Authentication failed")
                                                     state.isSendingCellInfoData = false
                                                 }
                                             }
@@ -736,18 +715,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 onBackClick = { onTabSelected(5) }
                             )
                             1 -> DataScreen(state, onNavigateTo = onTabSelected)
-//                         2 -> RSRPGraph(state)
                             2 -> MapScreen(state, onNavigateTo = onTabSelected)
                             3 -> TrafficScreen(state, onNavigateTo = onTabSelected)
-                            4 -> SettingsScreen(state, onNavigateTo = { index, uuid, jwtToken -> onTabSelected(index)})
+                            4 -> SettingsScreen(state, onNavigateTo = { index, _, _ -> onTabSelected(index)})
                             5 -> NavigationScreen(onNavigateTo = onTabSelected)
                             7 -> DataSendingScreen(state, onNavigateTo = onTabSelected, onCellInfoDataClick  = {})
                         }
                     }
-                }
-                else {
+                } else {
                     PermissionRequestButtons(context) { allGranted ->
-                        permissionsGranted = allGranted
+                        Log.d(TAG, "PermissionRequestButtons callback: All granted = $allGranted")
+                        // this@MainActivity.permissionsGranted = allGranted
                     }
                 }
             }

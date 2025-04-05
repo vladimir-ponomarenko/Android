@@ -260,7 +260,7 @@ bool _diag_switch_logging(int fd_val, int log_mode) {
 
     LOGD("_diag_switch_logging: Trying sequential ioctl calls, starting with newest.");
 
-    LOGD("Trying Android 10/11 struct (q)");
+    LOGD("Trying Android 10 - 14 struct (q)");
     struct diag_logging_mode_param_t_q mode_q;
     memset(&mode_q, 0, sizeof(mode_q));
     mode_q.req_mode = log_mode;
@@ -273,10 +273,10 @@ bool _diag_switch_logging(int fd_val, int log_mode) {
     mode_q.device_mask = (1 << DIAG_MD_LOCAL);
     ret = ioctl(fd_val, DIAG_IOCTL_SWITCH_LOGGING, &mode_q);
     if (ret >= 0) {
-        LOGI("Android 10/11 ioctl (struct q) succeeded (ret=%d).", ret);
+        LOGI("Android 10 - 14  ioctl (struct q) succeeded (ret=%d).", ret);
         return true;
     }
-    LOGW("Android 10/11 ioctl (struct q) failed: %s (errno %d)", strerror(errno), errno);
+    LOGW("Android 10 - 14  ioctl (struct q) failed: %s (errno %d)", strerror(errno), errno);
 
 
     LOGD("Trying Android 9 struct (pie)");
@@ -740,7 +740,6 @@ Java_com_example_login_DiagRevealerControl_stopDiag(
         must_stop = true;
         int current_fd = fd_atomic.load();
         if (current_fd >= 0) {
-            // Здесь можно добавить логику посылки сигнала потоку t2h, если он сохранен
             // pthread_kill(t2h, SIGUSR2);
         }
     }

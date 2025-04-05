@@ -2,6 +2,7 @@ package com.example.login
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -129,17 +130,25 @@ fun LoginScreen(
                     coroutineScope.launch {
                         MainActivity.networkManager.registerUser(email, password) { response ->
                             if (response != null) {
-                                jwtToken = response.jwt
-                                uuid = response.uuid
-                                state.JwtToken = response.jwt
-                                state.Uuid = response.uuid
+                                val receivedJwt = response.jwt ?: ""
+                                val receivedUuid = response.uuid ?: ""
+
+                                Log.d("LoginScreen", "Registration successful. Message: ${response.message}. JWT received: ${receivedJwt.isNotEmpty()}, UUID received: ${receivedUuid.isNotEmpty()}")
+
+                                state.JwtToken = receivedJwt
+                                state.Uuid = receivedUuid
                                 state.Email = email
                                 state.Password = password
                                 state.RememberMe = rememberMe
                                 state.saveLoginData()
+
                                 showSuccessMessage = true
+                                showErrorMessage = false
                                 showRegistration = false
+
                             } else {
+                                Log.e("LoginScreen", "Registration failed: Network error or invalid response from server.")
+                                showSuccessMessage = false
                                 showErrorMessage = true
                             }
                         }
@@ -152,20 +161,44 @@ fun LoginScreen(
                 onEmailChange = { email = it.replace(" ", "") },
                 password = password,
                 onPasswordChange = { password = it.replace(" ", "") },
-                jwtToken = jwtToken,
-                onJwtTokenChange = { jwtToken = it.replace(" ", "") },
-                uuid = uuid,
-                onUuidChange = { uuid = it.replace(" ", "") },
+                jwtToken = state.JwtToken,
+                onJwtTokenChange = { state.JwtToken = it.replace(" ", "") },
+                uuid = state.Uuid,
+                onUuidChange = { state.Uuid = it.replace(" ", "") },
                 rememberMe = rememberMe,
                 onRememberMeChange = {
                     rememberMe = it
-                    with(sharedPreferences.edit()) {
+                    state.RememberMe = it
+                    val prefs = context.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                    with(prefs.edit()) {
                         putBoolean(MainActivity.REMEMBER_ME_KEY, it)
                         apply()
                     }
                 },
-                onCellInfoDataClick = onCellInfoDataClick,
-                onShowRegistrationClick = { showRegistration = true }
+                onCellInfoDataClick = {
+                    coroutineScope.launch {
+                        MainActivity.networkManager.authenticateUser(email, password, state.JwtToken) { authResponse ->
+                            if (authResponse != null) {
+                                Log.d("LoginScreen", "Authentication successful: ${authResponse.jwt}")
+                                state.Email = email
+                                state.Password = password
+                                state.JwtToken = authResponse.jwt
+                                state.Uuid = authResponse.uuid
+                                state.RememberMe = rememberMe
+                                state.saveLoginData()
+                                onLoginSuccess()
+                            } else {
+                                Log.e("LoginScreen", "Authentication failed.")
+                                showErrorMessage = true
+                            }
+                        }
+                    }
+                },
+                onShowRegistrationClick = {
+                    showRegistration = true
+                    showSuccessMessage = false
+                    showErrorMessage = false
+                }
             )
         }
         if (showSuccessMessage) {
@@ -517,7 +550,8 @@ fun LoginForm(
                         textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565),
                         focusedBorderColor = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF9E9E9E),
                         unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0x809E9E9E)
-                    )
+                    ),
+                    singleLine = true
                 )
             }
 
@@ -546,7 +580,8 @@ fun LoginForm(
                         textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF656565),
                         focusedBorderColor = if (isDarkTheme) Color(0xD9FFFFFF) else Color(0xFF9E9E9E),
                         unfocusedBorderColor = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0x809E9E9E)
-                    )
+                    ),
+                    singleLine = true
                 )
             }
 
@@ -571,7 +606,7 @@ fun LoginForm(
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Text(
-                    text = stringResource(id = R.string.send_cell_info),
+                    text = stringResource(id = R.string.auth),
                     color = Color.White
                 )
             }

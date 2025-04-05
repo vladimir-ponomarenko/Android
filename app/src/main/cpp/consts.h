@@ -128,6 +128,7 @@ enum LogPacketType {
     LTE_PHY_RLM_Report 										= 0xB18A,
     LTE_PHY_System_Scan_Results 							= 0xB18E,
     LTE_PHY_Idle_Neighbor_Cell_Meas 						= 0xB192,
+    LTE_PHY_Inter_Freq_Log = 0xB19E,
     LTE_PHY_Serving_Cell_Measurement_Result 				= 0xB193,
     LTE_PHY_Connected_Mode_Neighbor_Meas_Req_Resp 			= 0xB195,
     LTE_PHY_CDRX_Events_Info 								= 0xB198,
@@ -153,7 +154,7 @@ enum LogPacketType {
     Modem_debug_message 									= 0x1FEB,
 };
 
-const array<PktValueName, 80> LogPacketTypeID_To_Name = {{
+const array<PktValueName, 81> LogPacketTypeID_To_Name = {{
     {CDMA_Paging_Channel_Message,                       "CDMA_Paging_Channel_Message", true},
     {_1xEV_Connection_Attempt,                          "1xEV_Connection_Attempt", true},
     {_1xEV_Connection_Release,                          "1xEV_Connection_Release", true},
@@ -204,7 +205,7 @@ const array<PktValueName, 80> LogPacketTypeID_To_Name = {{
     {LTE_MAC_UL_Transport_Block,                         "LTE_MAC_UL_Transport_Block", true},
     {LTE_MAC_DL_Transport_Block,                         "LTE_MAC_DL_Transport_Block", true},
     {LTE_MAC_UL_Buffer_Status_Internal,                  "LTE_MAC_UL_Buffer_Status_Internal", true},
-    {LTE_MAC_UL_Tx_Statistics,                           "LTE_MAC_UL_Tx_Statistics", true},
+        {LTE_MAC_UL_Tx_Statistics,                           "LTE_MAC_UL_Tx_Statistics", true},
 
     {LTE_RLC_UL_Config_Log_Packet,                       "LTE_RLC_UL_Config_Log_Packet", true},
     {LTE_RLC_DL_Config_Log_Packet,                       "LTE_RLC_DL_Config_Log_Packet", true},
@@ -224,6 +225,7 @@ const array<PktValueName, 80> LogPacketTypeID_To_Name = {{
     {LTE_PHY_RLM_Report,                                 "LTE_PHY_RLM_Report", true},
     {LTE_PHY_System_Scan_Results,                        "LTE_PHY_System_Scan_Results", true},
     {LTE_PHY_Idle_Neighbor_Cell_Meas,                    "LTE_PHY_Idle_Neighbor_Cell_Meas", true},
+    {LTE_PHY_Inter_Freq_Log,                            "LTE_PHY_Inter_Freq_Log", true},
     {LTE_PHY_Serving_Cell_Measurement_Result,            "LTE_PHY_Serv_Cell_Measurement", true},
     {LTE_PHY_Connected_Mode_Neighbor_Meas_Req_Resp,      "LTE_PHY_Connected_Mode_Neighbor_Measurement", true},
     {LTE_PHY_CDRX_Events_Info,                           "LTE_RRC_CDRX_Events_Info", true},
@@ -252,4 +254,4 @@ const array<PktValueName, 80> LogPacketTypeID_To_Name = {{
 
 
 
-#endif //SIGNAL_CONSTS_ЯH
+#endif //SIGNAL_CONSTS_H

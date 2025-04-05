@@ -13,7 +13,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import com.example.login.MainActivity.Companion.ACTION_STOP_MAIN_ACTIVITY
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,56 +38,84 @@ class ForegroundService : Service() {
             action = ACTION_STOP_SERVICE
         }
         val stopPendingIntent = PendingIntent.getService(
-            this,
-            0,
-            stopIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         if (intent?.action == ACTION_STOP_SERVICE) {
+            Log.d(TAG, "Received stop action.")
             stopForeground(true)
             stopSelf()
-
-            val stopMainActivityIntent = Intent(ACTION_STOP_MAIN_ACTIVITY)
-//            sendBroadcast(stopMainActivityIntent)
             serviceScope.cancel()
-            System.exit(0)
+            job?.cancel()
+            // DataManager.stopLocationUpdates()
+            Log.d(TAG, "Service stopped via action.")
             return START_NOT_STICKY
         }
 
         val notification = createNotification(stopPendingIntent).build()
         startForeground(NOTIFICATION_ID, notification)
+        Log.d(TAG, "Foreground service started.")
 
         if (dataCollectionJob == null || !dataCollectionJob!!.isActive) {
+            Log.d(TAG, "Starting data collection job...")
             dataCollectionJob = serviceScope.launch {
+                try {
+                    val initialState = MainActivity.state
+                    DataManager.getLocation(applicationContext, initialState)
+                    Log.d(TAG, "Initial getLocation call finished (request possibly initiated). Starting loop.")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during initial getLocation call", e)
+                }
+
                 while (isActive) {
                     try {
                         val state = MainActivity.state
-                        DataManager.getLocation(applicationContext, state)
-                        DataManager.getSignalStrength(state)
 
+                        DataManager.getSignalStrength(state)
                         updateNotification(state, stopPendingIntent)
 
                         Handler(Looper.getMainLooper()).post {
                             DataManager.getCellInfo(applicationContext, state)
                         }
+
+                    } catch (e: SecurityException) {
+                        Log.e(TAG, "Permission error in data collection loop: ${e.message}")
+                        // stopSelf()
+                        // cancel()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error in ForegroundService: ", e)
+                        Log.e(TAG, "Error in ForegroundService data collection loop: ", e)
                     }
                     delay(2000)
                 }
+                Log.d(TAG, "Data collection job finished.")
             }
-        }
-        job = CoroutineScope(Dispatchers.IO).launch {
-            while (isActive) {
-                val messageToData2 = MainActivity.state.messageToData2
-                if (messageToData2 != null) {
-                    DataManager.saveCellInfoToJsonFile(this@ForegroundService, messageToData2)
-                }
-                delay(MainActivity.UPDATE_INTERVAL)
-            }
+        } else {
+            Log.d(TAG, "Data collection job already active.")
         }
 
+        if (job == null || !job!!.isActive) {
+            Log.d(TAG, "Starting file saving job...")
+            job = CoroutineScope(Dispatchers.IO).launch {
+                while (isActive) {
+                    val messageToData2 = MainActivity.state.messageToData2
+                    if (messageToData2 != null) {
+                        if (messageToData2.latitude != 0.0 || messageToData2.longitude != 0.0) {
+                            try {
+                                DataManager.saveCellInfoToJsonFile(this@ForegroundService, messageToData2)
+                            } catch(e: Exception) {
+                                Log.e(TAG, "Error saving to file in loop: ", e)
+                            }
+                        } else {
+                            Log.w(TAG, "Skipping save to file due to missing location data.")
+                        }
+                    }
+                    delay(MainActivity.UPDATE_INTERVAL)
+                }
+                Log.d(TAG, "File saving job finished.")
+            }
+        } else {
+            Log.d(TAG, "File saving job already active.")
+        }
 
         return START_STICKY
     }
@@ -99,9 +126,11 @@ class ForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.cancel()
-        job?.cancel()
-        Log.d(TAG, "ForegroundService stopped")
+        Log.d(TAG, "ForegroundService stopping...")
+        DataManager.stopLocationUpdates()
+        serviceScope.cancel("ForegroundService destroyed")
+        job?.cancel("ForegroundService destroyed")
+        Log.d(TAG, "ForegroundService stopped and cleaned up.")
     }
 
     private fun createNotificationChannel() {
@@ -132,7 +161,7 @@ class ForegroundService : Service() {
             .setContentIntent(pendingIntent)
             .addAction(
                 R.drawable.ic_launcher_foreground,
-                "Stop",
+                "Stop foreground work",
                 stopPendingIntent
             )
             .setOnlyAlertOnce(true)

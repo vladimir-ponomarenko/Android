@@ -7,6 +7,7 @@
     <string name="jwt_token_label">JWT Токен</string>
     <string name="remember_me">Запомнить меня</string>
     <string name="send_cell_info">Отправить файл</string>
+    <string name="auth">Авторизация</string>
     <string name="stop_recording">Остановить запись</string>
     <string name="resume_recording">Запись в файл</string>
     <string name="resume_recording_description">Начать или остановить запись</string>
@@ -56,7 +57,7 @@
     <string name="wifi">Wi-Fi:</string>
     <string name="downlink">Прием:</string>
     <string name="uplink">Отправка:</string>
-    <string name="hourly_traffic_for_app">Часовой трафик для %1$s</string> <!-- %1$s - это placeholder для имени приложения -->
+    <string name="hourly_traffic_for_app">Часовой трафик для %1$s</string>
     <string name="total_hourly_traffic">Общий часовой трафик</string>
     <string name="show_chart">Показать график</string>
     <string name="show_diagram">Показать диаграмму</string>

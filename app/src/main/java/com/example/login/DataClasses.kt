@@ -33,13 +33,41 @@ data class MessageData(
     val physcellid: Long
 )
 
+// Временные поля
+// -----------------------------------------------------------------------
 @Serializable
 data class RegisterResponse(
-    val email: String,
-    val jwt: String,
-    val message: String,
-    val uuid: String
+    val email: String? = null,
+    val jwt: String? = null,
+    val uuid: String? = null,
+    val message: String
 )
+
+@Serializable
+data class AuthLog(
+    val user_uuid: String,
+    val access_token: String,
+    val refresh_token: String? = null
+)
+
+@Serializable
+data class ApiResponseMeta(
+    val request_id: String? = null,
+    val timestamp: String? = null,
+    val url: String? = null,
+    val gateway_id: String? = null
+)
+
+@Serializable
+data class ActualAuthResponse(
+    val status: String,
+    val code: Int,
+    val message: String,
+    val logs: List<AuthLog>,
+    val meta: ApiResponseMeta? = null
+)
+
+// -----------------------------------------------------------------------
 
 @Serializable
 data class AuthResponse(

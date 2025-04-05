@@ -11,6 +11,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Build
+import android.os.Looper
 import android.telephony.CellIdentityNr
 import android.telephony.CellInfo
 import android.telephony.CellInfoCdma
@@ -30,8 +31,8 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -56,6 +57,9 @@ object DataManager {
     private var locationCallback: LocationCallback? = null
     private var locationUpdatesCount = 0
     private const val MAX_LOCATION_UPDATES = 1
+    private var fusedLocationClient: FusedLocationProviderClient? = null
+    private var locationCallbackInstance: LocationCallback? = null
+    private var isLocationUpdatesActive = false
 
     private var fileCounter = 1
     private val maxFileCount = 10
@@ -81,156 +85,166 @@ object DataManager {
     val orientationAngles = FloatArray(3)
 
     @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
     fun getLocation(activity: Context, state: MainActivity.MainActivityState) {
         val context = activity.applicationContext
-        Log.d(MainActivity.TAG, "getLocation() called")
+        Log.d(TAG, "getLocation() called. Updates active: $isLocationUpdatesActive")
 
-//        if (ContextCompat.checkSelfPermission(
-//                context,
-//                Manifest.permission.ACCESS_FINE_LOCATION
-//            ) != PackageManager.PERMISSION_GRANTED
-//        ) {
-//            ActivityCompat.requestPermissions(
-//                activity as Activity,
-//                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-//                LOCATION_PERMISSION_REQUEST_CODE
-//            )
-//            return
-//        }
-
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.d(MainActivity.TAG, "No permission to access coarse location")
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Location permissions missing. Cannot get location.")
             return
         }
 
-        val locationRequest = LocationRequest.create().apply {
-            interval = 10000
-            fastestInterval = 5000
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        if (fusedLocationClient == null) {
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            Log.d(TAG, "FusedLocationProviderClient initialized.")
         }
 
-        val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
-        val cancellationTokenSource = CancellationTokenSource()
+        fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
+            location?.let {
+                Log.d(TAG, "Last known location received: Lat=${it.latitude}, Lon=${it.longitude}, Alt=${it.altitude}")
+                state.Altitude = it.altitude.toString()
+                if (state.Latitude.isEmpty()) state.Latitude = it.latitude.toString()
+                if (state.Longtitude.isEmpty()) state.Longtitude = it.longitude.toString()
+            } ?: Log.d(TAG, "Last known location is null.")
+        }?.addOnFailureListener { e ->
+            Log.e(TAG, "Failed to get last known location", e)
+        }
 
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let it@{
-                Log.d(MainActivity.TAG, "Location received: Lat=${location.latitude}, Lon=${location.longitude}, Alt=${location.altitude}")
-                state.Altitude = location.altitude.toString()
-                if (isOrientationReady) {
-                    val adjustedLocation = adjustLocationWithOrientation(location)
-                    state.Latitude = adjustedLocation.latitude.toString()
-                    state.Longtitude = adjustedLocation.longitude.toString()
-                } else {
-                    state.Latitude = location.latitude.toString()
-                    state.Longtitude = location.longitude.toString()
-                }
+        if (!isLocationUpdatesActive) {
+            Log.d(TAG, "Location updates are not active. Requesting...")
+
+            val locationRequest = LocationRequest.create().apply {
+                interval = 0
+                fastestInterval = 0
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+                smallestDisplacement = 0f
             }
-        }.addOnFailureListener { e ->
-            Log.e(MainActivity.TAG, "Failed to get last known location", e)
-        }
 
-        if (locationUpdatesCount < MAX_LOCATION_UPDATES) {
-            locationUpdatesCount++
-            fusedLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
-                .addOnSuccessListener { location: Location? ->
-                    location?.let {
-                        if (isOrientationReady) {
-                            val adjustedLocation = adjustLocationWithOrientation(location)
-                            state.Latitude = adjustedLocation.latitude.toString()
-                            state.Longtitude = adjustedLocation.longitude.toString()
-                            state.Altitude = adjustedLocation.altitude.toString()
-                            Log.d(
-                                MainActivity.TAG,
-                                "Location updated: Lat=${state.Latitude}, Lon=${state.Longtitude}, Alt=${state.Altitude}"
-                            )
-                        } else {
-                            state.Latitude = location.latitude.toString()
-                            state.Longtitude = location.longitude.toString()
-                            state.Altitude = location.altitude.toString()
-                            Log.d(
-                                MainActivity.TAG,
-                                "Location updated (no orientation): Lat=${state.Latitude}, Lon=${state.Longtitude}, Alt=${state.Altitude}"
-                            )
-                        }
+            if (locationCallbackInstance == null) {
+                locationCallbackInstance = object : LocationCallback() {
+                    override fun onLocationResult(locationResult: LocationResult) {
+                        super.onLocationResult(locationResult)
+                        val currentTime = System.currentTimeMillis()
+                        locationResult.lastLocation?.let { location ->
+                            Log.d(TAG,"[Callback @${currentTime}] Location Result: Lat=${location.latitude}, Lon=${location.longitude}, Alt=${location.altitude}")
+                            if (isOrientationReady) {
+                                val adjustedLocation = adjustLocationWithOrientation(location)
+                                state.Latitude = adjustedLocation.latitude.toString()
+                                state.Longtitude = adjustedLocation.longitude.toString()
+                                state.Altitude = adjustedLocation.altitude.toString()
+                            } else {
+                                state.Latitude = location.latitude.toString()
+                                state.Longtitude = location.longitude.toString()
+                                state.Altitude = location.altitude.toString()
+                            }
+                        } ?: Log.w(TAG, "[Callback @${currentTime}] LocationResult received but lastLocation is null")
                     }
                 }
-                .addOnFailureListener { e ->
-                    Log.e(MainActivity.TAG, "Failed to get current location", e)
-                }
+                Log.d(TAG, "Created new LocationCallback instance.")
+            }
+
+            try {
+                fusedLocationClient?.requestLocationUpdates(locationRequest, locationCallbackInstance!!, Looper.getMainLooper())
+                isLocationUpdatesActive = true
+                Log.d(TAG, "Successfully requested location updates.")
+
+                initializeAndRegisterSensors(context)
+
+            } catch (e: SecurityException) {
+                Log.e(TAG, "SecurityException during requestLocationUpdates. Permissions might have been revoked.", e)
+                isLocationUpdatesActive = false
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception during requestLocationUpdates", e)
+                isLocationUpdatesActive = false
+            }
         } else {
-            Log.w(TAG, "Maximum number of location updates reached.")
+            if (System.currentTimeMillis() % 10000 < 50) {
+                Log.v(TAG, "Location updates are already active.")
+            }
+        }
+    }
+
+    private fun initializeAndRegisterSensors(context: Context) {
+        if (!::sensorManager.isInitialized) {
+            sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+            magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+            rotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            Log.d(TAG, "SensorManager and sensors initialized.")
+        } else {
+            Log.d(TAG, "SensorManager already initialized.")
         }
 
-        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-        rotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        Log.d(TAG, "Registering sensor listeners...")
+        accelerometer?.let { sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        magnetometer?.let { sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        rotationVector?.let { sensorManager.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_NORMAL) }
+    }
 
-        sensorManager.registerListener(
-            sensorListener,
-            accelerometer,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-        sensorManager.registerListener(
-            sensorListener,
-            magnetometer,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-        sensorManager.registerListener(
-            sensorListener,
-            rotationVector,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+    fun stopLocationUpdates() {
+        if (isLocationUpdatesActive) {
+            Log.d(TAG, "Stopping location updates...")
+            if (fusedLocationClient != null && locationCallbackInstance != null) {
+                try {
+                    fusedLocationClient?.removeLocationUpdates(locationCallbackInstance!!)
+                    Log.d(TAG, "Successfully removed location updates.")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error removing location updates", e)
+                }
+            }
+            isLocationUpdatesActive = false
+        } else {
+            Log.d(TAG, "Location updates were not active.")
+        }
+
+        if (::sensorManager.isInitialized) {
+            Log.d(TAG, "Unregistering sensor listeners...")
+            sensorManager.unregisterListener(sensorListener)
+        }
+        isOrientationReady = false
+        lastAccelerometerReading = null
+        lastMagnetometerReading = null
+        lastRotationVectorReading = null
+        Log.d(TAG, "Sensor listeners unregistered and orientation state reset.")
+    }
+
+    fun resetLocationRequestState() {
+        Log.d(TAG, "Resetting location request state...")
+        stopLocationUpdates()
+        locationCallbackInstance = null
+        // fusedLocationClient = null
+        Log.d(TAG, "Location request state has been reset.")
     }
 
 
     internal val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when (event.sensor.type) {
-                Sensor.TYPE_ACCELEROMETER -> {
-                    lastAccelerometerReading = event.values.clone()
-                }
-                Sensor.TYPE_MAGNETIC_FIELD -> {
-                    lastMagnetometerReading = event.values.clone()
-                }
-                Sensor.TYPE_ROTATION_VECTOR -> {
-                    lastRotationVectorReading = event.values.clone()
-                }
+                Sensor.TYPE_ACCELEROMETER -> lastAccelerometerReading = event.values.clone()
+                Sensor.TYPE_MAGNETIC_FIELD -> lastMagnetometerReading = event.values.clone()
+                Sensor.TYPE_ROTATION_VECTOR -> lastRotationVectorReading = event.values.clone()
             }
-
             if (lastAccelerometerReading != null && lastMagnetometerReading != null) {
-                SensorManager.getRotationMatrix(
-                    rotationMatrix,
-                    null,
-                    lastAccelerometerReading,
-                    lastMagnetometerReading
-                )
+                SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometerReading, lastMagnetometerReading)
                 isOrientationReady = true
             } else if (lastRotationVectorReading != null) {
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, lastRotationVectorReading)
                 isOrientationReady = true
             }
         }
-
-        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-        }
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) { }
     }
 
     internal fun adjustLocationWithOrientation(location: Location): Location {
         SensorManager.getOrientation(rotationMatrix, orientationAngles)
-        val azimuth = Math.toRadians(orientationAngles[0].toDouble()) // Угол поворота вокруг оси Z (азимут)
-
-        val adjustedLatitude = location.latitude + Math.sin(azimuth) * 0.00001 //смещение на 1 метр
-        val adjustedLongitude = location.longitude + Math.cos(azimuth) * 0.00001 //смещение на 1 метр
-
+        val azimuth = Math.toRadians(orientationAngles[0].toDouble())
+        val adjustedLatitude = location.latitude + Math.sin(azimuth) * 0.00001
+        val adjustedLongitude = location.longitude + Math.cos(azimuth) * 0.00001
         val adjustedLocation = Location(location)
         adjustedLocation.latitude = adjustedLatitude
         adjustedLocation.longitude = adjustedLongitude
-
         return adjustedLocation
     }
     @RequiresApi(Build.VERSION_CODES.O)
