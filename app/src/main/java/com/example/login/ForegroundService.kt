@@ -48,6 +48,8 @@ class ForegroundService : Service() {
             serviceScope.cancel()
             job?.cancel()
             // DataManager.stopLocationUpdates()
+            Log.d(TAG, "Terminating application process via System.exit(0).")
+            System.exit(0)
             Log.d(TAG, "Service stopped via action.")
             return START_NOT_STICKY
         }
@@ -161,7 +163,7 @@ class ForegroundService : Service() {
             .setContentIntent(pendingIntent)
             .addAction(
                 R.drawable.ic_launcher_foreground,
-                "Stop foreground work",
+                "Exit application",
                 stopPendingIntent
             )
             .setOnlyAlertOnce(true)

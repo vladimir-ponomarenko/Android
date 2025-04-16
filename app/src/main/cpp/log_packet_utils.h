@@ -11,6 +11,16 @@
 using json = nlohmann::json;
 using namespace std;
 
+static std::string bytes_to_hex_string(const char* data, size_t len) {
+    std::stringstream ss;
+    ss << "0x";
+    ss << std::hex << std::setfill('0');
+    for (size_t i = 0; i < len; ++i) {
+        ss << std::setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(data[i]));
+    }
+    return ss.str();
+}
+
 static int
 _decode_by_fmt (const Fmt fmt [], int n_fmt,
                 const char *b, int offset, int length,
@@ -187,7 +197,7 @@ _decode_by_fmt (const Fmt fmt [], int n_fmt,
                 // (0.0625 * x - 180) dBm
                 if(fmt[i].len == 2) {
                     short val = *((short *) p);
-                    sprintf(str, "f", val * 0.0625 - 180);
+                    sprintf(str, "%f", val * 0.0625 - 180);
                     j[fmt[i].field_name] = str;
                     n_consumed += fmt[i].len;
                 }else{
@@ -201,7 +211,7 @@ _decode_by_fmt (const Fmt fmt [], int n_fmt,
                 // (0.0625 * x - 30) dB
                 if(fmt[i].len == 2) {
                     short val = *((short *) p);
-                    sprintf(str, "f", val * 0.0625 - 30);
+                    sprintf(str, "%f", val * 0.0625 - 30);
                     j[fmt[i].field_name] = str;
                     n_consumed += fmt[i].len;
                 }else{
@@ -214,7 +224,7 @@ _decode_by_fmt (const Fmt fmt [], int n_fmt,
             {   // (x-256) dBm
                 if(fmt[i].len == 1) {
                     unsigned int ii = *((unsigned char *) p);
-                    sprintf(str, "i", (int) ii - 256);
+                    sprintf(str, "%i", (int) ii - 256);
                     j[fmt[i].field_name] = str;
                     n_consumed += fmt[i].len;
                 }else{
