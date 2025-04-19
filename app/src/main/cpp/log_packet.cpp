@@ -140,11 +140,18 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
         }
         case LTE_RRC_OTA_Packet: {
             LOGD("payload_decode: LTE_RRC_OTA_Packet\n");
-            offset += _decode_by_fmt(LteRrcOtaPacketFmt,
-                                     ARRAY_SIZE(LteRrcOtaPacketFmt, Fmt),
-                                     b, offset, length, jj);
-            j["payload"]["LteRrcOtaPacket"] = jj;
-            offset += _decode_lte_rrc_ota(b, offset, length, j["payload"]["LteRrcOtaPacket"]);
+            int header_consumed = _decode_by_fmt(LteRrcOtaPacketFmt,
+                                                 ARRAY_SIZE(LteRrcOtaPacketFmt, Fmt),
+                                                 b, offset, length, jj);
+
+            if (header_consumed == 0 || jj.find("Pkt Version") == jj.end()) {
+                LOGD("Error decoding LTE_RRC_OTA_Packet base header.");
+                j["payload"]["LteRrcOtaPacket"] = {{"error", "Failed to decode base header"}};
+            } else {
+                offset += header_consumed;
+                j["payload"]["LteRrcOtaPacket"] = jj;
+                int payload_consumed = _decode_lte_rrc_ota(b, offset, length - header_consumed, j["payload"]["LteRrcOtaPacket"]);
+            }
             break;
         }
         case LTE_PDSCH_Stat_Indication: {

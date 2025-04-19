@@ -63,7 +63,6 @@ std::map<std::string, unsigned int> KnownMessageTypes = {
         {"LTE-NAS_EPS_PLAIN",       250},
         {"LTE-PDCP_DL_SRB",         300},
         {"LTE-PDCP_UL_SRB",         301}
-
 };
 
 
@@ -236,102 +235,92 @@ void stop_epan(void){
 
 unsigned char getcha(char h){
     switch(h){
-
-        case '0':
-            return 0;
-        case '1':
-            return 1;
-        case '2':
-            return 2;
-        case '3':
-            return 3;
-        case '4':
-            return 4;
-        case '5':
-            return 5;
-        case '6':
-            return 6;
-        case '7':
-            return 7;
-        case '8':
-            return 8;
-        case '9':
-            return 9;
-        case 'A':
-        case 'a':
-            return 10;
-        case 'B':
-        case 'b':
-            return 11;
-        case 'C':
-        case 'c':
-            return 12;
-        case 'D':
-        case 'd':
-            return 13;
-        case 'E':
-        case 'e':
-            return 14;
-        case 'F':
-        case 'f':
-            return 15;
-        default:
-            return 100;
+        case '0': return 0; case '1': return 1; case '2': return 2; case '3': return 3;
+        case '4': return 4; case '5': return 5; case '6': return 6; case '7': return 7;
+        case '8': return 8; case '9': return 9;
+        case 'A': case 'a': return 10; case 'B': case 'b': return 11; case 'C': case 'c': return 12;
+        case 'D': case 'd': return 13; case 'E': case 'e': return 14; case 'F': case 'f': return 15;
+        default: return 100;
     }
 }
 
-std::string decode_msg(std::string msgType, std::string msgData){
+std::string decode_msg(std::string msgType, std::string msgData) {
     std::map<std::string, unsigned int>::iterator itr;
 
     itr = KnownMessageTypes.find(msgType);
-    if (itr == KnownMessageTypes.end()) return "Unknown Message Type";
-    if(msgData.size() % 2 != 0) return "Message must have even number of chars";
-    unsigned int mt = htonl(itr->second);
-    unsigned int msg_sz = 0;
-    unsigned int offset = 8;
-
-    for(int i=0; i<msgData.size(); i+=2){
-        unsigned char h1 = getcha(msgData.at(i));
-        unsigned char h2 = getcha(msgData.at(i+1));
-        if((h1 > 16) || (h2>16)) return "character unrecognized";
-        unsigned char h = (h1<<4) | h2;
-        msgbuf[ offset + msg_sz ] = h;
-        msg_sz++;
-        //LOGD("%c %c %i %i %i %02X\n",msgData.at(i), msgData.at(i+1), h1, h2, h, h );
+    if (itr == KnownMessageTypes.end()) {
+        LOGD("decode_msg: Unknown Message Type '%s'", msgType.c_str());
+        return "Error: Unknown Message Type '" + msgType + "'";
     }
 
-    unsigned int msg_sz2 = htonl(msg_sz);
-    memcpy(msgbuf+0, &mt, sizeof(int32_t));
-    memcpy(msgbuf+4, &msg_sz2, sizeof(int32_t));
+    int start_index = 0;
+    if (msgData.size() >= 2 && (msgData.substr(0, 2) == "0x" || msgData.substr(0, 2) == "0X")) {
+        start_index = 2;
+        LOGD("decode_msg: Detected and skipping '0x' prefix.");
+    }
 
-    std::string res = process_message( msgbuf, msg_sz+8);
+    size_t hex_data_len = msgData.size() - start_index;
+    if (hex_data_len % 2 != 0) {
+        LOGD("decode_msg: Message data (len %zu after removing prefix) must have even number of chars. Original: '%s'", hex_data_len, msgData.c_str());
+        return "Error: Message hex data length error";
+    }
+    if (hex_data_len == 0 && msgData.size() > 0) {
+        LOGD("decode_msg: Message data is empty after removing prefix. Original: '%s'", msgData.c_str());
+        return "Error: Message hex data empty";
+    }
+    if (hex_data_len == 0 && msgData.size() == 0) {
+        LOGD("decode_msg: Input message data is empty.");
+        return "";
+    }
+
+
+    unsigned int mt = htonl(itr->second);
+    unsigned int msg_byte_sz = hex_data_len / 2;
+    const unsigned int ws_header_offset = 8;
+    const unsigned int total_buffer_needed = ws_header_offset + msg_byte_sz;
+
+    if (total_buffer_needed > sizeof(msgbuf)) {
+        LOGD("decode_msg: Message data too large for buffer. Required: %u, Available: %zu", total_buffer_needed, sizeof(msgbuf));
+        return "Error: Message data too large for buffer";
+    }
+
+    unsigned int current_byte_index = 0;
+    for (int i = start_index; i < msgData.size(); i += 2) {
+        unsigned char h1 = getcha(msgData.at(i));
+        unsigned char h2 = getcha(msgData.at(i + 1));
+
+
+        if (h1 > 15 || h2 > 15) {
+            LOGD("decode_msg: Unrecognized character in hex string at index %d or %d. Chars: '%c', '%c'", i, i+1, msgData.at(i), msgData.at(i+1));
+
+            std::string err_msg = "Error: character unrecognized '";
+            err_msg += msgData.at(i);
+            err_msg += msgData.at(i+1);
+            err_msg += "'";
+            return err_msg;
+        }
+        unsigned char byte_val = (h1 << 4) | h2;
+        msgbuf[ws_header_offset + current_byte_index] = byte_val;
+        current_byte_index++;
+    }
+
+
+    if (current_byte_index != msg_byte_sz) {
+        LOGD("decode_msg: Byte conversion error. Expected %u bytes, got %u.", msg_byte_sz, current_byte_index);
+        return "Error: Byte conversion failed";
+    }
+
+
+
+    unsigned int msg_sz_net = htonl(msg_byte_sz);
+    memcpy(msgbuf + 0, &mt, sizeof(uint32_t));
+    memcpy(msgbuf + 4, &msg_sz_net, sizeof(uint32_t));
+
+
+
+    std::string res = process_message(msgbuf, total_buffer_needed);
+
 
     return res;
-
-
-/*
-  const char * innerdata = res.c_str();
-    unsigned int strsz = res.size();
-    unsigned char locbuf[513] = {};
-
-
-    int pos = 0;
-    for(int idx=0; idx<strsz; idx+=512) {
-        memset(locbuf, 0, 513);
-        if(idx+512<=strsz){
-            pos = idx+512;
-            memcpy(locbuf, innerdata+idx, 512);
-            LOGD("%s", locbuf);
-        }
-    }
-
-    if(pos<strsz){
-        memset(locbuf, 0, 513);
-        memcpy(locbuf, innerdata+pos, strsz-pos);
-        LOGD("%s", locbuf);
-    }
-
-    return "OK";
-*/
 }
 
