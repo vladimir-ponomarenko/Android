@@ -410,7 +410,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {
-        val endpoint = "/ws/putdata"
+        val endpoint = "v1/ws/phonedata"
         val jsonBody = try {
             val fileContent = File(filePath).readText()
             if (!fileContent.startsWith("[")) {
@@ -434,7 +434,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
             val request = Request.Builder()
-                .url("ws://109.172.114.128:3000/ws/putdata")
+                .url("ws://109.172.114.128:3000/api/v1/ws/phonedata")
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
