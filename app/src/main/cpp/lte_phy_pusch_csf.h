@@ -179,17 +179,7 @@ const ValueName ValueNamePuschReportingMode[] = {
         {8, "MODE_PERIODIC_RM21"}
 };
 
-const ValueName ValueNameRankIndex[] = {
-        {0, "Rank 1"},
-        {1, "Rank 2"},
-        {2, "Rank 3"},
-        {3, "Rank 4"},
-        {4, "Rank 5"},
-        {5, "Rank 6"},
-        {6, "Rank 7"},
-        {7, "Rank 8"}
 
-};
 
 const ValueName ValueNameCSFTxMode[] = {
         {0, "TX_MODE_1"},

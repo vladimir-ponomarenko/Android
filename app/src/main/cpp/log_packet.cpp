@@ -15,6 +15,8 @@
 #include "lte_rrc_mib_message_log_packet.h"
 #include "lte_rrc_serv_cell_info.h"
 #include "lte_rrc_ota.h"
+#include "lte_rlc_dl_stats.h"
+#include "lte_rlc_ul_stats.h"
 #include "lte_phy_idle_neighbor_cell_meas.h"
 #include "lte_phy_connected_neighbor_cell_meas.h"
 #include "lte_phy_connected_mode_intra_freq_meas_results.h"
@@ -25,8 +27,12 @@
 #include "lte_phy_pusch_tx_report.h"
 #include "lte_phy_bplmn_cell_request.h"
 #include "lte_phy_bplmn_cell_confirm.h"
+#include "lte_phy_pdsch_demapper_configuration.h"
 #include "lte_mac_rach_trigger.h"
+#include "lte_mac_configuration.h"
+#include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
+#include "lte_pusch_power_control.h"
 #include "lte_nb1_ml1_gm_tx_report.h"
 #include "lte_pdsch_stat_indication.h"
 #include "wcdma_signaling_messages.h"
@@ -104,6 +110,36 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["LtePhyCmlifmr"] = jj;
             offset += _decode_lte_phy_cmlifmr(b, offset, length, j["payload"]["LtePhyCmlifmr"]);
+            break;
+        }
+        case LTE_RLC_DL_Stats: {
+            LOGD("payload_decode: LTE_RLC_DL_Stats\n");
+            int header_consumed = _decode_by_fmt(LteRlcDlStats_Fmt,
+                                                 ARRAY_SIZE(LteRlcDlStats_Fmt, Fmt),
+                                                 b, offset, length, jj);
+            if (header_consumed == 0 || jj.find("Version") == jj.end() || jj.find("Num Subpkt") == jj.end()){
+                LOGD("Error decoding RLC DL Stats header.");
+                j["payload"]["LteRlcDlStats"] = {{"error", "Failed to decode header"}};
+            } else {
+                offset += header_consumed;
+                j["payload"]["LteRlcDlStats"] = jj;
+                _decode_lte_rlc_dl_stats_subpkt(b, offset, length - header_consumed, j["payload"]["LteRlcDlStats"]);
+            }
+            break;
+        }
+        case LTE_RLC_UL_Stats: {
+            LOGD("payload_decode: LTE_RLC_UL_Stats\n");
+            int header_consumed = _decode_by_fmt(LteRlcUlStats_Fmt,
+                                                 ARRAY_SIZE(LteRlcUlStats_Fmt, Fmt),
+                                                 b, offset, length, jj);
+            if (header_consumed == 0 || jj.find("Version") == jj.end() || jj.find("Num Subpkt") == jj.end()){
+                LOGD("Error decoding RLC UL Stats header.");
+                j["payload"]["LteRlcUlStats"] = {{"error", "Failed to decode header"}};
+            } else {
+                offset += header_consumed;
+                j["payload"]["LteRlcUlStats"] = jj;
+                _decode_lte_rlc_ul_stats_subpkt(b, offset, length - header_consumed, j["payload"]["LteRlcUlStats"]);
+            }
             break;
         }
         case LTE_RRC_Serv_Cell_Info_Log_Packet: {
@@ -235,6 +271,63 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             j["payload"]["LtePucchPowerControl"] = jj;
             break;
         }
+        case LTE_PUSCH_Power_Control: {
+            LOGD("payload_decode: LTE_PUSCH_Power_Control\n");
+
+            offset += _decode_by_fmt(LtePuschPowerControl_Fmt,
+                                     ARRAY_SIZE(LtePuschPowerControl_Fmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") == jj.end()){
+                LOGD("Error decoding PUSCH Power Control: Version field missing.");
+                j["payload"]["LtePuschPowerControl"] = {{"error", "Version field missing"}};
+            } else {
+                offset += _decode_lte_pusch_power_control_payload(b + offset, 0, length - offset, jj);
+                j["payload"]["LtePuschPowerControl"] = jj;
+            }
+            break;
+        }
+        case LTE_PHY_PDSCH_Demapper_Configuration: {
+            LOGD("payload_decode: LTE_PHY_PDSCH_Demapper_Configuration\n");
+
+            int header_consumed = _decode_by_fmt(LtePhyPdschDemapperConfigFmt,
+                                                 ARRAY_SIZE(LtePhyPdschDemapperConfigFmt, Fmt),
+                                                 b, offset, length, jj);
+            if (header_consumed == 0 || jj.find("Version") == jj.end()) {
+                LOGD("Error decoding PDSCH Demapper Config: Version field missing or decode failed.");
+                j["payload"]["LtePhyPdschDemapperConfig"] = {{"error", "Version field missing or decode failed"}};
+            } else {
+                offset += header_consumed;
+                int payload_consumed = _decode_lte_phy_pdsch_demapper_config(
+                        b,
+                        offset,
+                        length - header_consumed,
+                        jj);
+                offset += payload_consumed;
+                j["payload"]["LtePhyPdschDemapperConfig"] = jj;
+            }
+            break;
+        }
+        case LTE_NAS_EMM_State: {
+            LOGD("payload_decode: LTE_NAS_EMM_State\n");
+
+            int header_consumed = _decode_by_fmt(LteNasEmmStateFmt,
+                                                 ARRAY_SIZE(LteNasEmmStateFmt, Fmt),
+                                                 b, offset, length, jj);
+            if (header_consumed == 0 || jj.find("Version") == jj.end()) {
+                LOGD("Error decoding LTE_NAS_EMM_State header.");
+                j["payload"]["LteNasEmmState"] = {{"error", "Failed to decode header"}};
+            } else {
+                j["payload"]["LteNasEmmState"] = jj;
+                offset += header_consumed;
+                int payload_consumed = _decode_lte_nas_emm_state(
+                        b,
+                        offset,
+                        length - header_consumed,
+                        j["payload"]["LteNasEmmState"]);
+                offset += payload_consumed;
+            }
+            break;
+        }
         case LTE_MAC_Rach_Trigger: {
             LOGD("payload_decode: LTE_MAC_Rach_Trigger\n");
             offset += _decode_by_fmt(LteMacRachTriggerFmt,
@@ -242,6 +335,26 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["LteMacRachTrigger"] = jj;
             offset += _decode_lte_mac_rach_trigger_subpkt(b, offset, length, j["payload"]["LteMacRachTrigger"]);
+            break;
+        }
+        case LTE_MAC_Configuration: {
+            LOGD("payload_decode: LTE_MAC_Configuration\n");
+            int header_consumed = _decode_by_fmt(LteMacConfigurationFmt,
+                                                 ARRAY_SIZE(LteMacConfigurationFmt, Fmt),
+                                                 b, offset, length, jj);
+            if (header_consumed == 0 || jj.find("Version") == jj.end() || jj.find("Num SubPkt") == jj.end()) {
+                LOGD("Error decoding LTE_MAC_Configuration header.");
+                j["payload"]["LteMacConfiguration"] = {{"error", "Failed to decode header"}};
+            } else {
+                j["payload"]["LteMacConfiguration"] = jj;
+                offset += header_consumed;
+                int subpackets_consumed = _decode_lte_mac_configuration_subpkt(
+                        b,
+                        offset,
+                        length - header_consumed,
+                        j["payload"]["LteMacConfiguration"]);
+                offset += subpackets_consumed;
+            }
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
