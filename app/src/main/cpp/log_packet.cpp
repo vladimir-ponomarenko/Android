@@ -19,6 +19,7 @@
 #include "lte_rlc_ul_stats.h"
 #include "lte_rlc_dl_config.h"
 #include "lte_rlc_ul_config.h"
+#include "lte_rlc_ul_am_all_pdu.h"
 #include "lte_phy_idle_neighbor_cell_meas.h"
 #include "lte_phy_connected_neighbor_cell_meas.h"
 #include "lte_phy_connected_mode_intra_freq_meas_results.h"
@@ -174,6 +175,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             } else {
                 LOGD("Error decoding LTE_RLC_UL_Config_Log_Packet base header.");
                 j["payload"]["LteRlcUlConfigLogPacket"] = {{"error", "Failed to decode base header"}};
+            }
+            break;
+        }
+        case LTE_RLC_UL_AM_All_PDU: {
+            LOGD("payload_decode: LTE_RLC_UL_AM_All_PDU\n");
+            offset += _decode_by_fmt(LteRlcUlAmAllPduFmt,
+                                     ARRAY_SIZE(LteRlcUlAmAllPduFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Number of Subpackets") != jj.end()) {
+                j["payload"]["LteRlcUlAmAllPdu"] = jj;
+                offset += _decode_lte_rlc_ul_am_all_pdu_subpkt(b, offset, length, j["payload"]["LteRlcUlAmAllPdu"]);
+            } else {
+                LOGD("Error decoding LTE_RLC_UL_AM_All_PDU base header.");
+                j["payload"]["LteRlcUlAmAllPdu"] = {{"error", "Failed to decode base header"}};
             }
             break;
         }

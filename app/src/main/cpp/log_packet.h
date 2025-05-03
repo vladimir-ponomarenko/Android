@@ -124,6 +124,133 @@ const ValueName ValueNameCompandingStats[] = {
 };
 
 
+const Fmt LteRlcUlAmAllPduFmt[] = {
+        {UINT, "Version",              1},
+        {UINT, "Number of Subpackets", 1},
+        {SKIP, NULL,                   2},
+};
+
+const Fmt LteRlcUlAmAllPdu_SubpktHeader[] = {
+        {UINT, "Subpacket ID",      1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size",    2},
+};
+
+const Fmt LteRlcUlAmAllPdu_SubpktPayload[] = {
+        {UINT, "RB Cfg Idx",              1},
+        {UINT, "RB Mode",                 1},
+        {UINT, "SN Length",               1},
+        {SKIP, NULL,                      1},
+        {UINT, "Enabled PDU Log Packets", 2},
+
+        {UINT, "VT(A)",                   2},
+        {UINT, "VT(S)",                   2},
+        {UINT, "PDU Without Poll",        2},
+        {UINT, "Byte Without Poll",       4},
+        {UINT, "Poll SN",                 2},
+        {UINT, "Number of PDUs",          2},
+};
+const ValueName LteRlcUlAmAllPdu_Subpkt_RBMode[] = {
+        {1, "AM"},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_Basic[] = {
+        {PLACEHOLDER, "PDU TYPE",      0},
+        {PLACEHOLDER, "rb_cfg_idx",    0},
+        {UINT,        "sys_fn",        2},
+        {PLACEHOLDER, "sub_fn",        0},
+        {UINT,        "pdu_bytes",     2},
+        {UINT,        "logged_bytes",  2},
+        {SKIP,        NULL,            1},
+        {UINT,        "D/C LookAhead", 1},
+        {UINT,        "SN",            1},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_Control[] = {
+        {PLACEHOLDER, "cpt", 0},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_NACK_ALLIGN[] = {
+        {UINT, "NACK_SN", 2},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_NACK_PADDING[] = {
+        {UINT, "NACK_SN", 1},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_DATA[] = {
+        {PLACEHOLDER, "RF", 0},
+        {PLACEHOLDER, "P",  0},
+        {PLACEHOLDER, "FI", 0},
+        {PLACEHOLDER, "E",  0},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LI_ALLIGN[] = {
+        {UINT, "LI", 2},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LI_PADDING[] = {
+        {UINT, "LI", 1},
+};
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LSF_SO[] = {
+        {UINT, "LSF", 1},
+        {UINT, "SO",  1},
+};
+
+const Fmt LteRlcUlAmAllPdu_SubpktPayload_v4[] = {
+        {UINT, "RB Cfg Idx",              1},
+        {UINT, "RB Mode",                 1},
+        {UINT, "SN Length",               1},
+        {SKIP, NULL,                      1},
+        {UINT, "Enabled PDU Log Packets", 2},
+        {UINT, "VT(A)",                   2},
+        {UINT, "VT(S)",                   2},
+        {UINT, "PDU Without Poll",        2},
+        {UINT, "Byte Without Poll",       4},
+        {UINT, "Poll SN",                 2},
+        {UINT, "Number of PDUs",          2},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_Basic_v4[] = {
+        {PLACEHOLDER, "PDU TYPE",      0},
+        {PLACEHOLDER, "rb_cfg_idx",    0},
+        {PLACEHOLDER, "SFN",           0},
+        {UINT,        "sys_fn",        2},
+        {PLACEHOLDER, "sub_fn",        0},
+        {UINT,        "pdu_bytes",     2},
+        {UINT,        "logged_bytes",  2},
+        {SKIP,        NULL,            1},
+        {UINT,        "D/C LookAhead", 1},
+        {UINT,        "SN",            1},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_Control_v4[] = {
+        {PLACEHOLDER, "cpt", 0},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_NACK_ALLIGN_v4[] = {
+        {UINT, "NACK_SN", 2},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_NACK_PADDING_v4[] = {
+        {UINT, "NACK_SN", 1},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_DATA_v4[] = {
+        {PLACEHOLDER, "RF", 0},
+        {PLACEHOLDER, "P",  0},
+        {PLACEHOLDER, "FI", 0},
+        {PLACEHOLDER, "E",  0},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LI_ALLIGN_v4[] = {
+        {UINT, "LI", 2},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LI_PADDING_v4[] = {
+        {UINT, "LI", 1},
+};
+
+const Fmt LteRlcUlAmAllPdu_Subpkt_PDU_LSF_SO_v4[] = {
+        {UINT, "LSF", 1},
+        {UINT, "SO",  1},
+};
+
 // LTE RLC UL Statistics
 
 const Fmt LteRlcUlStats_Fmt[] = {
@@ -1747,6 +1874,45 @@ const Fmt LteMacULBufferStatusInternal_ULBufferStatusSubPacket_LCIDFmt_v5[] = {
         {UINT,        "Retx bytes",             4},
         {UINT,        "Ctrl bytes",             2},
         {PLACEHOLDER, "Total Bytes",            0},
+};
+
+
+
+
+const Fmt LteRrcServCellInfoLogPacketFmt[] = {
+        {UINT, "Version", 1},
+};
+
+
+const Fmt LteRrcServCellInfoLogPacketFmt_v2[] = {
+        {UINT,      "Cell ID",            2},
+        {UINT,      "Downlink frequency", 2},
+        {UINT,      "Uplink frequency",   2},
+        {BANDWIDTH, "Downlink bandwidth", 1},
+        {BANDWIDTH, "Uplink bandwidth",   1},
+        {UINT,      "Cell Identity",      4},
+        {UINT,      "TAC",                2},
+        {UINT,      "Band Indicator",     4},
+        {UINT,      "MCC",                2},
+        {UINT,      "MNC Digit",          1},
+        {UINT,      "MNC",                2},
+        {UINT,      "Allowed Access",     1}
+};
+
+
+const Fmt LteRrcServCellInfoLogPacketFmt_v3[] = {
+        {UINT,      "Cell ID",            2},
+        {UINT,      "Downlink frequency", 4},
+        {UINT,      "Uplink frequency",   4},
+        {BANDWIDTH, "Downlink bandwidth", 1},
+        {BANDWIDTH, "Uplink bandwidth",   1},
+        {UINT,      "Cell Identity",      4},
+        {UINT,      "TAC",                2},
+        {UINT,      "Band Indicator",     4},
+        {UINT,      "MCC",                2},
+        {UINT,      "MNC Digit",          1},
+        {UINT,      "MNC",                2},
+        {UINT,      "Allowed Access",     1}
 };
 
 

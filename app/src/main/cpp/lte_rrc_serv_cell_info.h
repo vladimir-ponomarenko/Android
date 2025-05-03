@@ -17,46 +17,6 @@ using json = nlohmann::json;
 using namespace std;
 
 
-
-
-const Fmt LteRrcServCellInfoLogPacketFmt[] = {
-        {UINT, "Version", 1},
-};
-
-
-const Fmt LteRrcServCellInfoLogPacketFmt_v2[] = {
-        {UINT,      "Cell ID",            2},
-        {UINT,      "Downlink frequency", 2},
-        {UINT,      "Uplink frequency",   2},
-        {BANDWIDTH, "Downlink bandwidth", 1},
-        {BANDWIDTH, "Uplink bandwidth",   1},
-        {UINT,      "Cell Identity",      4},
-        {UINT,      "TAC",                2},
-        {UINT,      "Band Indicator",     4},
-        {UINT,      "MCC",                2},
-        {UINT,      "MNC Digit",          1},
-        {UINT,      "MNC",                2},
-        {UINT,      "Allowed Access",     1}
-};
-
-
-const Fmt LteRrcServCellInfoLogPacketFmt_v3[] = {
-        {UINT,      "Cell ID",            2},
-        {UINT,      "Downlink frequency", 4},
-        {UINT,      "Uplink frequency",   4},
-        {BANDWIDTH, "Downlink bandwidth", 1},
-        {BANDWIDTH, "Uplink bandwidth",   1},
-        {UINT,      "Cell Identity",      4},
-        {UINT,      "TAC",                2},
-        {UINT,      "Band Indicator",     4},
-        {UINT,      "MCC",                2},
-        {UINT,      "MNC Digit",          1},
-        {UINT,      "MNC",                2},
-        {UINT,      "Allowed Access",     1}
-};
-
-
-
 static int _decode_lte_rrc_serv_cell_info(const char* b, int offset, size_t length, json& j) {
     int start = offset;
 
