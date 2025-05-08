@@ -720,6 +720,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             4 -> SettingsScreen(state, onNavigateTo = { index, _, _ -> onTabSelected(index)})
                             5 -> NavigationScreen(onNavigateTo = onTabSelected)
                             7 -> DataSendingScreen(state, onNavigateTo = onTabSelected, onCellInfoDataClick  = {})
+                            8 -> RootModeScreen(state = state, onNavigateBack = { onTabSelected(4) })
                         }
                     }
                 } else {

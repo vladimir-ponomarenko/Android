@@ -107,5 +107,7 @@
     <string name="file_deleted">The file was deleted successfully</string>
     <string name="file_delete_error">Error when deleting a file</string>
     <string name="file_not_exist">The file does not exist</string>
-
+    <string name="root_mode_title">Root mode</string>
+    <string name="enable_root_mode">Enable Root mode</string>
+    <string name="root_features_description">Access to advanced functions and modem diagnostics (superuser rights required).</string>
 </resources>

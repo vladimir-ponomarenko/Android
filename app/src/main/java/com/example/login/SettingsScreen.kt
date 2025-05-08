@@ -3,6 +3,8 @@ package com.example.login
 import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -82,74 +86,62 @@ fun TopPanel(onNavigateTo: (Int, String?, String?) -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SettingsScreen(
     state: MainActivity.MainActivityState,
     onNavigateTo: (Int, String?, String?) -> Unit,
 ) {
     var isLanguageMenuVisible by remember { mutableStateOf(false) }
-    var currentLanguage by remember { mutableStateOf("ru") }
-
+    var currentLanguage by remember { mutableStateOf(Locale.getDefault().language.takeIf { it == "ru" || it == "en" } ?: "ru") }
     val isDarkTheme = isSystemInDarkTheme()
-
-    var isDarkMode by remember { mutableStateOf(isDarkTheme) }
-
     val context = LocalContext.current
-    val rootManager = remember { RootManager(context) }
-    var isRootModeEnabled by remember { mutableStateOf(rootManager.isRootModeEnabled()) }
 
-
-    TopPanel(onNavigateTo = onNavigateTo)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(if (isDarkMode) Color(0xFF1C1C1E) else Color(0xFFFFFFFF))
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = if (isDarkTheme) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            SettingItemWithArrow(
-                label = stringResource(R.string.interface_language),
-                onNavigateTo = { isLanguageMenuVisible = !isLanguageMenuVisible },
-                iconRes = if (isDarkMode) R.drawable.language_d else R.drawable.language
-            )
-            if (isLanguageMenuVisible) {
-                LanguageDropdownMenu(
-                    currentLanguage = currentLanguage,
-                    onLanguageSelected = { selectedLanguage ->
-                        currentLanguage = selectedLanguage
-                        setLocale(context, selectedLanguage)
-                        (context as? Activity)?.recreate()
-                        isLanguageMenuVisible = false
-                    }
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopPanel(onNavigateTo = onNavigateTo)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+
+                SettingItemWithArrow(
+                    label = stringResource(R.string.interface_language),
+                    onNavigateTo = { isLanguageMenuVisible = !isLanguageMenuVisible },
+                    iconRes = if (isDarkTheme) R.drawable.language_d else R.drawable.language
                 )
+                if (isLanguageMenuVisible) {
+                    LanguageDropdownMenu(
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { selectedLanguage ->
+                            currentLanguage = selectedLanguage
+                            setLocale(context, selectedLanguage)
+                            (context as? Activity)?.recreate()
+                            isLanguageMenuVisible = false
+                        }
+                    )
+                }
+
+
+                SettingItemWithArrow(
+                    label = stringResource(R.string.sending_collected_data),
+                    onNavigateTo = { onNavigateTo(7, state.Uuid, state.JwtToken) },
+                    iconRes = if (isDarkTheme) R.drawable.s_data_d else R.drawable.s_data
+                )
+
+                SettingItemWithArrow(
+                    label = stringResource(R.string.root_mode_title),
+                    onNavigateTo = { onNavigateTo(8, null, null) },
+                    iconRes = if (isDarkTheme) R.drawable.ic_launcher_foreground else R.drawable.ic_launcher_foreground
+                )
+
+
+                Spacer(modifier = Modifier.weight(1f))
             }
-
-            SettingItemWithArrow(
-                label = stringResource(R.string.sending_collected_data),
-                onNavigateTo = { onNavigateTo(7, state.Uuid, state.JwtToken) },
-                iconRes = if (isDarkMode) R.drawable.s_data_d else R.drawable.s_data
-            )
-
-            // TODO заменить иконку, переместить текст в strings
-
-            SettingItemWithSwitch(
-                label = "Root Mode",
-                isChecked = isRootModeEnabled,
-                onCheckedChange = { enabled ->
-                    isRootModeEnabled = enabled
-                    rootManager.setRootModeEnabled(enabled)
-                    if (enabled) {
-                        rootManager.requestRootAccess()
-                    }
-                },
-                iconRes = if (isDarkMode) R.drawable.ic_launcher_foreground else R.drawable.ic_launcher_foreground
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -299,6 +291,7 @@ fun SettingItemWithSwitch(
                 color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
                 shape = RoundedCornerShape(8.dp)
             )
+            .clickable { onCheckedChange(!isChecked) }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -306,6 +299,57 @@ fun SettingItemWithSwitch(
             painter = painterResource(id = iconRes),
             contentDescription = label,
             modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = if (isDarkTheme) Color.White else Color(0xFF34204C),
+                checkedTrackColor = if (isDarkTheme) Color(0xFF888888) else Color(0xFF8EC3F8),
+                uncheckedThumbColor = if (isDarkTheme) Color.Gray else Color.LightGray,
+                uncheckedTrackColor = if (isDarkTheme) Color(0xFF444444) else Color.Gray,
+            )
+        )
+    }
+}
+
+
+@Composable
+fun SettingItemWithSwitch(
+    label: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    iconVector: ImageVector,
+    iconTint: Color
+) {
+    val isDarkTheme = isSystemInDarkTheme()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .background(if (isDarkTheme) Color(0xFF2C2C2E) else Color(0xFFF8F8F8))
+            .border(
+                width = 1.5.dp,
+                color = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable { onCheckedChange(!isChecked) }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = iconVector,
+            contentDescription = label,
+            modifier = Modifier.size(24.dp),
+            tint = iconTint
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(

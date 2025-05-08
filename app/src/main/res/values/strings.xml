@@ -107,5 +107,8 @@
     <string name="file_deleted">Файл успешно удалён</string>
     <string name="file_delete_error">Ошибка при удалении файла</string>
     <string name="file_not_exist">Файл не существует</string>
+    <string name="root_mode_title">Root режим</string>
+    <string name="enable_root_mode">Включить Root режим</string>
+    <string name="root_features_description">Доступ к расширенным функциям и диагностике модема (требуются права суперпользователя).</string>
 
 </resources>
