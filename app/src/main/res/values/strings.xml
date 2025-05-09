@@ -110,5 +110,8 @@
     <string name="root_mode_title">Root режим</string>
     <string name="enable_root_mode">Включить Root режим</string>
     <string name="root_features_description">Доступ к расширенным функциям и диагностике модема (требуются права суперпользователя).</string>
+    <string name="log_directory_path_label">Путь для сохранения логов:</string>
+    <string name="default_log_path_internal_app">По умолчанию: внутренняя папка приложения</string>
+    <string name="select_directory_button">Выбрать папку</string>
 
 </resources>

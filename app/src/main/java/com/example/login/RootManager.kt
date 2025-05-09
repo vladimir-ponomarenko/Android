@@ -3,6 +3,7 @@ package com.example.login
 
 
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -43,29 +44,94 @@ class RootDataLogger {
     @Volatile private var writer: BufferedWriter? = null
     private var isFirstEntry = true
     private var logFile: File? = null
+    private var documentFileUri: Uri? = null
+    private var outputStream: java.io.OutputStream? = null
+
     private val TAG = "RootDataLogger"
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = false }
     private val lock = Any()
 
 
-    fun init(context: Context): Boolean {
-        synchronized(lock) {
-            if (writer != null) { Log.w(TAG, "init: Already initialized."); return true }
-            try {
-                val externalFilesDir = context.getExternalFilesDir(null)
-                if (externalFilesDir == null) { Log.e(TAG, "getExternalFilesDir is null!"); return false }
-                val rootDataDir = File(externalFilesDir, "SignalDataRoot_Logs")
-                if (!rootDataDir.exists() && !rootDataDir.mkdirs()) { Log.e(TAG, "Failed dir create"); return false }
-                val timestamp = SimpleDateFormat("H-m-s_d.M.y", Locale.getDefault()).format(Date())
-                val fileName = "Signal_data_$timestamp.txt"
+    @Synchronized
+    fun init(context: Context, selectedDirUri: Uri? = null): Boolean {
+        if (writer != null || outputStream != null) {
+            Log.w(TAG, "init: Already initialized.")
+            return true
+        }
+        try {
+            val timestamp = SimpleDateFormat("H-m-s_d.M.y", Locale.getDefault()).format(Date())
+            val fileName = "Signal_data_diag_$timestamp.txt"
+
+            if (selectedDirUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Log.d(TAG, "Attempting to use SAF with URI: $selectedDirUri")
+                try {
+                    val docTree = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, selectedDirUri)
+                    if (docTree == null || !docTree.canWrite()) {
+                        Log.e(TAG, "SAF: Cannot write to selected directory URI or URI is invalid: $selectedDirUri. Falling back.")
+                        return initAppSpecificExternalStorage(context, fileName)
+                    }
+                    val newFile = docTree.createFile("text/plain", fileName)
+                    if (newFile != null && newFile.canWrite()) {
+                        documentFileUri = newFile.uri
+                        outputStream = context.contentResolver.openOutputStream(documentFileUri!!)
+                        writer = outputStream?.bufferedWriter()
+                        if (writer == null) {
+                            Log.e(TAG, "SAF: Failed to get writer from outputStream. Falling back.")
+                            if (outputStream != null) try { outputStream?.close() } catch (e: IOException) {}
+                            outputStream = null
+                            documentFileUri = null
+                            return initAppSpecificExternalStorage(context, fileName)
+                        }
+                        Log.i(TAG, "Logger initialized with SAF. Path: ${documentFileUri}")
+                    } else {
+                        Log.e(TAG, "SAF: Failed to create file in selected directory. Falling back. newFile: $newFile, canWrite: ${newFile?.canWrite()}")
+                        return initAppSpecificExternalStorage(context, fileName)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "SAF: Exception during SAF file creation. Falling back.", e)
+                    return initAppSpecificExternalStorage(context, fileName)
+                }
+            } else {
+
+                Log.d(TAG, "SAF URI not provided or API level too low. Using app-specific external storage.")
+                return initAppSpecificExternalStorage(context, fileName)
+            }
+
+            writer?.write("[")
+            isFirstEntry = true
+            Log.i(TAG, "Logger common initialization part finished.")
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during logger init (outer catch)", e)
+            closeInternal()
+            return false
+        }
+    }
+
+
+    private fun initAppSpecificExternalStorage(context: Context, fileName: String): Boolean {
+        try {
+            val externalFilesDir = context.getExternalFilesDir(null)
+            if (externalFilesDir == null) {
+                Log.e(TAG, "getExternalFilesDir(null) returned null! Cannot use app-specific external storage.")
+
+                val internalFilesDir = context.filesDir
+                val rootDataDir = File(internalFilesDir, "SignalDataRoot_Logs_Internal")
+                if (!rootDataDir.exists() && !rootDataDir.mkdirs()) { Log.e(TAG, "Failed internal dir create"); return false }
                 logFile = File(rootDataDir, fileName)
-                Log.i(TAG, "Initializing logger: ${logFile?.absolutePath}")
-                writer = BufferedWriter(FileWriter(logFile, false))
-                writer?.write("[")
-                isFirstEntry = true
-                Log.i(TAG, "Logger initialized.")
-                return true
-            } catch (e: Exception) { Log.e(TAG, "Error init logger", e); closeInternal(); return false }
+            } else {
+                val rootDataDir = File(externalFilesDir, "SignalDataRoot_Logs")
+                if (!rootDataDir.exists() && !rootDataDir.mkdirs()) { Log.e(TAG, "Failed external app-specific dir create"); return false }
+                logFile = File(rootDataDir, fileName)
+            }
+            Log.i(TAG, "Initializing logger (app-specific storage). Path: ${logFile?.absolutePath}")
+            writer = BufferedWriter(FileWriter(logFile, false))
+            // writer?.write("[")
+            // isFirstEntry = true
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing logger with app-specific storage", e)
+            return false
         }
     }
 
@@ -157,7 +223,8 @@ class DiagDataPacket {
 class DiagRevealerControl(
     private val fifo: ArrayBlockingQueue<DiagDataPacket>,
     private val diagConfigFilePath: String,
-    private val context: Context
+    private val context: Context,
+    private val selectedDirUriProvider: () -> Uri?
 ) {
 
     @Volatile
@@ -262,15 +329,24 @@ class DiagRevealerControl(
 
         synchronized(this) {
             if (rootDataLogger == null) {
-                Log.i(TAG, "   Initializing RootDataLogger...")
+                Log.i(TAG, "   runRevealer: Initializing RootDataLogger...")
                 rootDataLogger = RootDataLogger()
-                if (rootDataLogger?.init(context) == false) {
+
+                val selectedUri = selectedDirUriProvider()
+                Log.d(TAG, "   runRevealer: URI for logger init: $selectedUri")
+                if (rootDataLogger?.init(context, selectedUri) == false) {
                     Log.e(TAG, "   RootDataLogger init FAILED!")
                     rootDataLogger = null
+                } else {
+                    Log.i(TAG, "   RootDataLogger initialized successfully with URI: $selectedUri")
                 }
+            } else {
+                Log.d(TAG, "   runRevealer: RootDataLogger already exists.")
             }
-            if (loggingScope == null || !loggingScope!!.isActive) {
-                Log.i(TAG, "   Creating new loggingScope...")
+
+
+            if (loggingScope == null || loggingScope?.isActive == false) {
+                Log.i(TAG, "   runRevealer: Creating new loggingScope (IO + SupervisorJob).")
                 loggingScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
             }
         }
@@ -293,11 +369,14 @@ class DiagRevealerControl(
             val exitCode = resp.getOrNull(0) as? Int ?: -99
             val exitMsg = resp.getOrNull(1)?.toString() ?: "No message"
             Log.i(TAG, "   runRevealer: DIAG thread exited code $exitCode, msg: $exitMsg")
+
             if (exitCode != 0 || !nativeCallSuccess) {
-                Log.e(TAG, "DIAG thread ended abnormally.")
+                Log.e(TAG, "DIAG thread ended abnormally (code: $exitCode, nativeSuccess: $nativeCallSuccess).")
                 CoroutineScope(Dispatchers.Main).launch {
 
-                    RootManager(context).handleRootOperationFailure("DIAG thread ended code $exitCode")
+                    RootManager(context, selectedDirUriProvider)
+                        .handleRootOperationFailure("DIAG thread ended code $exitCode")
+
                 }
             }
         }
@@ -366,7 +445,9 @@ class DiagRevealerControl(
 
 
 
-class RootManager(private val context: Context) {
+class RootManager(private val context: Context,
+                  private val selectedDirUriProvider: () -> Uri?
+                  ) {
 
     companion object {
         private const val PREFS_NAME = "RootPrefs"
@@ -385,7 +466,7 @@ class RootManager(private val context: Context) {
     init {
         diagLogBuffer = ArrayBlockingQueue<DiagDataPacket>(65535, true)
 
-        DRC = DiagRevealerControl(diagLogBuffer, "${context.filesDir}/$DIAG_CFG_FILE_NAME", context)
+        DRC = DiagRevealerControl(diagLogBuffer, "${context.filesDir}/$DIAG_CFG_FILE_NAME", context, selectedDirUriProvider)
         Log.d(logTag, "RootManager initialized (Final Log Safety Version).")
     }
 
