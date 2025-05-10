@@ -71,7 +71,7 @@ static int _decode_lte_nb1_ml1_gm_tx_report_payload(const char* b, int offset, s
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_NB1_ML1_GM_TX_Report with version: 0x%x", pkt_ver);
+   // LOGD("Decoding LTE_NB1_ML1_GM_TX_Report with version: 0x%x", pkt_ver);
 
     switch (pkt_ver) {
         case 2: {

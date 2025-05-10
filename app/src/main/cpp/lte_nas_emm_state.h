@@ -26,7 +26,7 @@ static int _decode_lte_nas_emm_state(const char* b, int offset, size_t length, j
     }
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_NAS_EMM_State with version: %d", pkt_ver);
+   // LOGD("Decoding LTE_NAS_EMM_State with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 2: {

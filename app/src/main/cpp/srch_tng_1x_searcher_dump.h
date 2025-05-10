@@ -135,7 +135,7 @@ static int _decode_srch_tng_1xsd_payload(const char* b, int offset, size_t lengt
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding Srch_TNG_1x_Searcher_Dump with version: 0x%x", pkt_ver);
+    //LOGD("Decoding Srch_TNG_1x_Searcher_Dump with version: 0x%x", pkt_ver);
 
     switch (pkt_ver) {
         case 1: {

@@ -206,7 +206,7 @@ static int _decode_lte_phy_pusch_csf_payload(const char* b, int offset, size_t l
     int start = offset;
     int pkt_ver = j["Version"];
 
-    LOGD("Decoding LTE_PHY_PUSCH_CSF with version: %d", pkt_ver);
+    //LOGD("Decoding LTE_PHY_PUSCH_CSF with version: %d", pkt_ver);
 
     switch (pkt_ver) {
         case 142: {

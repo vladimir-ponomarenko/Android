@@ -119,7 +119,7 @@ static int _decode_lte_phy_idle_neighbor_cell_meas_payload(const char* b, int of
     int pkt_ver = result["Version"];
     int n_subpkts = result["Number of SubPackets"];
 
-    LOGD("Decoding LTE_PHY_Idle_Neighbor_Cell_Meas with version: 0x%x", pkt_ver);
+    //LOGD("Decoding LTE_PHY_Idle_Neighbor_Cell_Meas with version: 0x%x", pkt_ver);
 
     switch (pkt_ver) {
         case 1: {

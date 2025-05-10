@@ -116,7 +116,7 @@ static int _decode_lte_phy_connected_neighbor_cell_meas_payload(const char* b, i
     int pkt_ver = j["Version"];
     int n_subpkts = j["Number of SubPackets"];
 
-    LOGD("Decoding LTE_PHY_Connected_Mode_Neighbor_Measurement with version: %d, num_subpkts: %d", pkt_ver, n_subpkts);
+   // LOGD("Decoding LTE_PHY_Connected_Mode_Neighbor_Measurement with version: %d, num_subpkts: %d", pkt_ver, n_subpkts);
 
     switch (pkt_ver) {
         case 1: {
@@ -134,11 +134,11 @@ static int _decode_lte_phy_connected_neighbor_cell_meas_payload(const char* b, i
                 int subpkt_size = subpkt_j["SubPacket Size"];
 
                 if (subpkt_id == 30) {
-                    LOGD("LTE PHY CNCM: Skipping Subpacket ID 30 (Request)");
+                   // LOGD("LTE PHY CNCM: Skipping Subpacket ID 30 (Request)");
 
                 } else if (subpkt_id == 31) {
                     if (subpkt_ver == 4) {
-                        LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 4");
+                       // LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 4");
                         offset += _decode_by_fmt(LtePhyCncm_Subpacket_Payload_31v4,
                                                  ARRAY_SIZE(LtePhyCncm_Subpacket_Payload_31v4, Fmt),
                                                  b, offset, length, subpkt_j);
@@ -183,7 +183,7 @@ static int _decode_lte_phy_connected_neighbor_cell_meas_payload(const char* b, i
                         subpkt_j["Neighbor Cells"] = cells_j;
 
                     } else if (subpkt_ver == 3) {
-                        LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 3");
+                        //LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 3");
                         offset += _decode_by_fmt(LtePhyCncm_Subpacket_Payload_31v3,
                                                  ARRAY_SIZE(LtePhyCncm_Subpacket_Payload_31v3, Fmt),
                                                  b, offset, length, subpkt_j);
@@ -228,7 +228,7 @@ static int _decode_lte_phy_connected_neighbor_cell_meas_payload(const char* b, i
                         subpkt_j["Neighbor Cells"] = cells_j;
 
                     } else if (subpkt_ver == 24) {
-                        LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 24 (using v4 logic)");
+                      //  LOGD("LTE PHY CNCM: Decoding Subpacket ID 31, Version 24 (using v4 logic)");
 
                         offset += _decode_by_fmt(LtePhyCncm_Subpacket_Payload_31v24,
                                                  ARRAY_SIZE(LtePhyCncm_Subpacket_Payload_31v24, Fmt),
@@ -288,10 +288,10 @@ static int _decode_lte_phy_connected_neighbor_cell_meas_payload(const char* b, i
 
 
                 if (offset < start_subpkt + subpkt_size) {
-                    LOGD("LTE PHY CNCM: Advancing offset for subpacket padding/remaining data. Current: %d, Expected end: %d", offset, start_subpkt + subpkt_size);
+                   // LOGD("LTE PHY CNCM: Advancing offset for subpacket padding/remaining data. Current: %d, Expected end: %d", offset, start_subpkt + subpkt_size);
                     offset = start_subpkt + subpkt_size;
                 } else if (offset > start_subpkt + subpkt_size) {
-                    LOGD("LTE PHY CNCM: WARNING - Offset (%d) exceeded subpacket size (%d) for subpacket ID %d, Version %d.", offset, subpkt_size, subpkt_id, subpkt_ver);
+                    //LOGD("LTE PHY CNCM: WARNING - Offset (%d) exceeded subpacket size (%d) for subpacket ID %d, Version %d.", offset, subpkt_size, subpkt_id, subpkt_ver);
 
                 }
 

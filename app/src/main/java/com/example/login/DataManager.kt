@@ -59,7 +59,7 @@ object DataManager {
     private const val MAX_LOCATION_UPDATES = 1
     private var fusedLocationClient: FusedLocationProviderClient? = null
     private var locationCallbackInstance: LocationCallback? = null
-    private var isLocationUpdatesActive = false
+    internal var isLocationUpdatesActive = false
 
     private var fileCounter = 1
     private val maxFileCount = 10
