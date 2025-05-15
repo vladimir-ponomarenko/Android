@@ -1187,6 +1187,41 @@ const Fmt LteMacDLTransportBlock_Mac_CE_CRID[] = {
         {BYTE_STREAM, "CRID",            6},
 };
 
+const Fmt LteMacULTxStatisticsFmt[] = {
+        {UINT, "Version",    1},
+        {UINT, "Num SubPkt", 1},
+        {SKIP, NULL,         2}
+};
+
+const Fmt LteMacULTxStatistics_SubpktHeaderFmt[] = {
+        {UINT, "SubPacket ID",   1},
+        {UINT, "Version",        1},
+        {UINT, "SubPacket Size", 2},
+};
+
+const Fmt LteMacULTxStatistics_ULTxStatsSubPacketFmt[] = {
+        {UINT, "Number of samples",      1},
+        {UINT, "Number of padding BSR",  1},
+        {UINT, "Number of regular BSR",  1},
+        {UINT, "Number of periodic BSR", 1},
+        {UINT, "Number of cancel BSR",   1},
+        {UINT, "Grant received",         4},
+        {UINT, "Grant utilized",         4},
+        {SKIP, NULL,                     3}
+};
+
+const Fmt LteMacULTxStatistics_ULTxStatsSubPacketFmtV2[] = {
+        {UINT, "Sub Id",                 1},
+        {UINT, "Number of samples",      1},
+        {UINT, "Number of padding BSR",  1},
+        {UINT, "Number of regular BSR",  1},
+        {UINT, "Number of periodic BSR", 1},
+        {UINT, "Number of cancel BSR",   1},
+        {UINT, "Grant received",         4},
+        {UINT, "Grant utilized",         4},
+        {SKIP, NULL,                     2}
+};
+
 const ValueName LteMacConfigurationSubpkt_SubpktType[] = {
         {0,  "Config Type Subpacket"},
         {1,  "DL Config SubPacket"},

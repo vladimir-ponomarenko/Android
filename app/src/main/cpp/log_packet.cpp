@@ -33,6 +33,7 @@
 #include "lte_mac_rach_attempt.h"
 #include "lte_mac_dl_transportblock.h"
 #include "lte_mac_ul_transportblock.h"
+#include "lte_mac_ul_txstatistics.h"
 #include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
 #include "lte_pusch_power_control.h"
@@ -394,6 +395,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["LteMacRachTrigger"] = jj;
             offset += _decode_lte_mac_rach_trigger_subpkt(b, offset, length, j["payload"]["LteMacRachTrigger"]);
+            break;
+        }
+        case LTE_MAC_UL_Tx_Statistics: {
+            LOGD("payload_decode: LTE_MAC_UL_Tx_Statistics\n");
+            offset += _decode_by_fmt(LteMacULTxStatisticsFmt,
+                                     ARRAY_SIZE(LteMacULTxStatisticsFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Num SubPkt") != jj.end()) {
+                j["payload"]["LteMacUlTxStatistics"] = jj;
+                offset += _decode_lte_mac_ul_txstatistics_subpkt(b, offset, length, j["payload"]["LteMacUlTxStatistics"]);
+            } else {
+                LOGD("Error decoding LTE_MAC_UL_Tx_Statistics base header.");
+                j["payload"]["LteMacUlTxStatistics"] = {{"error", "Failed to decode base header"}};
+            }
             break;
         }
         case LTE_MAC_Configuration: {
