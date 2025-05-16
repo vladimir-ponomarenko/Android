@@ -32,6 +32,7 @@
 #include "lte_mac_configuration.h"
 #include "lte_mac_rach_attempt.h"
 #include "lte_mac_dl_transportblock.h"
+#include "lte_mac_ul_transportblock.h"
 #include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
 #include "lte_pusch_power_control.h"
@@ -369,6 +370,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             } else {
                 LOGD("Error decoding LTE_MAC_DL_Transport_Block base header.");
                 j["payload"]["LteMacDlTransportBlock"] = {{"error", "Failed to decode base header"}};
+            }
+            break;
+        }
+        case LTE_MAC_UL_Transport_Block: {
+            LOGD("payload_decode: LTE_MAC_UL_Transport_Block\n");
+            offset += _decode_by_fmt(LteMacULTransportBlockFmt,
+                                     ARRAY_SIZE(LteMacULTransportBlockFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Num SubPkt") != jj.end()) {
+                j["payload"]["LteMacUlTransportBlock"] = jj;
+                offset += _decode_lte_mac_ul_transportblock_subpkt(b, offset, length, j["payload"]["LteMacUlTransportBlock"]);
+            } else {
+                LOGD("Error decoding LTE_MAC_UL_Transport_Block base header.");
+                j["payload"]["LteMacUlTransportBlock"] = {{"error", "Failed to decode base header"}};
             }
             break;
         }
