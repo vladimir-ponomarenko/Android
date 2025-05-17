@@ -31,6 +31,7 @@
 #include "lte_mac_rach_trigger.h"
 #include "lte_mac_configuration.h"
 #include "lte_mac_rach_attempt.h"
+#include "lte_mac_dl_transportblock.h"
 #include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
 #include "lte_pusch_power_control.h"
@@ -353,6 +354,21 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                     j["payload"]["LteMacRachAttempt"] = jj;
                     j["payload"]["LteMacRachAttempt"]["error"] = "Base header missing Version or Number of Subpackets";
                 }
+            }
+            break;
+        }
+        case LTE_MAC_DL_Transport_Block: {
+            LOGD("payload_decode: LTE_MAC_DL_Transport_Block\n");
+            int initial_offset_for_this_packet = offset;
+            offset += _decode_by_fmt(LteMacDLTransportBlockFmt,
+                                     ARRAY_SIZE(LteMacDLTransportBlockFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Num SubPkt") != jj.end()) {
+                j["payload"]["LteMacDlTransportBlock"] = jj;
+                offset += _decode_lte_mac_dl_transportblock_subpkt(b, offset, length, j["payload"]["LteMacDlTransportBlock"]);
+            } else {
+                LOGD("Error decoding LTE_MAC_DL_Transport_Block base header.");
+                j["payload"]["LteMacDlTransportBlock"] = {{"error", "Failed to decode base header"}};
             }
             break;
         }

@@ -901,6 +901,113 @@ const Fmt LteMacRachAttempt_Subpkt_Msg3_MACPDU[] = {
         {BYTE_STREAM, "MAC PDU", 1},
 };
 
+const Fmt LteMacDLTransportBlockFmt[] = {
+        {UINT, "Version",    1},
+        {UINT, "Num SubPkt", 1},
+        {SKIP, NULL,         2}
+};
+
+const Fmt LteMacDLTransportBlock_SubpktHeaderFmt[] = {
+        {UINT, "SubPacket ID",   1},
+        {UINT, "Version",        1},
+        {UINT, "SubPacket Size", 2},
+        {UINT, "Num Samples",    1},
+};
+
+const Fmt LteMacDLTransportBlock_SubpktV2_SampleFmt[] = {
+        {UINT,        "Sub-FN",          2},
+        {PLACEHOLDER, "SFN",             0},
+        {UINT,        "RNTI Type",       1},
+        {UINT,        "HARQ ID",         1},
+        {PLACEHOLDER, "Area ID",         0},
+        {UINT,        "PMCH ID",         2},
+        {UINT,        "DL TBS (bytes)",  2},
+        {UINT,        "RLC PDUs",        1},
+        {UINT,        "Padding (bytes)", 2},
+        {UINT,        "HDR LEN",         1},
+        // Mac Hdr + CE and UL TB Other Structure
+};
+
+const Fmt LteMacDLTransportBlock_SubpktV4_SampleFmt[] = {
+        {UINT,        "Sub Id",          1},
+        {UINT,        "Cell Id",         1},
+        {UINT,        "Sub-FN",          2},
+        {PLACEHOLDER, "SFN",             0},
+        {UINT,        "RNTI Type",       1},
+        {UINT,        "HARQ ID",         1},
+        {PLACEHOLDER, "Area ID",         0},
+        {UINT,        "PMCH ID",         2},
+        {UINT,        "DL TBS (bytes)",  2},
+        {UINT,        "RLC PDUs",        1},
+        {UINT,        "Padding (bytes)", 2},
+        {UINT,        "HDR LEN",         1},
+        // Mac Hdr + CE and UL TB Other Structure
+};
+
+//xyf
+const ValueName LteMacDLTransportBlock_Mac_Hdr_LCId[] = {
+        {0, "CCCH"},
+        {1, "1"},
+        {2, "2"},
+        {3, "3"},
+        {4, "4"},
+        {5, "5"},
+        {6, "6"},
+        {7, "7"},
+        {8, "8"},
+        {9, "9"},
+        {10, "10"},
+        {11, "Reserved (unsupported)"},
+        {12, "Reserved (unsupported)"},
+        {13, "Reserved (unsupported)"},
+        {14, "Reserved (unsupported)"},
+        {15, "Reserved (unsupported)"},
+        {16, "Extended LC ID field (unsupported)"},
+        {17, "DCQR Command (unsupported)"},
+        {18, "Activation/Deactivation of PDCP Duplication (unsupported)"},
+        {19, "Hibernation (1 octet) (unsupported)"},
+        {20, "Hibernation (4 octet) (unsupported)"},
+        {21, "Activation/Deactivation of CSI-RS (unsupported)"},
+        {22, "Recommended bit rate (unsupported)"},
+        {23, "SC-PTM Stop Indication (unsupported)"},
+        {24, "Activation/Deactivation (4 octet) (unsupported)"},
+        {25, "SC-MCCH, SC-MTCH (unsupported)"},
+        {26, "Long DRX Command"},
+        {27, "Activation/Deactivation (1 octet)"},
+        {28, "CRID"},
+        {29, "TA"},
+        {30, "DRX Command"},
+        {31, "Padding"},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_Hdr[] = {
+        {UINT,        "Header Field",    1},
+        {PLACEHOLDER, "LC ID",           0},
+        {PLACEHOLDER, "Len",             0},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_Hdr_L1[] = {
+        {UINT,        "L1 Field",        1},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_Hdr_L2[] = {
+        {UINT,        "L2 Field",        1},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_CE_TA[] = {
+        {UINT,        "TA Field",        1},
+        {PLACEHOLDER, "TAG Id",          0},
+        {PLACEHOLDER, "TA Command",      0},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_CE_AD1[] = {
+        {UINT,        "AD Field",        1},
+};
+
+const Fmt LteMacDLTransportBlock_Mac_CE_CRID[] = {
+        {BYTE_STREAM, "CRID",            6},
+};
+
 const ValueName LteMacConfigurationSubpkt_SubpktType[] = {
         {0,  "Config Type Subpacket"},
         {1,  "DL Config SubPacket"},
