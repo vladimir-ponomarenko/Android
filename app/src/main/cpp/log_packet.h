@@ -797,6 +797,110 @@ const ValueName LteNasEmmState_v2_EmmSubstate_Registered[] = {
         {5, "EMM_REGISTERED_LIMITED_SERVICE"}
 };
 
+const Fmt LteMacRachAttempt_Fmt[] = {
+        {UINT, "Version",              1},
+        {UINT, "Number of Subpackets", 1},
+        {SKIP, NULL,                   2},
+};
+
+const Fmt LteMacRachAttempt_SubpktHeader[] = {
+        {UINT, "Subpacket ID",      1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size",    2},
+};
+
+const Fmt LteMacRachAttempt_SubpktPayload[] = {
+        // Version 2
+        {UINT, "Retx counter",         1},
+        {UINT, "Rach result",          1},
+        {UINT, "Contention procedure", 1},
+        {UINT, "Rach msg bmasks",      1},
+};
+
+const Fmt LteMacRachAttempt_SubpktPayload_v3[] = {
+        // Version 3
+        {UINT, "Sub Id",               1},
+        {UINT, "Cell Id",              1},
+        {UINT, "Retx counter",         1},
+        {UINT, "Rach result",          1},
+        {UINT, "Contention procedure", 1},
+        {UINT, "Rach msg bmasks",      1},
+};
+
+const Fmt LteMacRachAttempt_SubpktPayload_v4[] = {
+        // Version 2
+        {UINT, "Retx counter",         1},
+        {UINT, "Rach result",          1},
+        {UINT, "Contention procedure", 1},
+        {UINT, "Rach msg bmasks",      1},
+};
+
+const ValueName LteMacRachAttempt_Subpkt_RachResult[] = {
+        {0, "Success"},
+        {1, "Failure at MSG2"},
+        {4, "Aborted"},
+};
+const ValueName LteMacRachAttempt_Subpkt_ContentionProcedure[] = {
+        {0, "Contention Free RACH Procedure"},
+        {1, "Contention Based RACH procedure"},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg1[] = {
+        {UINT,        "Preamble Index",        1},
+        {BYTE_STREAM, "Preamble index mask",   1},
+        {WCDMA_MEAS,  "Preamble power offset", 1},
+        {SKIP,        NULL,                    1},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg1_v3[] = {
+        {UINT,        "Preamble Index",        1},
+        {BYTE_STREAM, "Preamble index mask",   1},
+        {UINT,        "Preamble power offset", 2},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg1_v4[] = {
+        {UINT,        "Preamble Index",        1},
+        {UINT,        "Preamble index mask",   1},
+        {UINT,        "Preamble power offset", 2},
+        {UINT,        "CE Level",              1},
+};
+
+const ValueName LteMacRachAttempt_Subpkt_Preamble_index_mask[] = {
+        {0xff, "Invalid"},
+};
+
+const ValueName LteMacRachAttempt_Subpkt_CELEVEL[] = {
+        {0, "CE_LEVEL_0"},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg2[] = {
+        {UINT, "Backoff Value (ms)", 2},
+        {UINT, "Result",             1},
+        {UINT, "TCRNTI",             2},
+        {UINT, "TA value",           2},
+};
+const ValueName LteMacRachAttempt_Subpkt_Msg2_Result[] = {
+        {0, "No"},
+        {1, "True"},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg3[] = {
+        {SKIP,        NULL,        1},
+        {BYTE_STREAM, "Grant Raw", 3},
+        {UINT,        "Grant",     2},
+        {UINT,        "Harq ID",   1},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg3_v4[] = {
+        {UINT,        "Grant Raw", 4},
+        {UINT,        "Grant",     2},
+        {UINT,        "Harq ID",   1},
+};
+
+const Fmt LteMacRachAttempt_Subpkt_Msg3_MACPDU[] = {
+        {BYTE_STREAM, "MAC PDU", 1},
+};
+
 const ValueName LteMacConfigurationSubpkt_SubpktType[] = {
         {0,  "Config Type Subpacket"},
         {1,  "DL Config SubPacket"},

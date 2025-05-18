@@ -305,7 +305,7 @@ class DiagRevealerControl(
                     if (decodedPackets.isNotEmpty()) {
                         for (packet in decodedPackets) {
                             if (!revealerIsRunning) break
-                            Log.d(TAG, "Decoded Packet: ${packet?.toString()?.take(500)}")
+                            Log.d(TAG, "Decoded Packet: ${packet?.toString()?.take(50000)}")
                         }
                     }
                 } catch (e: Exception) { Log.e(TAG, "Error in Logcat logging", e) }

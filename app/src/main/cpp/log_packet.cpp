@@ -30,6 +30,7 @@
 #include "lte_phy_pdsch_demapper_configuration.h"
 #include "lte_mac_rach_trigger.h"
 #include "lte_mac_configuration.h"
+#include "lte_mac_rach_attempt.h"
 #include "lte_nas_emm_state.h"
 #include "lte_pucch_power_control.h"
 #include "lte_pusch_power_control.h"
@@ -325,6 +326,33 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                         length - header_consumed,
                         j["payload"]["LteNasEmmState"]);
                 offset += payload_consumed;
+            }
+            break;
+        }
+        case LTE_MAC_Rach_Attempt: {
+            LOGD("payload_decode: LTE_MAC_Rach_Attempt\n");
+            int initial_offset_for_this_packet = offset;
+            offset += _decode_by_fmt(LteMacRachAttempt_Fmt,
+                                     ARRAY_SIZE(LteMacRachAttempt_Fmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj["Version"].is_number() &&
+                jj.find("Number of Subpackets") != jj.end() && jj["Number of Subpackets"].is_number()) {
+                j["payload"]["LteMacRachAttempt"] = jj;
+                int subpackets_consumed = _decode_lte_mac_rach_attempt_subpkt(
+                        b + offset,
+                        0,
+                        length - offset,
+                        j["payload"]["LteMacRachAttempt"]
+                );
+                offset += subpackets_consumed;
+            } else {
+                LOGD("Error decoding LTE_MAC_Rach_Attempt base header or missing essential fields.");
+                if (jj.empty()) {
+                    j["payload"]["LteMacRachAttempt"] = {{"error", "Failed to decode base header (empty)"}};
+                } else {
+                    j["payload"]["LteMacRachAttempt"] = jj;
+                    j["payload"]["LteMacRachAttempt"]["error"] = "Base header missing Version or Number of Subpackets";
+                }
             }
             break;
         }
