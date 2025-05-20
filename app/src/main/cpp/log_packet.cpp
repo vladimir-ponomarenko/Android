@@ -17,6 +17,7 @@
 #include "lte_rrc_ota.h"
 #include "lte_rlc_dl_stats.h"
 #include "lte_rlc_ul_stats.h"
+#include "lte_rlc_dl_config.h"
 #include "lte_phy_idle_neighbor_cell_meas.h"
 #include "lte_phy_connected_neighbor_cell_meas.h"
 #include "lte_phy_connected_mode_intra_freq_meas_results.h"
@@ -144,6 +145,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                 offset += header_consumed;
                 j["payload"]["LteRlcUlStats"] = jj;
                 _decode_lte_rlc_ul_stats_subpkt(b, offset, length - header_consumed, j["payload"]["LteRlcUlStats"]);
+            }
+            break;
+        }
+        case LTE_RLC_DL_Config_Log_Packet: {
+            LOGD("payload_decode: LTE_RLC_DL_Config_Log_Packet\n");
+            offset += _decode_by_fmt(LteRlcDlConfigLogPacketFmt,
+                                     ARRAY_SIZE(LteRlcDlConfigLogPacketFmt, Fmt),
+                                     b, offset, length, jj);
+            if (jj.find("Version") != jj.end() && jj.find("Num SubPkt") != jj.end()) {
+                j["payload"]["LteRlcDlConfigLogPacket"] = jj;
+                offset += _decode_lte_rlc_dl_config_log_packet_subpkt(b, offset, length, j["payload"]["LteRlcDlConfigLogPacket"]);
+            } else {
+                LOGD("Error decoding LTE_RLC_DL_Config_Log_Packet base header.");
+                j["payload"]["LteRlcDlConfigLogPacket"] = {{"error", "Failed to decode base header"}};
             }
             break;
         }
