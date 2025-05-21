@@ -113,5 +113,15 @@
     <string name="log_directory_path_label">Path for saving logs:</string>
     <string name="default_log_path_internal_app">Default: internal application folder</string>
     <string name="select_directory_button">Select a folder</string>
+    <string name="diag_message_types_title">Modem Message Types</string>
+    <string name="select_all_messages">Select All</string>
+    <string name="deselect_all_messages">Deselect All</string>
+    <string name="no_diag_message_types_available">Modem message types are unavailable or not loaded</string>
+    <string name="search_message_types">Search messages…</string>
+    <string name="search_icon_desc">Search Icon</string>
+    <string name="clear_search_desc">Clear Search</string>
+    <string name="no_search_results">No results found</string>
+    <string name="expand_list">Expand list</string>
+    <string name="collapse_list">Collapse list</string>
 
 </resources>

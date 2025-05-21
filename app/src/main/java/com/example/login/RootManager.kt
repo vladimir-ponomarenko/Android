@@ -448,7 +448,6 @@ class DiagRevealerControl(
 class RootManager(private val context: Context,
                   private val selectedDirUriProvider: () -> Uri?
                   ) {
-
     companion object {
         private const val PREFS_NAME = "RootPrefs"
         private const val KEY_ROOT_MODE = "root_mode"
@@ -457,6 +456,7 @@ class RootManager(private val context: Context,
         init { Shell.enableVerboseLogging = true; Shell.setDefaultBuilder( Shell.Builder.create().setFlags(Shell.FLAG_MOUNT_MASTER).setTimeout(60) ) }
     }
 
+    private val msgTypePrefs = context.getSharedPreferences("RootMsgTypesPrefs", Context.MODE_PRIVATE)
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val logTag = "RootManager"
 
@@ -527,24 +527,64 @@ class RootManager(private val context: Context,
     }
 
     private fun initDiag(): Boolean {
+        Log.d(logTag, "initDiag started.")
         if (!Shell.rootAccess()) {
-            Log.e(logTag, "Unable to get root access. Root access is required.")
+            Log.e(logTag, "Root access check failed.")
             return false
         }
+        Log.d(logTag, "Root access confirmed.")
 
         if (!updateSecurityPolicy()) {
+            Log.e(logTag, "Failed to update security policy.")
             return false
+        }
+        Log.d(logTag, "Security policy updated successfully.")
+
+        val allKnownPairsFromDRC = DRC.getKnownMessageTypes()
+            .filterIsInstance<Array<*>>()
+            .mapNotNull {
+                if (it.size >= 2 && it[0] is String && it[1] is Int) {
+                    (it[0] as String) to (it[1] as Int)
+                } else {
+                    Log.w(logTag, "Invalid item format from DRC.getKnownMessageTypes: $it")
+                    null
+                }
+            }
+        Log.d(logTag, "Total known types from DRC: ${allKnownPairsFromDRC.size}")
+        if (allKnownPairsFromDRC.isEmpty() && DRC.getKnownMessageTypes().isNotEmpty()){
+            Log.w(logTag, "Known types from DRC were not empty, but parsing to pairs failed for all.")
         }
 
 
-        val enabledMessageTypesList = DRC.getKnownMessageTypes()
-            .map { (it as Array<*>)[0] as String }
-            .toTypedArray()
-        val writeConfigResult = DRC.writeNewDiagCfg(enabledMessageTypesList)
+        val selectedMessageTypeNames = mutableListOf<String>()
+        val allPrefs = msgTypePrefs.all
+        Log.d(logTag, "All RootMsgTypesPrefs: $allPrefs")
+
+        for ((name, id) in allKnownPairsFromDRC) {
+            val prefsKey = "${id}_$name"
+            val isSelected = msgTypePrefs.getBoolean(prefsKey, false)
+            if (isSelected) {
+                selectedMessageTypeNames.add(name)
+                Log.d(logTag, "Type '$name' (ID: $id, PrefKey: $prefsKey) is SELECTED.")
+            } else {
+                // Log.d(logTag, "Type '$name' (ID: $id, PrefKey: $prefsKey) is NOT selected.")
+            }
+        }
+
+        if (selectedMessageTypeNames.isEmpty()) {
+            Log.w(logTag, "No message types were found as selected in SharedPreferences. Diag.cfg will be generated for an empty set (or default set if C++ handles it).")
+        } else {
+            Log.i(logTag, "Final list of selected message type NAMES for Diag.cfg: ${selectedMessageTypeNames.joinToString()}")
+        }
+
+        val finalArrayToSend = selectedMessageTypeNames.toTypedArray()
+        val writeConfigResult = DRC.writeNewDiagCfg(finalArrayToSend)
+
         if (!writeConfigResult) {
-            Log.e(logTag, "Failed to write initial Diag.cfg")
+            Log.e(logTag, "DRC.writeNewDiagCfg FAILED. Result: $writeConfigResult")
             return false
         }
+        Log.i(logTag, "DRC.writeNewDiagCfg reported SUCCESS.")
         return true
     }
 

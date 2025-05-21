@@ -113,5 +113,15 @@
     <string name="log_directory_path_label">Путь для сохранения логов:</string>
     <string name="default_log_path_internal_app">По умолчанию: внутренняя папка приложения</string>
     <string name="select_directory_button">Выбрать папку</string>
+    <string name="diag_message_types_title">Типы сообщений модема</string>
+    <string name="select_all_messages">Выбрать все</string>
+    <string name="deselect_all_messages">Снять все</string>
+    <string name="no_diag_message_types_available">Типы сообщений модема недоступны или не загружены</string>
+    <string name="search_message_types">Поиск сообщений…</string>
+    <string name="search_icon_desc">Иконка поиска</string>
+    <string name="clear_search_desc">Очистить поиск</string>
+    <string name="no_search_results">Ничего не найдено</string>
+    <string name="expand_list">Развернуть список</string>
+    <string name="collapse_list">Свернуть список</string>
 
 </resources>
