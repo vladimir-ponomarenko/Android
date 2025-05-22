@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -431,16 +433,29 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             }
         }
 
+        val finishAfterDelay: () -> Unit = {
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(1000)
+                safeOnComplete(true)
+            }
+        }
+
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
             val request = Request.Builder()
-                .url("ws://109.172.114.128:3000/api/v1/ws/phonedata")
+                .url("ws://109.172.114.128:3000/api/v1/ws/phonedata") // TODO Хардкод на время теста. Вынести в MainActivity
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     Log.d(TAG, "WebSocket connected successfully for CellInfo (from file)")
-                    sendJsonBody(jsonBody, safeOnComplete)
+                    sendJsonBody(jsonBody) { success ->
+                        if (success) {
+                            finishAfterDelay()
+                        } else {
+                            safeOnComplete(false)
+                        }
+                    }
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
@@ -467,7 +482,13 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             this.isWebSocketConnected = this.webSocket != null
         } else {
             Log.d(TAG, "Sending CellInfo through existing WebSocket connection")
-            sendJsonBody(jsonBody, safeOnComplete)
+            sendJsonBody(jsonBody) { success ->
+                if (success) {
+                    finishAfterDelay()
+                } else {
+                    safeOnComplete(false)
+                }
+            }
         }
     }
 

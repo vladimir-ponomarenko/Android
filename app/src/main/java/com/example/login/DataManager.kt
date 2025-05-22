@@ -33,8 +33,10 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -867,13 +869,17 @@ object DataManager {
             }
 
             MainActivity.networkManager.sendMessageToServerFromFile(file.absolutePath) { success ->
-                callback(success)
+                if (!isCallbackHandled) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        delay(1000)
+                        callback(success)
+                    }
+                }
             }
 
             continuation.invokeOnCancellation {
                 if (!isCallbackHandled) {
                     isCallbackHandled = true
-                    MainActivity.networkManager.webSocket?.close(1000, "Cancelled")
                     callback(false)
                 }
             }

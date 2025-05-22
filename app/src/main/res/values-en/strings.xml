@@ -109,7 +109,7 @@
     <string name="file_not_exist">The file does not exist</string>
     <string name="root_mode_title">Root mode</string>
     <string name="enable_root_mode">Enable Root mode</string>
-    <string name="root_features_description">Access to advanced functions and modem diagnostics (superuser rights required).</string>
+    <string name="root_features_description">Access to advanced functions and modem diagnostics (superuser rights required)</string>
     <string name="log_directory_path_label">Path for saving logs:</string>
     <string name="default_log_path_internal_app">Default: internal application folder</string>
     <string name="select_directory_button">Select a folder</string>
