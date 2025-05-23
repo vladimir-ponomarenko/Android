@@ -151,34 +151,65 @@ fun RootModeScreen(
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(key1 = rootManager) {
-        Log.d("RootModeScreen", "LaunchedEffect for MessageTypes: Loading known message types.")
-        val knownTypesFromDRC = rootManager.DRC.getKnownMessageTypes()
+        Log.i("RootModeScreen_MsgLoad", "LaunchedEffect for MessageTypes: Loading known message types from DRC.")
+        val knownTypesFromDRC: Array<Any?> = try {
+            rootManager.DRC.getKnownMessageTypes()
+        } catch (e: Exception) {
+            Log.e("RootModeScreen_MsgLoad", "Error calling DRC.getKnownMessageTypes()", e)
+            emptyArray()
+        }
+
+        Log.d("RootModeScreen_MsgLoad", "Raw knownTypesFromDRC (size: ${knownTypesFromDRC.size}):")
+        knownTypesFromDRC.forEachIndexed { index, item ->
+            Log.d("RootModeScreen_MsgLoad", "  DRC item[$index]: ${item?.javaClass?.simpleName} - $item")
+            if (item is Array<*>) {
+                Log.d("RootModeScreen_MsgLoad", "    Array content: ${item.joinToString()}")
+            }
+        }
+
+        if (knownTypesFromDRC.isEmpty()) {
+            Log.w("RootModeScreen_MsgLoad", "DRC.getKnownMessageTypes() returned an empty array.")
+        }
+
         val loadedTypes = knownTypesFromDRC.mapIndexedNotNull { index, item ->
-            if (item is Array<*> && item.size >= 2 && item[0] is String && item[1] is Int) {
-                val name = item[0] as String
-                val id = item[1] as Int
-                val prefsAndLazyColumnKey = "${id}_$name"
-                val isSelected = msgTypePrefs.getBoolean(prefsAndLazyColumnKey, false)
-                MessageTypeItem(name, id, isSelected, prefsAndLazyColumnKey)
+            if (item is Array<*> && item.size >= 2) {
+                val nameAny = item[0]
+                val idAny = item[1]
+                if (nameAny is String && idAny is Int) {
+                    val name = nameAny
+                    val id = idAny
+                    val prefsAndLazyColumnKey = "${id}_${name}"
+                    val isSelected = msgTypePrefs.getBoolean(prefsAndLazyColumnKey, false)
+                    Log.d("RootModeScreen_MsgLoad", "  Mapping: Name='$name', ID=$id, PrefKey='$prefsAndLazyColumnKey', isSelectedFromPrefs=$isSelected")
+                    MessageTypeItem(name, id, isSelected, prefsAndLazyColumnKey)
+                } else {
+                    Log.w("RootModeScreen_MsgLoad", "  Invalid item format in getKnownMessageTypes at index $index: name is ${nameAny?.javaClass?.simpleName}, id is ${idAny?.javaClass?.simpleName}. Expected String and Int. Item: ${item.joinToString()}")
+                    null
+                }
             } else {
-                Log.w("RootModeScreen", "Invalid item format in getKnownMessageTypes: $item at index $index")
+                Log.w("RootModeScreen_MsgLoad", "  Invalid item structure in getKnownMessageTypes at index $index: Not an array or size < 2. Item: $item")
                 null
             }
         }.sortedBy { it.name }
-        allMessageTypes = loadedTypes
-        Log.d("RootModeScreen", "Loaded ${allMessageTypes.size} message types.")
-    }
 
-    val saveSelectedMessageTypes = remember {
-        {
-            Log.d("RootModeScreen", "Saving selected message types to SharedPreferences.")
-            val editor = msgTypePrefs.edit()
-            allMessageTypes.forEach { item ->
-                editor.putBoolean(item.uniqueKeyInPrefs, item.isSelected)
-            }
-            editor.apply()
+        allMessageTypes = loadedTypes
+        Log.i("RootModeScreen_MsgLoad", "Loaded ${allMessageTypes.size} message types into allMessageTypes state.")
+        if (allMessageTypes.isEmpty() && knownTypesFromDRC.isNotEmpty()) {
+            Log.w("RootModeScreen_MsgLoad", "WARNING: knownTypesFromDRC was not empty, but allMessageTypes is empty after mapping. Check mapping logic and item formats.")
         }
     }
+
+    val saveSelectedMessageTypes = rememberUpdatedState {
+        Log.d("RootModeScreen", "Saving ${allMessageTypes.count { it.isSelected }} selected message types to SharedPreferences.")
+        val editor = msgTypePrefs.edit()
+        allMessageTypes.forEach { item ->
+            // Log.v("RootModeScreen", "  Saving: Key='${item.uniqueKeyInPrefs}', Value=${item.isSelected}")
+            editor.putBoolean(item.uniqueKeyInPrefs, item.isSelected)
+        }
+        editor.apply()
+        Log.d("RootModeScreen", "SharedPreferences save complete.")
+    }
+
 
     LaunchedEffect(key1 = rootManager) {
         Log.d("RootModeScreen", "LaunchedEffect for rootManager state: Updating isRootModeEnabled from RootManager")
@@ -226,10 +257,11 @@ fun RootModeScreen(
         }
     }
 
+    val currentSaveFunction by saveSelectedMessageTypes
     val onRootModeToggle: (Boolean) -> Unit = remember(rootManager) {
         { enabled ->
             Log.d("RootModeScreen", "Switch toggled to $enabled")
-            saveSelectedMessageTypes()
+            currentSaveFunction()
             rootManager.setRootModeEnabled(enabled)
             isRootModeEnabled = rootManager.isRootModeEnabled()
         }
@@ -385,21 +417,27 @@ fun RootModeScreen(
                             if (allMessageTypes.isNotEmpty()) {
                                 Button(
                                     onClick = {
-                                        val allCurrentlyDisplayedSelected = if (searchText.isBlank()) {
-                                            allMessageTypes.all { it.isSelected }
+                                        val listToModifyKeys = if (searchText.isBlank()) {
+                                            allMessageTypes.map { it.uniqueKeyInPrefs }
                                         } else {
-                                            filteredMessageTypes.isNotEmpty() && filteredMessageTypes.all { it.isSelected }
+                                            filteredMessageTypes.map { it.uniqueKeyInPrefs }
                                         }
-                                        val newSelectionState = !allCurrentlyDisplayedSelected
 
-                                        allMessageTypes = allMessageTypes.map { item ->
-                                            if (searchText.isBlank() || item.name.contains(searchText, ignoreCase = true)) {
-                                                item.copy(isSelected = newSelectionState)
-                                            } else {
-                                                item
+                                        if (listToModifyKeys.isNotEmpty()) {
+                                            val allCurrentlyDisplayedSelected = allMessageTypes
+                                                .filter { it.uniqueKeyInPrefs in listToModifyKeys }
+                                                .all { it.isSelected }
+                                            val newSelectionState = !allCurrentlyDisplayedSelected
+
+                                            allMessageTypes = allMessageTypes.map { item ->
+                                                if (item.uniqueKeyInPrefs in listToModifyKeys) {
+                                                    item.copy(isSelected = newSelectionState)
+                                                } else {
+                                                    item
+                                                }
                                             }
+                                            currentSaveFunction()
                                         }
-                                        saveSelectedMessageTypes()
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -408,9 +446,9 @@ fun RootModeScreen(
                                         backgroundColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFE0E0E0)
                                     )
                                 ) {
-                                    val currentListToCheck = if (searchText.isBlank()) allMessageTypes else filteredMessageTypes
+                                    val currentListForButtonText = if (searchText.isBlank()) allMessageTypes else filteredMessageTypes
                                     Text(
-                                        text = if (currentListToCheck.isNotEmpty() && currentListToCheck.all { it.isSelected }) stringResource(R.string.deselect_all_messages)
+                                        text = if (currentListForButtonText.isNotEmpty() && currentListForButtonText.all { it.isSelected }) stringResource(R.string.deselect_all_messages)
                                         else stringResource(R.string.select_all_messages),
                                         color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                                     )
@@ -419,16 +457,17 @@ fun RootModeScreen(
 
                             if (filteredMessageTypes.isNotEmpty()) {
                                 Box(modifier = Modifier.heightIn(max = 300.dp)) {
-                                    LazyColumn {
+                                    LazyColumn(
+                                        // state = rememberLazyListState()
+                                    ) {
                                         items(items = filteredMessageTypes, key = { it.uniqueKeyInPrefs }) { item ->
                                             MessageTypeRow(
                                                 item = item,
                                                 onCheckedChange = { newItemState ->
-
                                                     allMessageTypes = allMessageTypes.map {
                                                         if (it.uniqueKeyInPrefs == newItemState.uniqueKeyInPrefs) newItemState else it
                                                     }
-                                                    saveSelectedMessageTypes()
+                                                    currentSaveFunction()
                                                 },
                                                 isDarkTheme = isDarkTheme
                                             )
@@ -439,13 +478,17 @@ fun RootModeScreen(
                                 Text(
                                     text = stringResource(R.string.no_search_results),
                                     color = if (isDarkTheme) Color(0x99FFFFFF) else Color(0x9934204C),
-                                    modifier = Modifier.padding(vertical = 8.dp).align(Alignment.CenterHorizontally)
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .align(Alignment.CenterHorizontally)
                                 )
                             } else if (allMessageTypes.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.no_diag_message_types_available),
                                     color = if (isDarkTheme) Color(0x99FFFFFF) else Color(0x9934204C),
-                                    modifier = Modifier.padding(vertical = 8.dp).align(Alignment.CenterHorizontally)
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .align(Alignment.CenterHorizontally)
                                 )
                             }
                         }

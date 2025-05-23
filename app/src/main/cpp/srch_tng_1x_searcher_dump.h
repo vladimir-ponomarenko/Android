@@ -15,8 +15,8 @@
 #include <android/log.h>
 #include "nlohmann/json.hpp"
 #include "gsm_rr_cell_reselection_meas.h"
-#include "lte/lte_phy_serving_cell_meas_res.h"
-#include "lte/lte_rrc_mib_message_log_packet.h"
+#include "lte/phy/lte_phy_serving_cell_meas_res.h"
+#include "lte/rrc/lte_rrc_mib_message_log_packet.h"
 #include "wcdma_signaling_messages.h"
 
 using json = nlohmann::json;
