@@ -34,6 +34,108 @@ const Fmt LogPacketHeaderFmt [] = {
         {QCDM_TIMESTAMP, "timestamp", 8}
 };
 
+const ValueName ValueNameAggregationLevel[] = {
+        {0, "Agg1"},
+        {1, "Agg2"},
+        {2, "Agg4"},
+        {3, "Agg8"},
+
+        {6, "Agg16"},
+        {7, "Agg24"},
+};
+
+const ValueName ValueNameSearchSpaceType[] = {
+        {0, "Common"},
+        {1, "UE-specific"},
+
+        {3, "Common Type 2"},
+        {2, "User"},
+};
+
+const ValueName ValueNameSubcarrierSpaceType[] = {
+        {4, "15 kHz"},
+};
+
+const ValueName ValueNameDCIFormat[] = {
+        // 4 bits
+        // Release 8
+        // http:    //www.sharetechnote.com/html/LTE_Advanced_DCI.html
+        {0,  "Format 0"},
+        {1,  "Format 1"},
+        {2,  "Format 1A"},
+        {3,  "Format 1B"},
+        {4,  "Format 1C"},
+        {5,  "Format 1D"},
+        {6,  "Format 2"},
+        {7,  "Format 2A"},
+        {8,  "Format 3"},
+        {9,  "Format 3A"},
+
+        {12, "Format 60A"},
+        {13, "Format 61A"},
+        {15, "Reserved"},
+
+        {14, "Format 62"},
+};
+
+const ValueName ValueNameMatchOrNot[] = {
+        {0, "Mismatch"},
+        {1, "Match"},
+};
+
+const ValueName ValueNamePruneStatus[] = {
+        {1,   "SUCCESS_DCI0"},
+        {3,   "SUCCESS_DCI1A"},
+        {4,   "SUCCESS_DCI1C"},
+        {6,   "SUCCESS_DCI2_2A_2B"},
+        {8,   "TAIL_MISMATCH"},
+        {9,   "FAIL_SURVIVOR_SELECT"},
+        {10,  "PADDING_ERROR"},
+        {13,  "RB_ALLOC_SET_NUM_ERROR_TYPE1"},
+        {17,  "DUPLICATE_HARQ_ID_ERROR"},
+        {19,  "UNEXPECTED_PAYLOAD_SIZE"},
+        {24,  "BAD_RIV_DCI0"},
+        {25,  "RB_ALLOC_ERROR_DCI0"},
+        {26,  "INVALID_RB_NUM_DCI0"},
+        {32,  "BAD_RIV_DCI1A"},
+        {33,  "RB_ALLOC_ERROR_DCI1A"},
+        {34,  "INVALID_RB_NUM_DCI1A"},
+        {36,  "RETURN_DL_DATA_ARRIVAL_DCI1A"},
+        {44,  "RB_ALLOC_ERROR_DCI1C"},
+        {48,  "PMI_ERROR_DCI2_2A"},
+        {50,  "NUM_LAYERS_ERROR_DCI2_2A_TB1"},
+        {64,  "FAIL_SER_ENGYMTRC_CHECK"},
+
+        {70,  "NUM_LAYERS_EXCEED_NUM_RX"},
+
+        {200, "PDCCH_DEBUG_SUCCESS_DCI60A"},
+        {201, "PDCCH_DEBUG_SUCCESS_DCI61A"},
+
+        {202, "PDCCH_DEBUG_SUCCESS_DCI62"},
+        {216, "PDCCH_DEBUG_SUCCESS_DCI62_EARLY_TERMINATION"},
+
+};
+
+const ValueName ValueNameFrameStructure[] = {
+        {0, "FDD"},
+        {1, "TDD"},
+};
+
+const ValueName ValueNameNumNBAntennas[] = {
+        {0, "1 or 2"},
+        {1, "2 antennas"},
+        {2, "4 antennas"},
+};
+
+const ValueName ValueNameNumNBAntennas_PDCCH_V141[] = {
+        {0, "1 or 2"},
+        {1, "4 antennas"},
+};
+
+const ValueName ValueNameNormalOrNot[] = {
+        {0, "Normal"},
+};
+
 const ValueName ValueNameTrueOrFalse[] = {
         {0, "False"},
         {1, "True"}
@@ -1094,6 +1196,290 @@ const ValueName LtePhyPdschDemapperConfig_v122_OPMode[] = {
 const ValueName LtePhyPdschDemapperConfig_Joint_Demod_Skip_Reason[] = {
         {0, "NO_SKIP"},
         {1, "SW_DISABLE"},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Fmt [] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v21 [] = {
+        {UINT, "Subframe Number", 2},   // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {SKIP, NULL, 3},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {UINT, "Number of Hypothesis", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v42 [] = {
+        {UINT, "Subframe Number", 4},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 3 bits, (x-1)*5
+        {PLACEHOLDER, "CIF Configured", 0}, // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bits
+        {PLACEHOLDER, "Frame Structure", 0},    // 2 bits
+        {PLACEHOLDER, "Num eNB Antennas", 0},   // 2 bits
+        {PLACEHOLDER, "DL CP", 0},  // 2 bits
+        {PLACEHOLDER, "SSC", 0},    // 2 bits
+        {PLACEHOLDER, "CA FDD TDD", 0}, // 2 bits
+        {SKIP, NULL, 1},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {UINT, "Number of Hypothesis", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v43 [] = {
+        {UINT, "Num Records", 4},   // 4 bits
+        {PLACEHOLDER, "Subframe Number", 0},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 4 bits, (x-1)*5
+        {PLACEHOLDER, "Frame Structure", 0},    // 2 bits
+        {PLACEHOLDER, "Num eNB Antennas", 0},   // 3 bits
+        {SKIP, NULL, 2},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+};
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v101 [] = {
+        {UINT, "Subframe Number", 4},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 3 bits, (x-1)*5
+        {PLACEHOLDER, "CIF Configured", 0}, // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bits
+        {PLACEHOLDER, "Frame Structure", 0},    // 2 bits
+        {PLACEHOLDER, "Num eNB Antennas", 0},   // 2 bits
+        {PLACEHOLDER, "DL CP", 0},  // 2 bits
+        {PLACEHOLDER, "SSC", 0},    // 2 bits
+        {PLACEHOLDER, "CA FDD TDD", 0}, // 2 bits
+        {SKIP, NULL, 1},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {UINT, "Number of Hypothesis", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v121 [] = {
+        {UINT, "Subframe Number", 4},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 3 bits, (x-1)*5
+        {PLACEHOLDER, "CIF Configured", 0}, // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bits
+        {PLACEHOLDER, "Frame Structure", 0},    // 2 bits
+        {PLACEHOLDER, "Num eNB Antennas", 0},   // 2 bits
+        {PLACEHOLDER, "DL CP", 0},  // 2 bits
+        {PLACEHOLDER, "SSC", 0},    // 2 bits
+        {PLACEHOLDER, "CA FDD TDD", 0}, // 2 bits
+        {UINT, "__pad", 1},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {UINT, "Number of Hypothesis", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Record_v43 [] = {
+        {UINT, "Subframe Offset", 2},
+        {UINT, "CIF Configured", 2},    // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bit
+        {PLACEHOLDER, "Number of Hypothesis", 0},   // 8 bits
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v21 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0},  // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0},  // 1 bit
+        {PLACEHOLDER, "DCI Format", 0}, // 4 bits
+        {PLACEHOLDER, "Decode Status", 0},  // 4 bits
+        {PLACEHOLDER, "Start CCE", 0},  // 7 bits
+        {PLACEHOLDER, "Payload Size", 0},   // 8 bits
+        {PLACEHOLDER, "Tail Match", 0}, // 1 bit
+        {UINT, "Prune Status", 2},
+        {SKIP, NULL, 2},
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v24 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0},  // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0},  // 1 bit
+        {PLACEHOLDER, "DCI Format", 0}, // 4 bits
+        {PLACEHOLDER, "Decode Status", 0},  // 4 bits
+        {PLACEHOLDER, "Start CCE", 0},  // 7 bits
+        {PLACEHOLDER, "Payload Size", 0},   // 8 bits
+        {PLACEHOLDER, "Tail Match", 0}, // 1 bit
+        {UINT, "Prune Status", 1},
+
+        {UINT, "Rmax",1},
+        {PLACEHOLDER, "Hypothesis Repetition",0},
+        {UINT, "Decoded Repetition",1},
+        {PLACEHOLDER, "Mpdcch Group",0},
+        {UINT, "Nb",1},
+
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v42 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  //  11 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v43 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  //  11 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v101 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  //  11 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v121 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Alt TBS Enabled", 0}, // 1 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  //  11 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v123 [] = {
+        {UINT, "Subframe Number", 4},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 3 bits, (x-1)*5
+        {PLACEHOLDER, "CIF Configured", 0}, // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bits
+        {PLACEHOLDER, "Frame Structure", 0},    // 2 bits
+        {PLACEHOLDER, "Num eNB Antennas", 0},   // 2 bits
+        {PLACEHOLDER, "DL CP", 0},  // 2 bits
+        {PLACEHOLDER, "SSC", 0},    // 2 bits
+        {PLACEHOLDER, "CA FDD TDD", 0}, // 2 bits
+        {UINT, "__pad", 1},
+        {UINT, "Demback Mode Select", 1},   // 4 bits
+        {PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        {UINT, "Number of Hypothesis", 1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v123 [] = {
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Alt TBS Enabled", 0}, // 1 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  //  11 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
+};
+
+
+const Fmt LtePhyPdcchDecodingResult_Payload_v141 [] = {
+        {UINT, "Carrier Index", 2},  // shfit 0 bit, 4 bits
+        {PLACEHOLDER, "Number of Records", 0}, //shift 4, total 9 bits
+        {SKIP,NULL,1},
+};
+
+const Fmt LtePhyPdcchDecodingResult_Hypothesis_v141 [] = {
+        {UINT, "Subframe Number", 4},    // 4 bits
+        {PLACEHOLDER, "System Frame Number", 0},    // 10 bits
+        {PLACEHOLDER, "Band Width (MHz)", 0}, // 3 bits, (x-1)*5
+        {PLACEHOLDER, "CIF Configured", 0}, // 1 bit
+        {PLACEHOLDER, "Two bits CSI Configured", 0},    // 1 bit
+        {PLACEHOLDER, "Aperiodic SRS Configured", 0},   // 1 bits
+        {PLACEHOLDER,"Frame Structure",0}, 	// shift 20 bits,total 3 bits
+        {PLACEHOLDER,"Num eNB Antennas",0}, 	// shift 23 bits,total 1 bits
+        {PLACEHOLDER,"DL CP",0}, 	// shift 24 bits,total 1 bits
+        {PLACEHOLDER,"SSC",0}, 	// shift 25 bits,total 4 bits
+        {PLACEHOLDER,"CA FDD TDD",0}, 	// shift 29 bits,total 1 bits
+        //{UINT, "__pad", 1},
+        //{UINT, "Demback Mode Select", 1},   // 4 bits
+        //{PLACEHOLDER, "Carrier Index", 0},  // 4 bits
+        //{UINT, "Number of Hypothesis", 1},
+
+        {BYTE_STREAM, "Payload", 8},
+        {UINT, "Aggregation Level", 4}, // 2 bits
+        {PLACEHOLDER, "Candidate", 0}, // 3 bits
+        {PLACEHOLDER, "Search Space Type", 0}, // 1 bit
+        {PLACEHOLDER, "DCI Format", 0},    // 4 bits
+        {PLACEHOLDER, "Decode States", 0}, // 4 bits
+        {PLACEHOLDER, "Payload Size", 0},  // 8 bits
+        {PLACEHOLDER, "Tail Match", 0},    // 1 bit
+        {PLACEHOLDER, "Non Zero Symbol Mismatch Count", 0},    // 9 bits
+        {UINT, "Start CCE", 4}, // right shift 1 bit, 7 bits
+        {PLACEHOLDER, "Alt TBS Enabled", 0}, // 1 bits
+        {PLACEHOLDER, "Non Zero Llr Count", 0}, // 9 bits
+        {PLACEHOLDER, "Normal", 0},     // 15 bits
+        {UINT, "Prune Status", 4},  // shift 0 bit, total 8 bits
+        {PLACEHOLDER, "Energy Metric", 0},  // shift 8 bits total 21 bits
+        {UINT, "Norm Energy Metric", 4},    // x/65535.0
+        {UINT, "Symbol Error Rate", 4}, // x/2147483648.0
 };
 
 const ValueName ValueNameRankIndex[] = {

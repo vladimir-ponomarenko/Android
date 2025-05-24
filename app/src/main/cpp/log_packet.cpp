@@ -32,6 +32,7 @@
 #include "lte/phy/lte_phy_bplmn_cell_request.h"
 #include "lte/phy/lte_phy_bplmn_cell_confirm.h"
 #include "lte/phy/lte_phy_pdsch_demapper_configuration.h"
+#include "lte/phy/lte_phy_pdcch_decoding_result.h"
 #include "lte/mac/lte_mac_rach_trigger.h"
 #include "lte/mac/lte_mac_configuration.h"
 #include "lte/mac/lte_mac_rach_attempt.h"
@@ -370,6 +371,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                 offset += payload_consumed;
                 j["payload"]["LtePhyPdschDemapperConfig"] = jj;
             }
+            break;
+        }
+        case LTE_PHY_PDCCH_Decoding_Result: {
+            LOGD("payload_decode: LTE_PHY_PDCCH_Decoding_Result\n");
+            offset += _decode_by_fmt(LtePhyPdcchDecodingResult_Fmt,
+                                     ARRAY_SIZE(LtePhyPdcchDecodingResult_Fmt, Fmt),
+                                     b, offset, length, jj);
+            offset += _decode_lte_phy_pdcch_decoding_result_payload(b, offset, length, jj);
+            j["payload"]["LtePhyPdcchDecodingResult"] = jj;
             break;
         }
         case LTE_NAS_EMM_State: {
