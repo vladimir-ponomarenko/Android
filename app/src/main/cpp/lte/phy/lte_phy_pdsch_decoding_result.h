@@ -676,6 +676,7 @@ static int _decode_lte_phy_pdsch_decoding_result_payload(const char* b, int offs
             break;
         }
 
+        // TODO Есть ещё версии этого лога
 
         default:
             LOGD("(MI)Unknown LTE PHY PDSCH Decoding Result version: 0x%x", pkt_ver);

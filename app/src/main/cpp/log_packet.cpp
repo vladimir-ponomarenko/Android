@@ -38,6 +38,8 @@
 #include "lte/phy/lte_phy_pdsch_demapper_configuration.h"
 #include "lte/phy/lte_phy_pdsch_decoding_result.h"
 #include "lte/phy/lte_phy_pdcch_decoding_result.h"
+#include "lte/phy/lte_phy_irat.h"
+#include "lte/phy/lte_phy_irat_cdma.h"
 #include "lte/mac/lte_mac_rach_trigger.h"
 #include "lte/mac/lte_mac_configuration.h"
 #include "lte/mac/lte_mac_rach_attempt.h"
@@ -62,7 +64,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
     json jj;
     switch (type_id) {
         case LTE_PHY_Serving_Cell_Measurement_Result: {
-            LOGD("payload_decode: LTE_PHY_Serving_Cell_Measurement_Result\n");
             offset += _decode_by_fmt(LtePhySubpktFmt,
                                      ARRAY_SIZE(LtePhySubpktFmt, Fmt),
                                      b, offset, length, jj);
@@ -71,7 +72,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PUSCH_CSF: {
-            LOGD("payload_decode: LTE_PHY_PUSCH_CSF\n");
             offset += _decode_by_fmt(LtePhyPuschCsf_Fmt,
                                      ARRAY_SIZE(LtePhyPuschCsf_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -80,7 +80,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_RLM_Report: {
-            LOGD("payload_decode: LTE_PHY_RLM_Report\n");
             offset += _decode_by_fmt(LtePhyRlmReport_Fmt,
                                      ARRAY_SIZE(LtePhyRlmReport_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -89,7 +88,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_Serving_Cell_COM_Loop: {
-            LOGD("payload_decode: LTE_PHY_Serving_Cell_COM_Loop\n");
             offset += _decode_by_fmt(LtePhyServingCellComLoop_Fmt,
                                      ARRAY_SIZE(LtePhyServingCellComLoop_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -98,7 +96,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_Connected_Mode_Neighbor_Meas_Req_Resp: {
-            LOGD("payload_decode: LTE_PHY_Connected_Mode_Neighbor_Measurement\n");
             offset += _decode_by_fmt(LtePhyCncm_Fmt,
                                      ARRAY_SIZE(LtePhyCncm_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -107,7 +104,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_Idle_Neighbor_Cell_Meas: {
-            LOGD("payload_decode: LTE_PHY_Idle_Neighbor_Cell_Meas\n");
             offset += _decode_by_fmt(LtePhyIncm_Fmt,
                                      ARRAY_SIZE(LtePhyIncm_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -117,7 +113,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_Connected_Mode_LTE_Intra_Freq_Meas_Results: {
-            LOGD("payload_decode: LTE_PHY_Connected_Mode_LTE_Intra_Freq_Meas_Results\n");
             offset += _decode_by_fmt(LtePhyCmlifmrFmt,
                                      ARRAY_SIZE(LtePhyCmlifmrFmt, Fmt),
                                      b, offset, length, jj);
@@ -125,8 +120,23 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             offset += _decode_lte_phy_cmlifmr(b, offset, length, j["payload"]["LtePhyCmlifmr"]);
             break;
         }
+        case LTE_PHY_IRAT_Measurement_Request: {
+            offset += _decode_by_fmt(LtePhyIratFmt,
+                                     ARRAY_SIZE(LtePhyIratFmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePhyIratMeasReq"] = jj;
+            offset += _decode_lte_phy_irat_subpkt(b, offset, length, j["payload"]["LtePhyIratMeasReq"]);
+            break;
+        }
+        case LTE_PHY_CDMA_MEAS: {
+            offset += _decode_by_fmt(LtePhyIratFmt,
+                                     ARRAY_SIZE(LtePhyIratFmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["LtePhyCdmaMeas"] = jj;
+            offset += _decode_lte_phy_irat_payload_with_cdma(b, offset, length, j["payload"]["LtePhyIratMeasReq"]);
+            break;
+        }
         case LTE_RLC_DL_Stats: {
-            LOGD("payload_decode: LTE_RLC_DL_Stats\n");
             int header_consumed = _decode_by_fmt(LteRlcDlStats_Fmt,
                                                  ARRAY_SIZE(LteRlcDlStats_Fmt, Fmt),
                                                  b, offset, length, jj);
@@ -141,7 +151,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RLC_UL_Stats: {
-            LOGD("payload_decode: LTE_RLC_UL_Stats\n");
             int header_consumed = _decode_by_fmt(LteRlcUlStats_Fmt,
                                                  ARRAY_SIZE(LteRlcUlStats_Fmt, Fmt),
                                                  b, offset, length, jj);
@@ -156,7 +165,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RLC_DL_Config_Log_Packet: {
-            LOGD("payload_decode: LTE_RLC_DL_Config_Log_Packet\n");
             offset += _decode_by_fmt(LteRlcDlConfigLogPacketFmt,
                                      ARRAY_SIZE(LteRlcDlConfigLogPacketFmt, Fmt),
                                      b, offset, length, jj);
@@ -170,7 +178,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RLC_UL_Config_Log_Packet: {
-            LOGD("payload_decode: LTE_RLC_UL_Config_Log_Packet\n");
             offset += _decode_by_fmt(LteRlcUlConfigLogPacketFmt,
                                      ARRAY_SIZE(LteRlcUlConfigLogPacketFmt, Fmt),
                                      b, offset, length, jj);
@@ -184,7 +191,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RLC_UL_AM_All_PDU: {
-            LOGD("payload_decode: LTE_RLC_UL_AM_All_PDU\n");
             offset += _decode_by_fmt(LteRlcUlAmAllPduFmt,
                                      ARRAY_SIZE(LteRlcUlAmAllPduFmt, Fmt),
                                      b, offset, length, jj);
@@ -198,7 +204,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RLC_DL_AM_All_PDU: {
-            LOGD("payload_decode: LTE_RLC_DL_AM_All_PDU\n");
             offset += _decode_by_fmt(LteRlcDlAmAllPduFmt,
                                      ARRAY_SIZE(LteRlcDlAmAllPduFmt, Fmt),
                                      b, offset, length, jj);
@@ -212,7 +217,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RRC_Serv_Cell_Info_Log_Packet: {
-            LOGD("payload_decode: LTE_RRC_Serv_Cell_Info_Log_Packet\n");
             int header_consumed = _decode_by_fmt(LteRrcServCellInfoLogPacketFmt,
                                                  ARRAY_SIZE(LteRrcServCellInfoLogPacketFmt, Fmt),
                                                  b, offset, length, jj);
@@ -235,7 +239,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RRC_MIB_Message_Log_Packet: {
-            LOGD("payload_decode: LTE_RRC_MIB_Message_Log_Packet\n");
             offset += _decode_by_fmt(LteRrcMibMessageLogPacketFmt,
                                      ARRAY_SIZE(LteRrcMibMessageLogPacketFmt, Fmt),
                                      b, offset, length, jj);
@@ -244,7 +247,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_RRC_OTA_Packet: {
-            LOGD("payload_decode: LTE_RRC_OTA_Packet\n");
             int header_consumed = _decode_by_fmt(LteRrcOtaPacketFmt,
                                                  ARRAY_SIZE(LteRrcOtaPacketFmt, Fmt),
                                                  b, offset, length, jj);
@@ -260,7 +262,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PDSCH_Stat_Indication: {
-            LOGD("payload_decode: LTE_PDSCH_Stat_Indication\n");
             offset += _decode_by_fmt(LtePdschStatIndication_Fmt,
                                      ARRAY_SIZE(LtePdschStatIndication_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -269,7 +270,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_System_Scan_Results: {
-            LOGD("payload_decode: LTE_PHY_System_Scan_Results\n");
             offset += _decode_by_fmt(LtePhySystemScanResults_Fmt,
                                      ARRAY_SIZE(LtePhySystemScanResults_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -284,7 +284,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PUSCH_Tx_Report: {
-            LOGD("payload_decode: LTE_PHY_PUSCH_Tx_Report\n");
             offset += _decode_by_fmt(LtePhyPuschTxReport_Fmt,
                                      ARRAY_SIZE(LtePhyPuschTxReport_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -294,7 +293,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
         }
         case LTE_PHY_Inter_Freq_Log:
         {
-            LOGD("payload_decode: LTE_PHY_InterFreq_Log\n");
 
             offset += _decode_by_fmt(LtePhyInterlogFmt,
                                      ARRAY_SIZE(LtePhyInterlogFmt, Fmt),
@@ -305,7 +303,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_CDRX_Events_Info: {
-            LOGD("payload_decode: LTE_PHY_CDRX_Events_Info\n");
             offset += _decode_by_fmt(LtePhyCdrxEventsInfo_Fmt,
                                      ARRAY_SIZE(LtePhyCdrxEventsInfo_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -314,7 +311,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_BPLMN_Cell_Request: {
-            LOGD("payload_decode: LTE_PHY_BPLMN_Cell_Request\n");
             offset += _decode_by_fmt(LtePhyBplmnCellRequest_Fmt,
                                      ARRAY_SIZE(LtePhyBplmnCellRequest_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -323,7 +319,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_BPLMN_Cell_Confirm: {
-            LOGD("payload_decode: LTE_PHY_BPLMN_Cell_Confirm\n");
             offset += _decode_by_fmt(LtePhyBplmnCellConfirm_Fmt,
                                      ARRAY_SIZE(LtePhyBplmnCellConfirm_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -332,7 +327,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PUCCH_Power_Control: {
-            LOGD("payload_decode: LTE_PUCCH_Power_Control\n");
             offset += _decode_by_fmt(LtePucchPowerControl_Fmt,
                                      ARRAY_SIZE(LtePucchPowerControl_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -341,7 +335,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PUCCH_Tx_Report: {
-            LOGD("payload_decode: LTE_PHY_PUCCH_Tx_Report\n");
             offset += _decode_by_fmt(LtePhyPucchTxReport_Fmt,
                                      ARRAY_SIZE(LtePhyPucchTxReport_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -350,7 +343,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PUSCH_Power_Control: {
-            LOGD("payload_decode: LTE_PUSCH_Power_Control\n");
 
             offset += _decode_by_fmt(LtePuschPowerControl_Fmt,
                                      ARRAY_SIZE(LtePuschPowerControl_Fmt, Fmt),
@@ -365,7 +357,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PUCCH_CSF: {
-            LOGD("payload_decode: LTE_PHY_PUCCH_CSF\n");
             offset += _decode_by_fmt(LtePhyPucchCsf_Fmt,
                                      ARRAY_SIZE(LtePhyPucchCsf_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -374,7 +365,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PDSCH_Demapper_Configuration: {
-            LOGD("payload_decode: LTE_PHY_PDSCH_Demapper_Configuration\n");
 
             int header_consumed = _decode_by_fmt(LtePhyPdschDemapperConfigFmt,
                                                  ARRAY_SIZE(LtePhyPdschDemapperConfigFmt, Fmt),
@@ -395,7 +385,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PDSCH_Decoding_Result: {
-            LOGD("payload_decode: LTE_PHY_PDSCH_Decoding_Result\n");
             offset += _decode_by_fmt(LtePhyPdschDecodingResult_Fmt,
                                      ARRAY_SIZE(LtePhyPdschDecodingResult_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -404,7 +393,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PDCCH_Decoding_Result: {
-            LOGD("payload_decode: LTE_PHY_PDCCH_Decoding_Result\n");
             offset += _decode_by_fmt(LtePhyPdcchDecodingResult_Fmt,
                                      ARRAY_SIZE(LtePhyPdcchDecodingResult_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -413,7 +401,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_NAS_EMM_State: {
-            LOGD("payload_decode: LTE_NAS_EMM_State\n");
 
             int header_consumed = _decode_by_fmt(LteNasEmmStateFmt,
                                                  ARRAY_SIZE(LteNasEmmStateFmt, Fmt),
@@ -434,7 +421,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_Rach_Attempt: {
-            LOGD("payload_decode: LTE_MAC_Rach_Attempt\n");
             int initial_offset_for_this_packet = offset;
             offset += _decode_by_fmt(LteMacRachAttempt_Fmt,
                                      ARRAY_SIZE(LteMacRachAttempt_Fmt, Fmt),
@@ -461,7 +447,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_DL_Transport_Block: {
-            LOGD("payload_decode: LTE_MAC_DL_Transport_Block\n");
             int initial_offset_for_this_packet = offset;
             offset += _decode_by_fmt(LteMacDLTransportBlockFmt,
                                      ARRAY_SIZE(LteMacDLTransportBlockFmt, Fmt),
@@ -476,7 +461,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_UL_Transport_Block: {
-            LOGD("payload_decode: LTE_MAC_UL_Transport_Block\n");
             offset += _decode_by_fmt(LteMacULTransportBlockFmt,
                                      ARRAY_SIZE(LteMacULTransportBlockFmt, Fmt),
                                      b, offset, length, jj);
@@ -490,7 +474,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_Rach_Trigger: {
-            LOGD("payload_decode: LTE_MAC_Rach_Trigger\n");
             offset += _decode_by_fmt(LteMacRachTriggerFmt,
                                      ARRAY_SIZE(LteMacRachTriggerFmt, Fmt),
                                      b, offset, length, jj);
@@ -499,7 +482,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_UL_Tx_Statistics: {
-            LOGD("payload_decode: LTE_MAC_UL_Tx_Statistics\n");
             offset += _decode_by_fmt(LteMacULTxStatisticsFmt,
                                      ARRAY_SIZE(LteMacULTxStatisticsFmt, Fmt),
                                      b, offset, length, jj);
@@ -513,7 +495,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_Configuration: {
-            LOGD("payload_decode: LTE_MAC_Configuration\n");
             int header_consumed = _decode_by_fmt(LteMacConfigurationFmt,
                                                  ARRAY_SIZE(LteMacConfigurationFmt, Fmt),
                                                  b, offset, length, jj);
@@ -533,7 +514,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_MAC_UL_Buffer_Status_Internal: {
-            LOGD("payload_decode: LTE_MAC_UL_Buffer_Status_Internal\n");
             offset += _decode_by_fmt(LteMacULBufferStatusInternalFmt,
                                      ARRAY_SIZE(LteMacULBufferStatusInternalFmt, Fmt),
                                      b, offset, length, jj);
@@ -547,7 +527,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
-            LOGD("payload_decode: LTE_NB1_ML1_GM_TX_Report\n");
             offset += _decode_by_fmt(LteNb1Ml1GmTxReport,
                                      ARRAY_SIZE(LteNb1Ml1GmTxReport, Fmt),
                                      b, offset, length, jj);
@@ -556,7 +535,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case GSM_RR_Cell_Reselection_Meas: {
-            LOGD("payload_decode: GSM_RR_Cell_Reselection_Meas\n");
             offset += _decode_by_fmt(GsmRrCellResMeas_Fmt,
                                      ARRAY_SIZE(GsmRrCellResMeas_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -565,7 +543,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case WCDMA_CELL_ID: {
-            LOGD("payload_decode: WCDMA_CELL_ID\n");
             offset += _decode_by_fmt(WcdmaCellIdFmt,
                                      ARRAY_SIZE(WcdmaCellIdFmt, Fmt),
                                      b, offset, length, jj);
@@ -573,7 +550,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case WCDMA_Signaling_Messages: {
-            LOGD("payload_decode: WCDMA_Signaling_Messages\n");
             offset += _decode_by_fmt(WcdmaSignalingMessagesFmt,
                                      ARRAY_SIZE(WcdmaSignalingMessagesFmt, Fmt),
                                      b, offset, length, jj);
@@ -582,7 +558,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case Srch_TNG_1x_Searcher_Dump: {
-            LOGD("payload_decode: Srch_TNG_1x_Searcher_Dump\n");
             offset += _decode_by_fmt(SrchTng1xsd_Fmt,
                                      ARRAY_SIZE(SrchTng1xsd_Fmt, Fmt),
                                      b, offset, length, jj);

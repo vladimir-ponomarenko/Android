@@ -829,6 +829,68 @@ const Fmt LteRlcUlConfigLogPacket_Subpkt_ActiveRB_Fmt_v3[] = {
         {UINT,        "AM SN Length",       1},
 };
 
+enum LtePhyIratType {
+    LtePhyIratType_HRPD = 14,
+    LtePhyIratType_WCDMA = 35,
+    LtePhyIratType_1x = 41,
+    LtePhyIratType_GSM = 42,
+};
+
+
+const Fmt LtePhyIratFmt[] = {
+        {UINT, "Version",         1},
+        {UINT, "Subpacket count", 1},
+        {SKIP, NULL,              2},
+};
+
+const Fmt LtePhyIratSubPktFmt[] = {
+        {UINT, "Subpacket ID",   1},
+        {UINT, "Version",        1},
+        {UINT, "Subpacket size", 2},
+};
+
+const Fmt LtePhyIratWCDMAFmt[] = {
+        {UINT, "Current DRX cycle",     4},
+        {UINT, "Number of frequencies", 1},
+        {SKIP, NULL,                    3},
+};
+
+const Fmt LtePhyIratWCDMACellMetaFmt[] = {
+        {UINT, "Frequency",       2},
+        {UINT, "Number of cells", 1},
+        {SKIP, NULL,              1},
+};
+
+const Fmt LtePhyIratWCDMACellFmt[] = {
+        {UINT,       "PSC+Energy",                             2},
+        {UINT,       "CSG",                                    1},
+        {SKIP,       NULL,                                     1},
+        {UINT,       "Pn Pos",                                 4},
+        {WCDMA_MEAS, "RSCP",                                   1},
+        {WCDMA_MEAS, "RSSI",                                   1},
+        {WCDMA_MEAS, "EcNo",                                   1},
+        {UINT,       "SrxLev",                                 1},
+        {UINT,       "DRX cycle count since last measurement", 2},
+        {UINT,       "Treselection",                           1},
+        {UINT,       "Squal",                                  1}
+
+};
+
+const Fmt LtePhyIratCDMACellFmt[] = {
+        {UINT, "Number of Pilots", 1},
+        {UINT, "Band",             1},
+        {UINT, "Channel",          2},
+};
+
+const Fmt LtePhyIratCDMACellPilotFmt[] = {
+        {UINT, "Pilot ID", 2},
+        {UINT, "RSS (dB)", 2},
+        {SKIP, NULL,       4},
+        {UINT, "EcNo",     2},
+        {SKIP, NULL,       6},
+};
+
+
 const Fmt LtePhyPuschTxReport_Fmt[] = {
         {UINT, "Version", 1},
 };
