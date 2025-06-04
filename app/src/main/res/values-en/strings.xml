@@ -123,5 +123,6 @@
     <string name="no_search_results">No results found</string>
     <string name="expand_list">Expand list</string>
     <string name="collapse_list">Collapse list</string>
+    <string name="upload_log_button">Send file to server</string>
 
 </resources>

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -149,6 +150,35 @@ fun RootModeScreen(
 
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val contentResolver = context.contentResolver
+            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            try {
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+                Log.i("RootModeScreen", "Log file selected for upload: $uri")
+                coroutineScope.launch {
+                    val networkManager = NetworkManager(context, "http://109.172.114.128:3000", "/api/v1/ws/phonedata")
+                    networkManager.sendRootLogToServerFromFile(context, uri) { success ->
+                        if (success) {
+                            Log.i("RootModeScreen", "Root log file successfully sent to server: $uri")
+                            (context as? MainActivity)?.showSendingIndicator()
+                        } else {
+                            Log.e("RootModeScreen", "Failed to send root log file to server: $uri")
+                        }
+                    }
+                }
+            } catch (e: SecurityException) {
+                Log.e("RootModeScreen", "Failed to take persistable URI permission for file upload", e)
+            }
+        } else {
+            Log.w("RootModeScreen", "Log file selection cancelled.")
+        }
+    }
 
     LaunchedEffect(key1 = rootManager) {
         Log.i("RootModeScreen_MsgLoad", "LaunchedEffect for MessageTypes: Loading known message types from DRC.")
@@ -340,6 +370,35 @@ fun RootModeScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.select_directory_button),
+                                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                item {
+                    Button(
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                try { filePickerLauncher.launch(arrayOf("text/plain")) }
+                                catch (e: Exception) { Log.e("RootModeScreen", "Error launching file picker for upload", e) }
+                            } else { Log.w("RootModeScreen", "SAF file picker not available on this API level.") }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFE0E0E0)
+                        )
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Upload,
+                                contentDescription = stringResource(R.string.upload_log_button),
+                                tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.upload_log_button),
                                 color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
                             )
                         }

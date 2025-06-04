@@ -123,5 +123,5 @@
     <string name="no_search_results">Ничего не найдено</string>
     <string name="expand_list">Развернуть список</string>
     <string name="collapse_list">Свернуть список</string>
-
+    <string name="upload_log_button">Отправить файл на сервер</string>
 </resources>

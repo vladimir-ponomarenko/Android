@@ -1,7 +1,10 @@
 package com.example.login
 
 import android.app.Activity
+import android.net.Uri
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
+import com.google.gson.stream.JsonReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -22,8 +25,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
+import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 
@@ -409,6 +415,236 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             Log.e(TAG, "WebSocket is not connected, cannot send CellInfo")
             onComplete?.invoke(false)
         }
+    }
+
+    fun sendRootLogToServerFromFile(context: android.content.Context, fileUri: Uri, onComplete: ((Boolean) -> Unit)? = null) {
+        val endpoint = "v1/ws/phonedata"
+        val chunkSize = 1000
+
+        val documentFile = DocumentFile.fromSingleUri(context, fileUri)
+        if (documentFile == null || !documentFile.exists() || !documentFile.canRead()) {
+            Log.e(TAG, "Cannot read file from URI: $fileUri")
+            onComplete?.invoke(false)
+            return
+        }
+
+        var isCompleted = false
+        val safeOnComplete = { result: Boolean ->
+            if (!isCompleted) {
+                isCompleted = true
+                onComplete?.invoke(result)
+            }
+        }
+
+        val finishAfterDelay: () -> Unit = {
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(1000)
+                safeOnComplete(true)
+            }
+        }
+
+        fun sendJsonArray(jsonArray: JSONArray, onSent: (Boolean) -> Unit) {
+            val jsonString = jsonArray.toString()
+            Log.d(TAG, "Sending chunk to server: $jsonString")
+            if (webSocket == null || !isWebSocketConnected) {
+                Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
+                val request = Request.Builder()
+                    .url("ws://109.172.114.128:3000/api/$endpoint") // TODO: Вынести хардкод в MainActivity
+                    .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
+                    .build()
+                this@NetworkManager.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
+                    override fun onOpen(webSocket: WebSocket, response: Response) {
+                        Log.d(TAG, "WebSocket connected successfully for RootLog")
+                        this@NetworkManager.isWebSocketConnected = true
+                        val success = webSocket.send(jsonString)
+                        if (success) {
+                            Log.d(TAG, "Successfully sent chunk of $chunkSize JSON objects")
+                            onSent(true)
+                        } else {
+                            Log.e(TAG, "Failed to send JSON chunk")
+                            onSent(false)
+                        }
+                    }
+
+                    override fun onMessage(webSocket: WebSocket, text: String) {
+                        Log.d(TAG, "Received message from server RootLog: $text")
+                    }
+
+                    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                        Log.d(TAG, "WebSocket connection closing RootLog: $code $reason")
+                        this@NetworkManager.webSocket = null
+                        this@NetworkManager.isWebSocketConnected = false
+                    }
+
+                    override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                        Log.d(TAG, "WebSocket connection closed (RootLog): $code $reason")
+                        this@NetworkManager.webSocket = null
+                        this@NetworkManager.isWebSocketConnected = false
+                    }
+
+                    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                        Log.e(TAG, "Failed to connect WebSocket for RootLog", t)
+                        this@NetworkManager.isWebSocketConnected = false
+                        onSent(false)
+                    }
+                })
+                this@NetworkManager.isWebSocketConnected = this@NetworkManager.webSocket != null
+            } else {
+                Log.d(TAG, "Sending RootLog chunk through existing WebSocket connection")
+                val success = webSocket!!.send(jsonString)
+                if (success) {
+                    Log.d(TAG, "Successfully sent chunk of $chunkSize JSON objects")
+                    onSent(true)
+                } else {
+                    Log.e(TAG, "Failed to send JSON chunk")
+                    onSent(false)
+                }
+            }
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val inputStream = context.contentResolver.openInputStream(fileUri)
+                if (inputStream == null) {
+                    Log.e(TAG, "Failed to open input stream for URI: $fileUri")
+                    safeOnComplete(false)
+                    return@launch
+                }
+
+                inputStream.use { stream ->
+                    val reader = JsonReader(InputStreamReader(stream, "UTF-8")).apply {
+                        isLenient = true
+                    }
+                    reader.use {
+                        if (!reader.hasNext() || reader.peek() != com.google.gson.stream.JsonToken.BEGIN_ARRAY) {
+                            Log.e(TAG, "File does not start with a JSON array")
+                            safeOnComplete(false)
+                            return@launch
+                        }
+
+                        reader.beginArray()
+                        var currentArray = JSONArray()
+                        var currentCount = 0
+
+                        while (reader.hasNext()) {
+                            val jsonObject = reader.readJsonObject()
+                            currentArray.put(jsonObject)
+                            currentCount++
+
+                            if (currentCount >= chunkSize) {
+                                sendJsonArray(currentArray) { success ->
+                                    if (!success) {
+                                        safeOnComplete(false)
+                                        return@sendJsonArray
+                                    }
+                                }
+                                currentArray = JSONArray()
+                                currentCount = 0
+                            }
+                        }
+
+                        if (currentCount > 0) {
+                            sendJsonArray(currentArray) { success ->
+                                if (!success) {
+                                    safeOnComplete(false)
+                                    return@sendJsonArray
+                                }
+                                finishAfterDelay()
+                            }
+                        } else {
+                            finishAfterDelay()
+                        }
+                    }
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Error reading file URI: $fileUri", e)
+                safeOnComplete(false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing JSON from file URI: $fileUri", e)
+                safeOnComplete(false)
+            }
+        }
+    }
+
+    private fun JsonReader.readJsonObject(): JSONObject {
+        beginObject()
+        val jsonObject = JSONObject()
+        while (hasNext()) {
+            val name = nextName()
+            when (peek()) {
+                com.google.gson.stream.JsonToken.BEGIN_OBJECT -> {
+                    jsonObject.put(name, readJsonObject())
+                }
+                com.google.gson.stream.JsonToken.BEGIN_ARRAY -> {
+                    jsonObject.put(name, readJsonArray())
+                }
+                com.google.gson.stream.JsonToken.STRING -> {
+                    jsonObject.put(name, nextString())
+                }
+                com.google.gson.stream.JsonToken.NUMBER -> {
+                    val value = nextString()
+                    try {
+                        jsonObject.put(name, value.toInt())
+                    } catch (e: NumberFormatException) {
+                        try {
+                            jsonObject.put(name, value.toDouble())
+                        } catch (e: NumberFormatException) {
+                            jsonObject.put(name, value)
+                        }
+                    }
+                }
+                com.google.gson.stream.JsonToken.BOOLEAN -> {
+                    jsonObject.put(name, nextBoolean())
+                }
+                com.google.gson.stream.JsonToken.NULL -> {
+                    nextNull()
+                    jsonObject.put(name, JSONObject.NULL)
+                }
+                else -> skipValue()
+            }
+        }
+        endObject()
+        return jsonObject
+    }
+
+    private fun JsonReader.readJsonArray(): JSONArray {
+        beginArray()
+        val jsonArray = JSONArray()
+        while (hasNext()) {
+            when (peek()) {
+                com.google.gson.stream.JsonToken.BEGIN_OBJECT -> {
+                    jsonArray.put(readJsonObject())
+                }
+                com.google.gson.stream.JsonToken.BEGIN_ARRAY -> {
+                    jsonArray.put(readJsonArray())
+                }
+                com.google.gson.stream.JsonToken.STRING -> {
+                    jsonArray.put(nextString())
+                }
+                com.google.gson.stream.JsonToken.NUMBER -> {
+                    val value = nextString()
+                    try {
+                        jsonArray.put(value.toInt())
+                    } catch (e: NumberFormatException) {
+                        try {
+                            jsonArray.put(value.toDouble())
+                        } catch (e: NumberFormatException) {
+                            jsonArray.put(value)
+                        }
+                    }
+                }
+                com.google.gson.stream.JsonToken.BOOLEAN -> {
+                    jsonArray.put(nextBoolean())
+                }
+                com.google.gson.stream.JsonToken.NULL -> {
+                    nextNull()
+                    jsonArray.put(JSONObject.NULL)
+                }
+                else -> skipValue()
+            }
+        }
+        endArray()
+        return jsonArray
     }
 
     fun sendMessageToServerFromFile(filePath: String, onComplete: ((Boolean) -> Unit)? = null) {

@@ -128,6 +128,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.8.1")
     implementation ("com.jakewharton.timber:timber:5.0.1")
     implementation ("com.google.guava:guava:32.1.3-android")
+    implementation ("com.google.code.gson:gson:2.13.1")
 
     val libsuVersion = "6.0.0"
     implementation("com.github.topjohnwu.libsu:core:$libsuVersion")

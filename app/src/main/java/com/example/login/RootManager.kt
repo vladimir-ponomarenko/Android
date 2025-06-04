@@ -144,7 +144,7 @@ class RootDataLogger {
             catch (e: Exception) { return }
             val modifiedJson = buildJsonObject {
                 put("geo", buildJsonObject { put("latitude", entry.latitude); put("longitude", entry.longitude); put("altitude", entry.altitude) })
-                put("diagTimestamp", entry.timestamp)
+                //put("diagTimestamp", entry.timestamp)
                 originalJsonObject.entries.forEach { (key, value) -> if (key != "geo" && key != "diagTimestamp") { put(key, value) } }
             }
             val jsonString = json.encodeToString(JsonObject.serializer(), modifiedJson)
