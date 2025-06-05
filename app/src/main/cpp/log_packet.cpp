@@ -543,6 +543,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["LtePdcpUlConfig"] = jj;
             offset += _decode_lte_pdcp_ul_config_subpkt(b, offset, length, j["payload"]["LtePdcpUlConfig"]);            break;
+            break;
+        }
+        case LTE_PDCP_DL_Stats: {
+            offset += _decode_by_fmt(LtePdcpDlStats_Fmt,
+                                     ARRAY_SIZE(LtePdcpDlStats_Fmt, Fmt),
+                                     b, offset, length, jj);
+                j["payload"]["LtePdcpDlStats"] = jj;
+                offset += _decode_lte_pdcp_dl_stats_subpkt(b, offset, length, j["payload"]["LtePdcpDlStats"]);
+            break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
             offset += _decode_by_fmt(LteNb1Ml1GmTxReport,
