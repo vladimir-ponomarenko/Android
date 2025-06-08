@@ -51,8 +51,9 @@
 #include "lte/nb1/lte_nb1_ml1_gm_tx_report.h"
 #include "lte/lte_pdsch_stat_indication.h"
 #include "lte/pdcp/lte_pdcp_dl_config.h"
-#include "lte/pdcp/lte_pdcp_ul_config.h"
 #include "lte/pdcp/lte_pdcp_dl_stats.h"
+#include "lte/pdcp/lte_pdcp_ul_config.h"
+#include "lte/pdcp/lte_pdcp_ul_stats.h"
 #include "wcdma_signaling_messages.h"
 #include "srch_tng_1x_searcher_dump.h"
 
@@ -551,6 +552,14 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
                 j["payload"]["LtePdcpDlStats"] = jj;
                 offset += _decode_lte_pdcp_dl_stats_subpkt(b, offset, length, j["payload"]["LtePdcpDlStats"]);
+            break;
+        }
+        case LTE_PDCP_UL_Stats: {
+            offset += _decode_by_fmt(LtePdcpUlStats_Fmt,
+                                     ARRAY_SIZE(LtePdcpUlStats_Fmt, Fmt),
+                                     b, offset, length, jj);
+                j["payload"]["LtePdcpUlStats"] = jj;
+                offset += _decode_lte_pdcp_ul_stats_subpkt(b, offset, length, j["payload"]["LtePdcpUlStats"]);
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
