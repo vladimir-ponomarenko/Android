@@ -4814,6 +4814,122 @@ const ValueName LtePdcpUlStats_Subpkt_UDC_Comp_state[] = {
         {0, "DISABLE COMP"},
 };
 
+const Fmt LtePdcpDlCipherDataPdu_Fmt [] = {
+        {UINT, "Version", 1},
+        {UINT, "Num Subpkts", 1},
+        {SKIP, NULL, 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_SubpktHeader_v1 [] = {
+        {UINT, "Subpacket ID", 1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size", 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_SubpktPayload_v1 [] = {
+        {SKIP, NULL, 16},
+        {SKIP, NULL, 16},
+        {UINT, "SRB Cipher Algorithm", 1},
+        {UINT, "DRB Cipher Algorithm", 1},
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_Data_v1 [] = {
+        {UINT, "Cfg Idx", 2},   // 6 bits
+        {PLACEHOLDER, "Mode", 0},   // 1 bit
+        {PLACEHOLDER, "SN Length", 0},  // 2 bits
+        {PLACEHOLDER, "Bearer ID", 0},  // 5 bits
+        {PLACEHOLDER, "Valid PDU", 0},  // 1 bit
+        {UINT, "PDU Size", 2},
+        {UINT, "Logged Bytes", 2},
+        {UINT, "Sub FN", 2},    // 4 bits
+        {PLACEHOLDER, "Sys FN", 0}, // 10 bits
+        {UINT, "SN", 4},    // 12 bits
+};
+
+const Fmt LtePdcpDlCipherDataPdu_SubpktPayload_v3 [] = {
+        {UINT, "SRB Ciphering Keys", 16},
+        {UINT, "DRB Ciphering Keys", 16},
+        {UINT, "SRB Cipher Algorithm", 1},
+        {UINT, "DRB Cipher Algorithm", 1},
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_Data_v3 [] = {
+        {UINT, "Cfg Idx", 2},   // 6 bits
+        {PLACEHOLDER, "Mode", 0},   // 1 bit
+        {PLACEHOLDER, "SN Length", 0},  // 2 bits
+        {PLACEHOLDER, "Bearer ID", 0},  // 5 bits
+        {PLACEHOLDER, "Valid PDU", 0},  // 1 bit
+        {UINT, "PDU Size", 2},
+        {UINT, "Logged Bytes", 2},
+        {UINT, "Sub FN", 2},    // 4 bits
+        {PLACEHOLDER, "Sys FN", 0}, // 10 bits
+        {UINT, "SN",4},
+        {SKIP, NULL, 1},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_SubpktPayload_v24 [] = {
+        {SKIP, NULL, 16},
+        {SKIP, NULL, 16},
+        {UINT, "SRB Cipher Algorithm", 1},
+        {UINT, "DRB Cipher Algorithm", 1},
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_Data_v24 [] = {
+        {UINT, "Cfg Idx", 2},   // 6 bits
+        {PLACEHOLDER, "Mode", 0},   // 1 bit
+        {PLACEHOLDER, "SN Length", 0},  // 2 bits
+        {PLACEHOLDER, "Bearer ID", 0},  // 5 bits
+        {PLACEHOLDER, "Valid PDU", 0},  // 1 bit
+        {UINT, "PDU Size", 2},
+        {UINT, "Logged Bytes", 2},
+        {UINT, "Sub FN", 2},    // 4 bits
+        {PLACEHOLDER, "Sys FN", 0}, // 10 bits
+        {UINT, "SN", 4},    // 12 bits
+        {SKIP, NULL, 1},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_SubpktPayload_v40 [] = {
+        {SKIP, NULL, 16},
+        {SKIP, NULL, 16},
+        {UINT, "SRB Cipher Algorithm", 1},
+        {UINT, "DRB Cipher Algorithm", 1},
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpDlCipherDataPdu_Data_v40 [] = {
+        {UINT, "Cfg Idx", 2},   // 6 bits
+        {PLACEHOLDER, "Mode", 0},   // 1 bit
+        {PLACEHOLDER, "SN Length", 0},  // 2 bits
+        {PLACEHOLDER, "Bearer ID", 0},  // 5 bits
+        {PLACEHOLDER, "Valid PDU", 0},  // 1 bit
+        {UINT, "PDU Size", 2},
+        {UINT, "Logged Bytes", 2},
+        {UINT, "Sub FN", 2},    // 4 bits
+        {PLACEHOLDER, "Sys FN", 0}, // 10 bits
+        {PLACEHOLDER,"Reserved FN",0},//2 bit
+        {UINT,"count(hex)",4},
+        {SKIP, NULL, 1},
+};
+
+const ValueName ValueNameCipherAlgo[] = {
+        // 1 byte
+        {2, "LTE SNOW-3G"},
+        {3, "LTE AES"},
+        {7, "None"},
+};
+
+const ValueName ValueNamePdcpCipherDataPduMode[] = {
+        {0, "AM"},
+};
+
+const ValueName ValueNamePdcpSNLength[] = {
+        {0, "5 bit"},
+        {1, "7 bit"},
+        {2, "12 bit"},
+};
 
 const Fmt WcdmaCellIdFmt [] = {
         {UINT, "Uplink RF channel number", 4},    //Uplink RF channel number
