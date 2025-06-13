@@ -3,7 +3,6 @@ package com.example.login
 import android.app.Activity
 import android.net.Uri
 import android.util.Log
-import androidx.documentfile.provider.DocumentFile
 import com.google.gson.stream.JsonReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -41,7 +40,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
     }
 
     private val httpClient = OkHttpClient.Builder()
-        .pingInterval(5, TimeUnit.SECONDS)
+        .pingInterval(30, TimeUnit.SECONDS)
         .build()
 
     fun registerUser(email: String, password: String, onComplete: (RegisterResponse?) -> Unit) {
@@ -419,14 +418,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
     fun sendRootLogToServerFromFile(context: android.content.Context, fileUri: Uri, onComplete: ((Boolean) -> Unit)? = null) {
         val endpoint = "v1/ws/phonedata"
-        val chunkSize = 1000
-
-        val documentFile = DocumentFile.fromSingleUri(context, fileUri)
-        if (documentFile == null || !documentFile.exists() || !documentFile.canRead()) {
-            Log.e(TAG, "Cannot read file from URI: $fileUri")
-            onComplete?.invoke(false)
-            return
-        }
+        val maxChunkSizeBytes = 900 * 1024
 
         var isCompleted = false
         val safeOnComplete = { result: Boolean ->
@@ -436,134 +428,112 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
             }
         }
 
-        val finishAfterDelay: () -> Unit = {
+        val processAndSendFile: (WebSocket) -> Unit = { socket ->
             CoroutineScope(Dispatchers.IO).launch {
-                delay(1000)
-                safeOnComplete(true)
-            }
-        }
-
-        fun sendJsonArray(jsonArray: JSONArray, onSent: (Boolean) -> Unit) {
-            val jsonString = jsonArray.toString()
-            Log.d(TAG, "Sending chunk to server: $jsonString")
-            if (webSocket == null || !isWebSocketConnected) {
-                Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
-                val request = Request.Builder()
-                    .url("ws://109.172.114.128:3000/api/$endpoint") // TODO: Вынести хардкод в MainActivity
-                    .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
-                    .build()
-                this@NetworkManager.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
-                    override fun onOpen(webSocket: WebSocket, response: Response) {
-                        Log.d(TAG, "WebSocket connected successfully for RootLog")
-                        this@NetworkManager.isWebSocketConnected = true
-                        val success = webSocket.send(jsonString)
-                        if (success) {
-                            Log.d(TAG, "Successfully sent chunk of $chunkSize JSON objects")
-                            onSent(true)
-                        } else {
-                            Log.e(TAG, "Failed to send JSON chunk")
-                            onSent(false)
+                try {
+                    context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
+                        val reader = JsonReader(InputStreamReader(inputStream, "UTF-8")).apply {
+                            isLenient = true
                         }
-                    }
+                        reader.use {
+                            if (it.peek() != com.google.gson.stream.JsonToken.BEGIN_ARRAY) {
+                                Log.e(TAG, "File does not start with a JSON array")
+                                safeOnComplete(false)
+                                return@launch
+                            }
 
-                    override fun onMessage(webSocket: WebSocket, text: String) {
-                        Log.d(TAG, "Received message from server RootLog: $text")
-                    }
+                            it.beginArray()
+                            var currentChunkArray = JSONArray()
+                            var currentChunkSize = 0
 
-                    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                        Log.d(TAG, "WebSocket connection closing RootLog: $code $reason")
-                        this@NetworkManager.webSocket = null
-                        this@NetworkManager.isWebSocketConnected = false
-                    }
+                            while (it.hasNext()) {
+                                val jsonObject = it.readJsonObject()
+                                val objectString = jsonObject.toString()
+                                val objectSize = objectString.toByteArray(Charsets.UTF_8).size + 1
 
-                    override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                        Log.d(TAG, "WebSocket connection closed (RootLog): $code $reason")
-                        this@NetworkManager.webSocket = null
-                        this@NetworkManager.isWebSocketConnected = false
-                    }
-
-                    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                        Log.e(TAG, "Failed to connect WebSocket for RootLog", t)
-                        this@NetworkManager.isWebSocketConnected = false
-                        onSent(false)
-                    }
-                })
-                this@NetworkManager.isWebSocketConnected = this@NetworkManager.webSocket != null
-            } else {
-                Log.d(TAG, "Sending RootLog chunk through existing WebSocket connection")
-                val success = webSocket!!.send(jsonString)
-                if (success) {
-                    Log.d(TAG, "Successfully sent chunk of $chunkSize JSON objects")
-                    onSent(true)
-                } else {
-                    Log.e(TAG, "Failed to send JSON chunk")
-                    onSent(false)
-                }
-            }
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val inputStream = context.contentResolver.openInputStream(fileUri)
-                if (inputStream == null) {
-                    Log.e(TAG, "Failed to open input stream for URI: $fileUri")
-                    safeOnComplete(false)
-                    return@launch
-                }
-
-                inputStream.use { stream ->
-                    val reader = JsonReader(InputStreamReader(stream, "UTF-8")).apply {
-                        isLenient = true
-                    }
-                    reader.use {
-                        if (!reader.hasNext() || reader.peek() != com.google.gson.stream.JsonToken.BEGIN_ARRAY) {
-                            Log.e(TAG, "File does not start with a JSON array")
-                            safeOnComplete(false)
-                            return@launch
-                        }
-
-                        reader.beginArray()
-                        var currentArray = JSONArray()
-                        var currentCount = 0
-
-                        while (reader.hasNext()) {
-                            val jsonObject = reader.readJsonObject()
-                            currentArray.put(jsonObject)
-                            currentCount++
-
-                            if (currentCount >= chunkSize) {
-                                sendJsonArray(currentArray) { success ->
-                                    if (!success) {
+                                if (currentChunkSize > 0 && currentChunkSize + objectSize > maxChunkSizeBytes) {
+                                    val chunkToSend = currentChunkArray.toString()
+                                    Log.d(TAG, "Sending chunk of size ${chunkToSend.toByteArray(Charsets.UTF_8).size / 1024} KB")
+                                    if (!socket.send(chunkToSend)) {
+                                        Log.e(TAG, "Failed to send a chunk, aborting.")
                                         safeOnComplete(false)
-                                        return@sendJsonArray
+                                        return@launch
                                     }
-                                }
-                                currentArray = JSONArray()
-                                currentCount = 0
-                            }
-                        }
+                                    currentChunkArray = JSONArray()
+                                    currentChunkSize = 0
 
-                        if (currentCount > 0) {
-                            sendJsonArray(currentArray) { success ->
-                                if (!success) {
-                                    safeOnComplete(false)
-                                    return@sendJsonArray
                                 }
-                                finishAfterDelay()
+
+                                currentChunkArray.put(jsonObject)
+                                currentChunkSize += objectSize
                             }
-                        } else {
-                            finishAfterDelay()
+
+                            if (currentChunkArray.length() > 0) {
+                                val finalChunkToSend = currentChunkArray.toString()
+                                Log.d(TAG, "Sending final chunk of size ${finalChunkToSend.toByteArray(Charsets.UTF_8).size / 1024} KB")
+                                if (!socket.send(finalChunkToSend)) {
+                                    Log.e(TAG, "Failed to send the final chunk, aborting.")
+                                    safeOnComplete(false)
+                                    return@launch
+                                }
+                            }
+
+                            Log.i(TAG, "Finished sending all chunks for file: $fileUri")
+                            safeOnComplete(true)
                         }
+                    } ?: run {
+                        Log.e(TAG, "Failed to open input stream for URI: $fileUri")
+                        safeOnComplete(false)
                     }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing or sending file URI: $fileUri", e)
+                    safeOnComplete(false)
                 }
-            } catch (e: IOException) {
-                Log.e(TAG, "Error reading file URI: $fileUri", e)
+            }
+        }
+
+        if (webSocket != null && isWebSocketConnected) {
+            Log.d(TAG, "Using existing WebSocket connection to send RootLog.")
+            processAndSendFile(webSocket!!)
+            return
+        }
+
+        Log.d(TAG, "WebSocket not connected. Creating new connection for RootLog.")
+        val request = Request.Builder()
+            .url("ws://127.0.0.1:3000/api/$endpoint")
+            .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
+            .build()
+
+        val webSocketListener = object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.d(TAG, "WebSocket connected successfully for RootLog. Starting file processing.")
+                this@NetworkManager.webSocket = webSocket
+                this@NetworkManager.isWebSocketConnected = true
+                processAndSendFile(webSocket)
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) { Log.d(TAG, "Received message from server RootLog: $text") }
+
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket connection closing RootLog: $code $reason")
+                this@NetworkManager.isWebSocketConnected = false
                 safeOnComplete(false)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error parsing JSON from file URI: $fileUri", e)
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket connection closed (RootLog): $code $reason")
+                this@NetworkManager.webSocket = null
+                this@NetworkManager.isWebSocketConnected = false
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.e(TAG, "WebSocket connection failed for RootLog", t)
+                this@NetworkManager.isWebSocketConnected = false
                 safeOnComplete(false)
             }
         }
+
+        httpClient.newWebSocket(request, webSocketListener)
     }
 
     private fun JsonReader.readJsonObject(): JSONObject {
@@ -679,7 +649,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
             val request = Request.Builder()
-                .url("ws://109.172.114.128:3000/api/v1/ws/phonedata") // TODO Хардкод на время теста. Вынести в MainActivity
+                .url("ws://109.172.114.128:3000:3000/api/v1/ws/phonedata") // TODO Хардкод на время теста. Вынести в MainActivity
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
