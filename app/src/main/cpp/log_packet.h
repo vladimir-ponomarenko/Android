@@ -236,6 +236,196 @@ const ValueName ValueNameCompandingStats[] = {
 };
 
 
+const Fmt LtePdcchPhichIndicationReport_Fmt[] = {
+        {UINT, "Version", 1},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Fmt_v5[] = {
+        {UINT, "Duplex Mode",       2},
+        {UINT, "Number of Records", 1},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Fmt_v25[] = {
+        {UINT, "Duplex Mode",       2},
+        {UINT, "Number of Records", 1},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Fmt_v33[] = {
+        {UINT, "Duplex Mode",       2},
+        {UINT, "Number of Records", 1},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v5_p1[] = {
+        {UINT,        "Num PDCCH Results",   4},
+        {PLACEHOLDER, "PDCCH Timing SFN",    0},
+        {PLACEHOLDER, "PDCCH Timing Sub-FN", 0},
+        {PLACEHOLDER, "PHICH Included",      0},
+        {PLACEHOLDER, "PHICH 1 Included",    0},
+        {PLACEHOLDER, "PHICH Timing SFN",    0},
+        {UINT,        "PHICH Timing Sub-FN", 4},
+        {PLACEHOLDER, "PHICH Value",         0},
+        {PLACEHOLDER, "PHICH 1 Value",       0},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v25_p1[] = {
+        {UINT,        "Num PDCCH Results",   4},    // 3 bits
+        {PLACEHOLDER, "Num PHICH Results",   0},    // 3 bits
+        {PLACEHOLDER, "PDCCH Timing SFN",    0},    // 10 bits
+        {PLACEHOLDER, "PDCCH Timing Sub-FN", 0},    // 4 bits
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v33_p1[] = {
+        {UINT,        "Num PDCCH Results",   4},    // 3 bits
+        {PLACEHOLDER, "Num PHICH Results",   0},    // 3 bits
+        {PLACEHOLDER, "PDCCH Timing SFN",    0},    // 10 bits
+        {PLACEHOLDER, "PDCCH Timing Sub-FN", 0},    // 4 bits
+        {SKIP,        NULL,                  8},
+};
+
+// totally 12 bytes for all phich
+const Fmt LtePdcchPhichIndicationReport_Record_v25_phich[] = {
+        {UINT,        "Cell Index",       4},    // 3 bits
+        {PLACEHOLDER, "PHICH Included",   0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Included", 0},    // 1 bit
+        {PLACEHOLDER, "PHICH Value",      0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Value",    0},    // 1 bit
+};
+
+// totally 20 bytes for all phich
+const Fmt LtePdcchPhichIndicationReport_Record_v33_phich[] = {
+        {UINT,        "Cell Index",       4},    // 3 bits
+        {PLACEHOLDER, "PHICH Included",   0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Included", 0},    // 1 bit
+        {PLACEHOLDER, "PHICH Value",      0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Value",    0},    // 1 bit
+};
+
+// totally number of pdcch info + number of pdcch hidden info = 8
+const Fmt LtePdcchPhichIndicationReport_Record_v5_p2[] = {
+        // PDCCH Info
+        {UINT,        "Serv Cell Idx",     2},
+        {PLACEHOLDER, "RNTI Type",         0},
+        {PLACEHOLDER, "Payload Size",      0},
+        {PLACEHOLDER, "Aggregation Level", 0},
+        {UINT,        "Search Space",      2},
+        {PLACEHOLDER, "SPS Grant Type",    0},
+        {PLACEHOLDER, "New DL Tx",         0},
+        {PLACEHOLDER, "Num DL Trblks",     0},
+};
+
+// totally 64 bytes for all pdcch
+const Fmt LtePdcchPhichIndicationReport_Record_v25_pdcch[] = {
+        // PDCCH Info
+        {UINT,        "Serv Cell Idx",     2},    // 3 bits
+        {PLACEHOLDER, "RNTI Type",         0},    // 4 bits
+        {PLACEHOLDER, "Payload Size",      0},    // 7 bits
+        {PLACEHOLDER, "Aggregation Level", 0},    // 2 bits
+        {UINT,        "Search Space",      2},    // 1 bit
+        {PLACEHOLDER, "SPS Grant Type",    0},    // 3 bits
+        {PLACEHOLDER, "New DL Tx",         0},    // 1 bit
+        {PLACEHOLDER, "Num DL Trblks",     0},    // 2 bits
+        {SKIP,        NULL,                4},
+};
+
+// totally 64 bytes for all pdcch
+const Fmt LtePdcchPhichIndicationReport_Record_v33_pdcch[] = {
+        // PDCCH Info
+        {UINT,        "Serv Cell Idx",     2},    // 3 bits
+        {PLACEHOLDER, "RNTI Type",         0},    // 4 bits
+        {PLACEHOLDER, "Payload Size",      0},    // 7 bits
+        {PLACEHOLDER, "Aggregation Level", 0},    // 2 bits
+        {UINT,        "Search Space",      2},    // 1 bit
+        {PLACEHOLDER, "SPS Grant Type",    0},    // 3 bits
+        {PLACEHOLDER, "New DL Tx",         0},    // 1 bit
+        {PLACEHOLDER, "Num DL Trblks",     0},    // 2 bits
+        {SKIP,        NULL,                4},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Fmt_v42[] = {
+        {UINT,        "Duplex Mode",       2},    // shift 0 bits,total 2 bits
+        {PLACEHOLDER, "UL DL Config",      0},    // shift 2 bits,total 4 bits
+        {UINT,        "Number of Records", 1},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v42_p1[] = {
+        {UINT,        "Num PDCCH Results",   4},    // 3 bits
+        {PLACEHOLDER, "Num PHICH Results",   0},    // 3 bits
+        {PLACEHOLDER, "PDCCH Timing SFN",    0},    // 10 bits
+        {PLACEHOLDER, "PDCCH Timing Sub-FN", 0},    // 4 bits
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v42_phich[] = {
+        {UINT,        "Cell Index",       4},    // 3 bits
+        {PLACEHOLDER, "PHICH Included",   0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Included", 0},    // 1 bit
+        {PLACEHOLDER, "PHICH Value",      0},    // 1 bit
+        {PLACEHOLDER, "PHICH 1 Value",    0},    // 1 bit
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v42_pdcch[] = {
+        // PDCCH Info
+        {UINT,        "Serv Cell Idx",     2},    // 3 bits
+        {PLACEHOLDER, "RNTI Type",         0},    // 4 bits
+        {PLACEHOLDER, "Payload Size",      0},    // 7 bits
+        {PLACEHOLDER, "Aggregation Level", 0},    // 2 bits
+        {UINT,        "Search Space",      2},    // 1 bit
+        {PLACEHOLDER, "SPS Grant Type",    0},    // 3 bits
+        {PLACEHOLDER, "New DL Tx",         0},    // 1 bit
+        {PLACEHOLDER, "Num DL Trblks",     0},    // 2 bits
+
+        {UINT,        "S0 Index",          4},    // shift 0 bits,total 5 bits
+        {PLACEHOLDER, "S1 Index",          0},    // shift 5 bits,total 5 bits
+        {PLACEHOLDER, "S2 Index",          0},    // shift 10 bits,total 5 bits
+        {PLACEHOLDER, "S3 Index",          0},    // shift 15 bits,total 5 bits
+        {PLACEHOLDER, "Msleep",            0},    // shift 20 bits,total 1 bits
+        {PLACEHOLDER, "Usleep",            0},    // shift 21 bits,total 1 bits
+        {PLACEHOLDER, "uSleep Duration",   0},    // shift 22 bits,total 5 bits
+        {PLACEHOLDER, "Fake Pdcch Sf",     0},    // shift 27 bits,total 1 bits
+        {PLACEHOLDER, "Is Ul Dropped",     0},    // shift 28 bits,total 1 bits
+        {PLACEHOLDER, "Interf Active",     0},    // shift 29 bits,total 1 bits
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v42_p3[] = {
+        {UINT, "Full Mode Events Mask", 4},    // shift 0 bits,total 32 bits
+        {UINT, "Dl Subframe Count",     4},    // shift 0 bits,total 32 bits
+        {UINT, "Force Send PDCCH Ind",  4},    // shift 0 bits,total 1 bits
+        {SKIP, NULL,                    4},
+};
+
+const Fmt LtePdcchPhichIndicationReport_Record_v5_p3[] = {
+        // PDCCH Hidden Info
+        {SKIP, NULL, 4},
+};
+
+const ValueName LtePdcchPhichIndicationReport_Record_v5_Included[] = {
+        {0, "No"},
+        {1, "Yes"},
+};
+const ValueName LtePdcchPhichIndicationReport_Record_v5_Value[] = {
+        {0, "NACK"},
+        {1, "ACK"},
+};
+const ValueName LtePdcchPhichIndicationReport_Record_v5_NewDLTx[] = {
+        {0, "false"},
+        {1, "true"},
+};
+const ValueName LtePdcchPhichIndicationReport_Record_v5_AggLv[] = {
+        {0, "Agg1"},
+        {1, "Agg2"},
+        {2, "Agg4"},
+        {3, "Agg8"},
+};
+const ValueName LtePdcchPhichIndicationReport_Record_v5_SS[] = {
+        {0, "Common"},
+        {1, "UE-specific"},
+};
+
+const ValueName ValueNameAckOrNack[] = {
+        {0, "NACK"},
+        {1, "ACK"},
+};
+
+
 const Fmt LteRlcDlAmAllPduFmt[] = {
         {UINT, "Version",              1},
         {UINT, "Number of Subpackets", 1},
@@ -5029,6 +5219,69 @@ const ValueName ValueNamePdcpSNLength[] = {
         {0, "5 bit"},
         {1, "7 bit"},
         {2, "12 bit"},
+};
+
+const Fmt LtePdcpDlCtrlPdu_Fmt[] = {
+        {UINT, "Version",    1},
+        {UINT, "Num Subpkt", 1},
+        {SKIP, NULL,         2},
+};
+
+const Fmt LtePdcpDlCtrlPdu_SubpktHeader[] = {
+        {UINT, "Subpacket ID",      1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size",    2},
+};
+
+const Fmt LtePdcpDlCtrlPdu_SubpktPayload[] = {
+        {UINT, "RB Cfg Idx",      1},
+        {UINT, "Mode",            1},
+        {UINT, "SN Length (bit)", 1},
+};
+const ValueName LtePdcpDlCtrlPdu_Subpkt_Mode[] = {
+        {1, "AM"},
+};
+
+const Fmt LtePdcpDlCtrlPdu_Subpkt_PDU_Header[] = {
+        {UINT, "Num PDUs", 1},
+};
+
+const Fmt LtePdcpDlCtrlPdu_Subpkt_PDU_Fmt[] = {
+        {UINT,        "PDU Size",            2},
+        {UINT,        "Logged Bytes",        2},
+        {UINT,        "System Frame Number", 2},
+        {PLACEHOLDER, "Subframe Number",     0},
+        {PLACEHOLDER, "type",                0},
+        {UINT,        "fms",                 2},
+};
+
+const Fmt LtePdcpDlCtrlPdu_SubpktPayload_v24[] = {
+        {UINT, "RB Cfg Idx",      1},
+        {UINT, "Mode",            1},
+        {UINT, "SN Length (bit)", 1},
+};
+
+const Fmt LtePdcpDlCtrlPdu_Subpkt_PDU_Header_v24[] = {
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpDlCtrlPdu_Subpkt_PDU_Fmt_v24[] = {
+        {UINT,        "PDU Size",     2},
+        {UINT,        "Logged Bytes", 2},
+        {UINT,        "sys fn",       2},
+        {PLACEHOLDER, "sub fn",       0},
+        {UINT,        "PDU Type",     1},
+        {UINT,        "fms",          2},
+        {PLACEHOLDER, "DC",           0},
+        {PLACEHOLDER, "type",         0},
+};
+
+const ValueName LtePdcpDlCtrlPdu_PDU_Type[] = {
+        {0, "STATUS"},
+};
+
+const ValueName LtePdcpDlCtrlPdu_Type[] = {
+        {0, "STATUS REPORT"},
 };
 
 const Fmt WcdmaCellIdFmt [] = {

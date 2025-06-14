@@ -31,6 +31,7 @@
 #include "lte/phy/lte_phy_pusch_tx_report.h"
 #include "lte/phy/lte_phy_pusch_csf.h"
 #include "lte/lte_pusch_power_control.h"
+#include "lte/lte_pdcch_phich_indication_report.h"
 #include "lte/phy/lte_phy_pucch_tx_report.h"
 #include "lte/lte_pucch_power_control.h"
 #include "lte/phy/lte_phy_bplmn_cell_request.h"
@@ -56,6 +57,7 @@
 #include "lte/pdcp/lte_pdcp_ul_stats.h"
 #include "lte/pdcp/lte_pdcp_dl_cipher_data_pdu.h"
 #include "lte/pdcp/lte_pdcp_ul_cipher_data_pdu.h"
+#include "lte/pdcp/lte_pdcp_dl_ctrl_pdu.h"
 #include "wcdma_signaling_messages.h"
 #include "srch_tng_1x_searcher_dump.h"
 
@@ -363,11 +365,21 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PUCCH_CSF: {
-            offset += _decode_by_fmt(LtePhyPucchCsf_Fmt,
-                                     ARRAY_SIZE(LtePhyPucchCsf_Fmt, Fmt),
+            offset += _decode_by_fmt(LtePdcchPhichIndicationReport_Fmt,
+                                     ARRAY_SIZE(LtePdcchPhichIndicationReport_Fmt, Fmt),
                                      b, offset, length, jj);
             offset += _decode_lte_phy_pucch_csf_payload(b, offset, length, jj);
             j["payload"]["LtePhyPucchCsf"] = jj;
+            break;
+        }
+        case LTE_PHY_PDCCH_Decoding_Result: {
+            LOGD("payload_decode: LTE_PHY_PDCCH_Decoding_Result\n");
+            offset += _decode_by_fmt(LtePhyPdcchDecodingResult_Fmt,
+                                     ARRAY_SIZE(LtePhyPdcchDecodingResult_Fmt, Fmt),
+                                     b, offset, length, jj);
+
+            offset += _decode_lte_phy_pdcch_decoding_result_payload(b, offset, length, jj);
+            j["payload"]["LtePhyPdcchDecodingResult"] = jj;
             break;
         }
         case LTE_PHY_PDSCH_Demapper_Configuration: {
@@ -396,14 +408,6 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             offset += _decode_lte_phy_pdsch_decoding_result_payload(b, offset, length, jj);
             j["payload"]["LtePhyPdschDecodingResult"] = jj;
-            break;
-        }
-        case LTE_PHY_PDCCH_Decoding_Result: {
-            offset += _decode_by_fmt(LtePhyPdcchDecodingResult_Fmt,
-                                     ARRAY_SIZE(LtePhyPdcchDecodingResult_Fmt, Fmt),
-                                     b, offset, length, jj);
-            offset += _decode_lte_phy_pdcch_decoding_result_payload(b, offset, length, jj);
-            j["payload"]["LtePhyPdcchDecodingResult"] = jj;
             break;
         }
         case LTE_NAS_EMM_State: {
@@ -572,12 +576,20 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                 offset += _decode_lte_pdcp_dl_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpDlCipherDataPdu"]);
             break;
         }
-        case LTE_PDCP_UL_Cipher_Data_PDU: {
-            offset += _decode_by_fmt(LtePdcpUlCipherDataPdu_Fmt,
-                                     ARRAY_SIZE(LtePdcpUlCipherDataPdu_Fmt, Fmt),
+//        case LTE_PDCP_UL_Cipher_Data_PDU: {
+//            offset += _decode_by_fmt(LtePdcpUlCipherDataPdu_Fmt,
+//                                     ARRAY_SIZE(LtePdcpUlCipherDataPdu_Fmt, Fmt),
+//                                     b, offset, length, jj);
+//                j["payload"]["LtePdcpUlCipherDataPdu"] = jj;
+//                offset += _decode_lte_pdcp_ul_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpUlCipherDataPdu"]);
+//            break;
+//        }
+        case LTE_PDCP_DL_Ctrl_PDU: {
+            offset += _decode_by_fmt(LtePdcpDlCtrlPdu_Fmt,
+                                     ARRAY_SIZE(LtePdcpDlCtrlPdu_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpUlCipherDataPdu"] = jj;
-                offset += _decode_lte_pdcp_ul_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpUlCipherDataPdu"]);
+                j["payload"]["LtePdcpDlCtrlPdu"] = jj;
+                offset += _decode_lte_pdcp_dl_ctrl_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpDlCtrlPdu"]);
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {

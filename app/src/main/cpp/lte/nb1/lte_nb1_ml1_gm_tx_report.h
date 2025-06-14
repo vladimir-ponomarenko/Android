@@ -61,10 +61,6 @@ const ValueName ValueNameNPUSCHFormat_1_TX_Type[] = {
         {1, "UCI"}
 };
 
-const ValueName ValueNameAckOrNack[] = {
-        {0, "NACK"},
-        {1, "ACK"}
-};
 
 
 static int _decode_lte_nb1_ml1_gm_tx_report_payload(const char* b, int offset, size_t length, json& j) {
