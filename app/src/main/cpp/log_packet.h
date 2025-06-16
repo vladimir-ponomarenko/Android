@@ -5284,6 +5284,60 @@ const ValueName LtePdcpDlCtrlPdu_Type[] = {
         {0, "STATUS REPORT"},
 };
 
+const Fmt LtePdcpUlCtrlPdu_Fmt[] = {
+        {UINT, "Version",    1},
+        {UINT, "Num Subpkt", 1},
+        {SKIP, NULL,         2},
+};
+
+const Fmt LtePdcpUlCtrlPdu_SubpktHeader[] = {
+        {UINT, "Subpacket ID",      1},
+        {UINT, "Subpacket Version", 1},
+        {UINT, "Subpacket Size",    2},
+};
+
+const Fmt LtePdcpUlCtrlPdu_SubpktPayload[] = {
+        {UINT, "RB Cfg Idx",      1},
+        {UINT, "Mode",            1},
+        {UINT, "SN Length (bit)", 1},
+};
+const ValueName LtePdcpUlCtrlPdu_Subpkt_Mode[] = {
+        {1, "AM"},
+};
+
+const Fmt LtePdcpUlCtrlPdu_Subpkt_PDU_Header[] = {
+        {UINT, "Num PDUs", 1},
+};
+
+const Fmt LtePdcpUlCtrlPdu_Subpkt_PDU_Fmt[] = {
+        {UINT,        "PDU Size",            2},
+        {UINT,        "Logged Bytes",        2},
+        {UINT,        "System Frame Number", 2},
+        {PLACEHOLDER, "Subframe Number",     0},
+        {PLACEHOLDER, "type",                0},
+        {UINT,        "fms",                 2},
+};
+
+const Fmt LtePdcpUlCtrlPdu_SubpktPayload_v24[] = {
+        {UINT, "RB Cfg Idx",      1},
+        {UINT, "Mode",            1},
+        {UINT, "SN Length (bit)", 1},
+};
+const Fmt LtePdcpUlCtrlPdu_Subpkt_PDU_Header_v24[] = {
+        {UINT, "Num PDUs", 2},
+};
+
+const Fmt LtePdcpUlCtrlPdu_Subpkt_PDU_Fmt_v24[] = {
+        {UINT,        "PDU Size",     2},
+        {UINT,        "Logged Bytes", 2},
+        {UINT,        "sys fn",       2},
+        {PLACEHOLDER, "sub fn",       0},
+        {UINT,        "PDU Type",     1},
+        {UINT,        "fms",          2},
+        {PLACEHOLDER, "DC",           0},
+        {PLACEHOLDER, "type",         0},
+};
+
 const Fmt WcdmaCellIdFmt [] = {
         {UINT, "Uplink RF channel number", 4},    //Uplink RF channel number
         {UINT, "Download RF channel number", 4},    //Download RF channel number
