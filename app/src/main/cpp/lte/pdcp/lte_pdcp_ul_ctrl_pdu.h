@@ -210,4 +210,3 @@ static int _decode_lte_pdcp_ul_ctrl_pdu_subpkt(const char* b, int offset, size_t
             return 0;
     }
 }
-

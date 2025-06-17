@@ -16,7 +16,7 @@ using json = nlohmann::json;
 using namespace std;
 
 
-static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset, size_t length, json& j) {
+static int _decode_lte_pdcp_ul_cipher_data_pdu_subpkt(const char* b, int offset, size_t length, json& j) {
     int start = offset;
     int pkt_ver = 0;
     int n_subpkt = 0;
@@ -36,7 +36,7 @@ static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset
         return 0;
     }
 
-//    LOGD("Decoding LTE_PDCP_UL_Cipher_Data_PDU with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
+    LOGD("Decoding LTE_PDCP_UL_Cipher_Data_PDU with version: %d, num_subpackets: %d", pkt_ver, n_subpkt);
 
     switch (pkt_ver) {
         case 1: {
@@ -76,7 +76,8 @@ static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset
                 }
                 offset += header_consumed;
                 int payload_offset_start = offset;
-                int payload_consumed_total = 0;
+                // int payload_consumed_total = 0;
+
 
                 if (subpkt_id == 195) {
                     const Fmt* subpkt_payload_fmt_array = nullptr;
@@ -109,10 +110,9 @@ static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset
                     }
 
                     if (subpkt_payload_fmt_array && pdu_data_fmt_array) {
-                        payload_consumed_total = _decode_by_fmt(subpkt_payload_fmt_array,
-                                                                subpkt_payload_fmt_size,
-                                                                b, payload_offset_start, length - (payload_offset_start - start), subpkt_j);
-                        offset = payload_offset_start + payload_consumed_total;
+                        offset += _decode_by_fmt(subpkt_payload_fmt_array, subpkt_payload_fmt_size,
+                                                 b, payload_offset_start, length - (payload_offset_start - start), subpkt_j);
+
 
                         if (subpkt_j.find("SRB Cipher Algorithm") != subpkt_j.end()) {
                             const char* srb_algo_name = search_name(ValueNameCipherAlgo, ARRAY_SIZE(ValueNameCipherAlgo, ValueName), subpkt_j["SRB Cipher Algorithm"]);
@@ -123,68 +123,58 @@ static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset
                             subpkt_j["DRB Cipher Algorithm"] = (drb_algo_name ? drb_algo_name : "(MI)Unknown");
                         }
 
-                        int iNumPDUs = 0;
+                        int num_PDUs = 0;
                         if (subpkt_j.find("Num PDUs") != subpkt_j.end() && subpkt_j["Num PDUs"].is_number()) {
-                            iNumPDUs = subpkt_j["Num PDUs"].get<int>();
+                            num_PDUs = subpkt_j["Num PDUs"].get<int>();
                         }
 
                         json pdu_list_j = json::array();
-                        int current_pdu_offset = offset;
-
-                        for (int pdu_idx = 0; pdu_idx < iNumPDUs; ++pdu_idx) {
+                        for (int pdu_idx = 0; pdu_idx < num_PDUs; ++pdu_idx) {
                             json pdu_item_j;
-                            int pdu_data_consumed = _decode_by_fmt(pdu_data_fmt_array, pdu_data_fmt_size,
-                                                                   b, current_pdu_offset, length - (current_pdu_offset - start), pdu_item_j);
-                            if(pdu_data_consumed == 0) { LOGD("Error decoding PDU item %d", pdu_idx); break; }
-                            current_pdu_offset += pdu_data_consumed;
+                            int pdu_consumed_bytes = _decode_by_fmt(pdu_data_fmt_array, pdu_data_fmt_size,
+                                                                    b, offset, length - (offset - start), pdu_item_j);
+                            offset += pdu_consumed_bytes;
 
-                            int temp_cfg = pdu_item_j["Cfg Idx"];
-                            pdu_item_j["Cfg Idx"] = temp_cfg & 63;
-                            pdu_item_j["Mode"] = (temp_cfg >> 6) & 1;
-                            const char* mode_name = search_name(ValueNamePdcpCipherDataPduMode, ARRAY_SIZE(ValueNamePdcpCipherDataPduMode, ValueName), pdu_item_j["Mode"]);
-                            pdu_item_j["Mode"] = (mode_name ? mode_name : "(MI)Unknown");
-                            pdu_item_j["SN Length"] = (temp_cfg >> 7) & 3;
-                            const char* sn_len_name = search_name(ValueNamePdcpSNLength, ARRAY_SIZE(ValueNamePdcpSNLength, ValueName), pdu_item_j["SN Length"]);
-                            pdu_item_j["SN Length"] = (sn_len_name ? sn_len_name : "(MI)Unknown");
-                            pdu_item_j["Bearer ID"] = (temp_cfg >> 9) & 31;
-                            pdu_item_j["Valid PDU"] = (temp_cfg >> 14) & 1;
-                            const char* valid_pdu_name = search_name(ValueNameYesOrNo, ARRAY_SIZE(ValueNameYesOrNo, ValueName), pdu_item_j["Valid PDU"]);
-                            pdu_item_j["Valid PDU"] = (valid_pdu_name ? valid_pdu_name : "(MI)Unknown");
-
-                            int temp_fn = pdu_item_j["Sub FN"];
-                            pdu_item_j["Sub FN"] = temp_fn & 15;
-                            pdu_item_j["Sys FN"] = (temp_fn >> 4) & 1023;
-
-                            if (pdu_item_j.find("SN") != pdu_item_j.end() && pdu_item_j["SN"].is_number()) {
-                                int temp_sn = pdu_item_j["SN"];
-                                pdu_item_j["SN"] = temp_sn & 4095;
+                            if (pdu_item_j.find("Cfg Idx") != pdu_item_j.end() && pdu_item_j["Cfg Idx"].is_number()) {
+                                int temp_cfg = pdu_item_j["Cfg Idx"];
+                                pdu_item_j["Cfg Idx"] = temp_cfg & 63;
+                                pdu_item_j["Mode"] = (temp_cfg >> 6) & 1;
+                                const char* mode_name_pdu = search_name(ValueNamePdcpCipherDataPduMode, ARRAY_SIZE(ValueNamePdcpCipherDataPduMode, ValueName), pdu_item_j["Mode"]);
+                                pdu_item_j["Mode"] = (mode_name_pdu ? mode_name_pdu : "(MI)Unknown");
+                                pdu_item_j["SN Length"] = (temp_cfg >> 7) & 3;
+                                const char* sn_len_name = search_name(ValueNamePdcpSNLength, ARRAY_SIZE(ValueNamePdcpSNLength, ValueName), pdu_item_j["SN Length"]);
+                                pdu_item_j["SN Length"] = (sn_len_name ? sn_len_name : "(MI)Unknown");
+                                pdu_item_j["Bearer ID"] = (temp_cfg >> 9) & 31;
+                                pdu_item_j["Valid PDU"] = (temp_cfg >> 14) & 1;
+                                const char* valid_pdu_name = search_name(ValueNameYesOrNo, ARRAY_SIZE(ValueNameYesOrNo, ValueName), pdu_item_j["Valid PDU"]);
+                                pdu_item_j["Valid PDU"] = (valid_pdu_name ? valid_pdu_name : "(MI)Unknown");
                             }
+
+                            if (pdu_item_j.find("Sub FN") != pdu_item_j.end() && pdu_item_j["Sub FN"].is_number()) {
+                                int temp_fn = pdu_item_j["Sub FN"];
+                                pdu_item_j["Sub FN"] = temp_fn & 15;
+                                pdu_item_j["Sys FN"] = (temp_fn >> 4) & 1023;
+                            }
+
+
+                            if (subpkt_payload_ver != 40 && pdu_item_j.find("SN") != pdu_item_j.end() && pdu_item_j["SN"].is_number()) {
+                                pdu_item_j["SN"] = pdu_item_j["SN"].get<unsigned int>() & 4095;
+                            }
+
 
                             pdu_list_j.push_back(pdu_item_j);
 
-                            int iLoggedBytes = 0;
-                            if(pdu_item_j.find("Logged Bytes") != pdu_item_j.end() && pdu_item_j["Logged Bytes"].is_number()){
-                                iLoggedBytes = pdu_item_j["Logged Bytes"].get<int>();
-                            }
-                            if (iLoggedBytes > 0 && current_pdu_offset + iLoggedBytes <= start + length) {
-                                current_pdu_offset += iLoggedBytes;
-                            } else if (iLoggedBytes < 0) {
-                                LOGD("Invalid Logged Bytes value: %d", iLoggedBytes);
-                            } else if (current_pdu_offset + iLoggedBytes > start + length) {
-                                LOGD("Not enough data to skip Logged Bytes. Needed: %d, Available: %zu", iLoggedBytes, (start + length) - current_pdu_offset);
-                                offset = current_pdu_offset;
-                                goto end_subpacket_processing;
-                            }
-                        }
-                        end_subpacket_processing:;
-                        subpkt_j["PDCPUL CIPH DATA"] = pdu_list_j;
-                        offset = current_pdu_offset;
 
-                    } else {
-                        int remaining_payload_size = subpkt_size - header_consumed;
-                        if (remaining_payload_size > 0 && offset + remaining_payload_size <= start + length) {
-                            offset += remaining_payload_size;
+                            if (pdu_item_j.find("Logged Bytes") != pdu_item_j.end() && pdu_item_j["Logged Bytes"].is_number()) {
+                                int logged_bytes_to_skip = pdu_item_j["Logged Bytes"].get<int>();
+                                if (logged_bytes_to_skip > 0 && offset + logged_bytes_to_skip <= start + length) {
+                                    offset += logged_bytes_to_skip;
+                                } else if (logged_bytes_to_skip < 0) {
+                                    LOGD("LTE_PDCP_UL_Cipher_Data_PDU: Logged Bytes is negative (%d)", logged_bytes_to_skip);
+                                }
+                            }
                         }
+                        subpkt_j["PDCPUL CIPH DATA"] = pdu_list_j;
                     }
                 } else {
                     LOGD("(MI)Unknown LTE PDCP UL Cipher Data PDU Subpacket ID: 0x%x", subpkt_id);
@@ -209,7 +199,7 @@ static int _decode_lte_pdcp_ul_cipher_data_pdu_payload(const char* b, int offset
             return offset - start;
         }
         default:
-            LOGD("(MI)Unknown LTE PDCP UL Cipher Data PDU Packet version: %d", pkt_ver);
+            LOGD("(MI)Unknown LTE PDCP UL Cipher Data PDU packet version: 0x%x", pkt_ver);
             return 0;
     }
 }

@@ -557,48 +557,48 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             offset += _decode_by_fmt(LtePdcpDlStats_Fmt,
                                      ARRAY_SIZE(LtePdcpDlStats_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpDlStats"] = jj;
-                offset += _decode_lte_pdcp_dl_stats_subpkt(b, offset, length, j["payload"]["LtePdcpDlStats"]);
+            j["payload"]["LtePdcpDlStats"] = jj;
+            offset += _decode_lte_pdcp_dl_stats_subpkt(b, offset, length, j["payload"]["LtePdcpDlStats"]);
             break;
         }
         case LTE_PDCP_UL_Stats: {
             offset += _decode_by_fmt(LtePdcpUlStats_Fmt,
                                      ARRAY_SIZE(LtePdcpUlStats_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpUlStats"] = jj;
-                offset += _decode_lte_pdcp_ul_stats_subpkt(b, offset, length, j["payload"]["LtePdcpUlStats"]);
+            j["payload"]["LtePdcpUlStats"] = jj;
+            offset += _decode_lte_pdcp_ul_stats_subpkt(b, offset, length, j["payload"]["LtePdcpUlStats"]);
             break;
         }
         case LTE_PDCP_DL_Cipher_Data_PDU: {
             offset += _decode_by_fmt(LtePdcpDlCipherDataPdu_Fmt,
                                      ARRAY_SIZE(LtePdcpDlCipherDataPdu_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpDlCipherDataPdu"] = jj;
-                offset += _decode_lte_pdcp_dl_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpDlCipherDataPdu"]);
+            j["payload"]["LtePdcpDlCipherDataPdu"] = jj;
+            offset += _decode_lte_pdcp_dl_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpDlCipherDataPdu"]);
             break;
         }
-//        case LTE_PDCP_UL_Cipher_Data_PDU: {
-//            offset += _decode_by_fmt(LtePdcpUlCipherDataPdu_Fmt,
-//                                     ARRAY_SIZE(LtePdcpUlCipherDataPdu_Fmt, Fmt),
-//                                     b, offset, length, jj);
-//                j["payload"]["LtePdcpUlCipherDataPdu"] = jj;
-//                offset += _decode_lte_pdcp_ul_cipher_data_pdu_payload(b, offset, length, j["payload"]["LtePdcpUlCipherDataPdu"]);
-//            break;
-//        }
+        case LTE_PDCP_UL_Cipher_Data_PDU: {
+            offset += _decode_by_fmt(LtePdcpUlCipherDataPdu_Fmt,
+                                     ARRAY_SIZE(LtePdcpUlCipherDataPdu_Fmt, Fmt),
+                                     b, offset, length, jj);
+                j["payload"]["LtePdcpUlCipherDataPdu"] = jj;
+                offset += _decode_lte_pdcp_ul_cipher_data_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpUlCipherDataPdu"]);
+            break;
+        }
         case LTE_PDCP_DL_Ctrl_PDU: {
             offset += _decode_by_fmt(LtePdcpDlCtrlPdu_Fmt,
                                      ARRAY_SIZE(LtePdcpDlCtrlPdu_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpDlCtrlPdu"] = jj;
-                offset += _decode_lte_pdcp_dl_ctrl_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpDlCtrlPdu"]);
+            j["payload"]["LtePdcpDlCtrlPdu"] = jj;
+            offset += _decode_lte_pdcp_dl_ctrl_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpDlCtrlPdu"]);
             break;
         }
         case LTE_PDCP_UL_Ctrl_PDU: {
             offset += _decode_by_fmt(LtePdcpUlCtrlPdu_Fmt,
                                      ARRAY_SIZE(LtePdcpUlCtrlPdu_Fmt, Fmt),
                                      b, offset, length, jj);
-                j["payload"]["LtePdcpUlCtrlPdu"] = jj;
-                offset += _decode_lte_pdcp_ul_ctrl_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpUlCtrlPdu"]);
+            j["payload"]["LtePdcpUlCtrlPdu"] = jj;
+            offset += _decode_lte_pdcp_ul_ctrl_pdu_subpkt(b, offset, length, j["payload"]["LtePdcpUlCtrlPdu"]);
             break;
         }
         case LTE_NB1_ML1_GM_TX_Report: {
@@ -686,4 +686,3 @@ string decode_log_packet (const char *b, size_t length, bool skip_decoding) {
 
     return j.dump();
 }
-
