@@ -3262,6 +3262,18 @@ const ValueName LteNasEmmState_v2_EmmSubstate_Registered[] = {
         {5, "EMM_REGISTERED_LIMITED_SERVICE"}
 };
 
+const Fmt LteNasPlainFmt[] = {
+        {UINT, "Pkt Version", 1}
+};
+
+const Fmt LteNasPlainFmt_v1[] = {
+        {UINT, "RRC Release Number", 1},
+        {UINT, "Major Version",      1},
+        {UINT, "Minor Version",      1}
+        // followed by NAS messages
+};
+
+
 const Fmt LteMacRachAttempt_Fmt[] = {
         {UINT, "Version",              1},
         {UINT, "Number of Subpackets", 1},

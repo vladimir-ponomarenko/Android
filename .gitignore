@@ -16,4 +16,6 @@
 app/build/
 app/src/main/python/
 local.properties
-/.vscode/settings.json
+.vscode/*
+.vscode/c_cpp_properties.json
+.vscode/launch.json

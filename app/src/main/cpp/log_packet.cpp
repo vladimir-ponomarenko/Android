@@ -49,6 +49,7 @@
 #include "lte/mac/lte_mac_ul_txstatistics.h"
 #include "lte/mac/lte_mac_ul_bufferstatusinternal.h"
 #include "lte/nas/lte_nas_emm_state.h"
+#include "lte/nas/lte_nas_plain.h"
 #include "lte/nb1/lte_nb1_ml1_gm_tx_report.h"
 #include "lte/lte_pdsch_stat_indication.h"
 #include "lte/pdcp/lte_pdcp_dl_config.h"
@@ -374,7 +375,7 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             break;
         }
         case LTE_PHY_PDCCH_Decoding_Result: {
-            LOGD("payload_decode: LTE_PHY_PDCCH_Decoding_Result\n");
+            //LOGD("payload_decode: LTE_PHY_PDCCH_Decoding_Result\n");
             offset += _decode_by_fmt(LtePhyPdcchDecodingResult_Fmt,
                                      ARRAY_SIZE(LtePhyPdcchDecodingResult_Fmt, Fmt),
                                      b, offset, length, jj);
@@ -431,6 +432,24 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
             }
             break;
         }
+        case LTE_NAS_ESM_Plain_OTA_Incoming_Message:
+        case LTE_NAS_ESM_Plain_OTA_Outgoing_Message:
+        case LTE_NAS_EMM_Plain_OTA_Incoming_Message:
+        case LTE_NAS_EMM_Plain_OTA_Outgoing_Message: {
+            const char* packet_type_str = "";
+            if (type_id == LTE_NAS_ESM_Plain_OTA_Incoming_Message) packet_type_str = "LteNasEsmPlainOtaIncomingMessage";
+            else if (type_id == LTE_NAS_ESM_Plain_OTA_Outgoing_Message) packet_type_str = "LteNasEsmPlainOtaOutgoingMessage";
+            else if (type_id == LTE_NAS_EMM_Plain_OTA_Incoming_Message) packet_type_str = "LteNasEmmPlainOtaIncomingMessage";
+            else packet_type_str = "LteNasEmmPlainOtaOutgoingMessage";
+
+            offset += _decode_by_fmt(LteNasPlainFmt,
+                                     ARRAY_SIZE(LteNasPlainFmt, Fmt),
+                                     b, offset, length, jj);
+
+                offset += _decode_lte_nas_plain(b, offset, length, jj);
+                j["payload"][packet_type_str] = jj;
+                break;
+            }
         case LTE_MAC_Rach_Attempt: {
             int initial_offset_for_this_packet = offset;
             offset += _decode_by_fmt(LteMacRachAttempt_Fmt,
