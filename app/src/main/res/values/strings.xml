@@ -11,7 +11,7 @@
     <string name="stop_recording">Остановить запись</string>
     <string name="resume_recording">Запись в файл</string>
     <string name="resume_recording_description">Начать или остановить запись</string>
-    <string name="delete_file">Удалить файл</string>
+    <string name="delete_file">Удалить логи</string>
     <string name="register">Зарегистрироваться</string>
     <string name="login">Войти</string>
     <string name="registration_success">Регистрация успешна! Ваш JWT токен: %1$s</string>

@@ -11,7 +11,7 @@
     <string name="stop_recording">Stop recording</string>
     <string name="resume_recording">Recording to a file</string>
     <string name="resume_recording_description">Start or stop recording</string>
-    <string name="delete_file">Delete file</string>
+    <string name="delete_file">Delete logs</string>
     <string name="register">Register</string>
     <string name="login">Login</string>
     <string name="registration_success">Registration successful! Your JWT token is: %1$s</string>

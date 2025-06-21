@@ -8,6 +8,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -43,10 +45,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.Surface
+import kotlinx.coroutines.withContext
 
 
 // Предварительный просмотр UI
@@ -196,30 +197,26 @@ fun DataSendingScreen(
                     }
                 }
 
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        val signalDataDir =
-                            File(context.getExternalFilesDir(null), "Signal_data")
-                        val file = File(signalDataDir, DataManager.fileName)
-
-                        DataManager.sendFileWithRetry(context, file) { success ->
-                            if (success) {
-                                Toast.makeText(
-                                    context,
-                                    "Данные успешно отправлены",
-                                    Toast.LENGTH_SHORT
-                                )
-                                    .show()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Ошибка при отправке данных",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val triggered = DataManager.triggerFileUpload(context)
+                            withContext(Dispatchers.Main) {
+                                if (triggered) {
+                                    Toast.makeText(
+                                        context,
+                                        "Отправка данных инициирована",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Нет данных для отправки",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
-                    }
                     },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isDarkTheme) Color(0xCC567BFF) else Color(0xFF132C86),
@@ -240,42 +237,20 @@ fun DataSendingScreen(
                     )
                 }
 
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        val signalDataDir =
-                            File(context.getExternalFilesDir(null), "Signal_data")
-                        val file = File(signalDataDir, DataManager.fileName)
-                        if (file.exists()) {
-                            val isDeleted = file.delete()
-                            if (isDeleted) {
-                                Log.d(MainActivity.TAG, "File deleted: ${file.absolutePath}")
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.file_deleted),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                Log.e(
-                                    MainActivity.TAG,
-                                    "Failed to delete file: ${file.absolutePath}"
-                                )
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.file_delete_error),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val deletedCount = DataManager.deleteAllLogFiles(context)
+                            withContext(Dispatchers.Main) {
+                                val message = if (deletedCount > 0) {
+                                    "Удалено старых файлов: $deletedCount"
+                                } else {
+                                    "Нет старых файлов для удаления"
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                             }
-                        } else {
-                            Log.d(MainActivity.TAG, "File does not exist: ${file.absolutePath}")
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.file_not_exist),
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
-                    }
-                },
+                    },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isDarkTheme) Color(0xFF2C2C2E) else Color(0x26567BFF),
                         contentColor = if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E)

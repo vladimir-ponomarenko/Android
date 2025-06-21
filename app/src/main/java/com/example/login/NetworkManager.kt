@@ -671,7 +671,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
 
         val finishAfterDelay: () -> Unit = {
             CoroutineScope(Dispatchers.IO).launch {
-                delay(1000)
+                delay(10000)
                 safeOnComplete(true)
             }
         }

@@ -744,12 +744,14 @@ object DataManager {
                     Log.d(TAG, "Recording is paused, skipping save")
                     return@withContext
                 }
+
                 val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
                 if (!signalDataDir.exists() && !signalDataDir.mkdirs()) {
                     Log.e(TAG, "Failed to create directory: ${signalDataDir.absolutePath}")
                     return@withContext
                 }
-                val file = File(signalDataDir, fileName)
+
+                val currentFile = File(signalDataDir, fileName)
 
                 val jsonEntry = buildJsonObject {
                     put("jwt", messageToData2.jwt)
@@ -782,9 +784,9 @@ object DataManager {
                     }
                 }
 
-                val existingData = if (file.exists()) {
+                val existingData = if (currentFile.exists()) {
                     try {
-                        val fileContent = file.readText()
+                        val fileContent = currentFile.readText()
                         if (fileContent.startsWith("[")) {
                             Json.decodeFromString<JsonArray>(fileContent)
                         } else {
@@ -803,26 +805,58 @@ object DataManager {
                     add(jsonEntry)
                 }
 
-                file.writeText(updatedData.toString())
+                currentFile.writeText(updatedData.toString())
+                Log.d(TAG, "Updated JSON array saved to file: ${currentFile.absolutePath}")
 
-                Log.d(TAG, "Updated JSON array saved to file: ${file.absolutePath}")
-
-                val fileSize = file.length()
+                val fileSize = currentFile.length()
                 Log.d(TAG, "Current file size: ${getReadableFileSize(fileSize)}")
-                if (fileSize >= 1_048_576) { // 1 МБ
-                    sendFileWithRetry(context, file) { success ->
-                        if (success) {
-                            Log.d(TAG, "File sent successfully (from save function)")
-                        } else {
-                            Log.e(TAG, "Failed to send file (from save function)")
-                        }
-                    }
-                    fileCounter = (fileCounter % maxFileCount) + 1
-                    fileName = "Signal_data_$fileCounter.txt"
+
+                if (fileSize >= 300_000) { // ~300 КБ
+                    triggerFileUpload(context)
                 }
+
             } catch (e: IOException) {
                 Log.e(TAG, "Error saving CellInfo to file: ", e)
             }
+        }
+    }
+
+    /**
+     * Инициирует отправку текущего файла логов.
+     * Эта функция выполняет "ротацию": текущий файл закрывается для записи,
+     * инициируется его отправка, а для новых логов создается следующий файл.
+     * @return `true`, если файл был поставлен в очередь на отправку, `false`, если текущий файл пуст и отправлять нечего.
+     */
+    suspend fun triggerFileUpload(context: Context): Boolean {
+        return withContext(Dispatchers.IO) {
+            val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
+            if (!signalDataDir.exists()) {
+                signalDataDir.mkdirs()
+            }
+            val currentFile = File(signalDataDir, fileName)
+
+            if (!currentFile.exists() || currentFile.length() == 0L) {
+                Log.d(TAG, "TriggerFileUpload called, but current file is empty. Nothing to send.")
+                return@withContext false
+            }
+
+            val fileToSend = currentFile
+            Log.d(TAG, "File ${fileToSend.name} is scheduled for sending via trigger.")
+
+            fileCounter = (fileCounter % maxFileCount) + 1
+            fileName = "Signal_data_$fileCounter.txt"
+            Log.d(TAG, "Rotated to new file for future data: $fileName")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                sendFileWithRetry(context, fileToSend) { success ->
+                    if (success) {
+                        Log.d(TAG, "File sent successfully (from trigger): ${fileToSend.name}")
+                    } else {
+                        Log.e(TAG, "Failed to send file (from trigger): ${fileToSend.name}")
+                    }
+                }
+            }
+            return@withContext true
         }
     }
 
@@ -883,6 +917,31 @@ object DataManager {
                     callback(false)
                 }
             }
+        }
+    }
+
+    /**
+     * Удаляет все файлы логов, кроме того, в который идет запись в данный момент.
+     * @return Количество удаленных файлов.
+     */
+    suspend fun deleteAllLogFiles(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            var deletedCount = 0
+            val signalDataDir = File(context.getExternalFilesDir(null), "Signal_data")
+            if (signalDataDir.exists() && signalDataDir.isDirectory) {
+                val allFiles = signalDataDir.listFiles()
+                allFiles?.forEach { file ->
+                    if (file.name != fileName) {
+                        if (file.delete()) {
+                            Log.d(TAG, "Deleted old log file: ${file.name}")
+                            deletedCount++
+                        } else {
+                            Log.e(TAG, "Failed to delete old log file: ${file.name}")
+                        }
+                    }
+                }
+            }
+            return@withContext deletedCount
         }
     }
 
