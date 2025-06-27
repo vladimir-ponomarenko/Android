@@ -126,7 +126,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
-    implementation ("com.jakewharton.timber:timber:5.0.1")
+    // implementation ("com.jakewharton.timber:timber:5.0.1")
     implementation ("com.google.guava:guava:32.1.3-android")
     implementation ("com.google.code.gson:gson:2.13.1")
 

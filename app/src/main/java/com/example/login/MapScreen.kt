@@ -56,8 +56,8 @@ import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,8 +67,21 @@ import java.util.Locale
 @Composable
 fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
+
+    val locations = remember(state.selectedNetworkType) {
+        when (state.selectedNetworkType) {
+            "LTE" -> state.lteLocations
+            "GSM" -> state.gsmLocations
+            "WCDMA" -> state.wcdmaLocations
+            "CDMA" -> state.cdmaLocations
+            "NR" -> state.nrLocations
+            else -> emptyList()
+        }
+    }
+
+    val initialLatLng = locations.lastOrNull()?.first ?: LatLng(55.0415, 82.9346)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(55.0415, 82.9346), 10f)
+        position = CameraPosition.fromLatLngZoom(initialLatLng, 15f)
     }
 
     val context = LocalContext.current
@@ -85,17 +98,6 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
             }
         } else {
             null
-        }
-    }
-
-    val locations = remember(state.selectedNetworkType) {
-        when (state.selectedNetworkType) {
-            "LTE" -> state.lteLocations
-            "GSM" -> state.gsmLocations
-            "WCDMA" -> state.wcdmaLocations
-            "CDMA" -> state.cdmaLocations
-            "NR" -> state.nrLocations
-            else -> emptyList()
         }
     }
 
@@ -128,14 +130,13 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     mapStyleOptions = mapStyleOptions
                 )
             ) {
-                if (locations.size > 1) {
-                    locations.windowed(2).forEach { (location1, location2) ->
-                        Polyline(
-                            points = listOf(location1.first, location2.first),
-                            color = location1.second,
-                            width = 15f
-                        )
-                    }
+                locations.forEach { (latLng, color) ->
+                    Circle(
+                        center = latLng,
+                        radius = 10.0,
+                        fillColor = color,
+                        strokeWidth = 0f
+                    )
                 }
             }
 

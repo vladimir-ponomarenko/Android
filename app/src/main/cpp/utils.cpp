@@ -46,12 +46,12 @@ search_name (int val) {
 
 bool
 typename_exist( const char *name ){
-	for (int i = 0; i < LogPacketTypeID_To_Name.size(); i++) {
-		if (strcmp(name, LogPacketTypeID_To_Name[i].name) == 0) {
-	            return true;
-		}
-	}
-	return false;
+    for (int i = 0; i < LogPacketTypeID_To_Name.size(); i++) {
+        if (strcmp(name, LogPacketTypeID_To_Name[i].name) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 constexpr char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7',
