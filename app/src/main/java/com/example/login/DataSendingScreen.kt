@@ -192,7 +192,9 @@ fun DataSendingScreen(
                             color = if (isDarkTheme) Color(0xB3FFFFFF) else Color(0xCC34204C),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Start
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                 }
