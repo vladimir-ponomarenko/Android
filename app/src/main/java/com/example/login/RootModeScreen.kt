@@ -162,7 +162,7 @@ fun RootModeScreen(
                 contentResolver.takePersistableUriPermission(uri, takeFlags)
                 Log.i("RootModeScreen", "Log file selected for upload: $uri")
                 coroutineScope.launch {
-                    val networkManager = NetworkManager(context, "ws://109.172.114.128:3000:3000", "/api/v1/ws/phonedata")
+                    val networkManager = NetworkManager(context, "ws://109.172.114.128:3000", "/api/v1/ws/phonedata")
                     networkManager.sendRootLogToServerFromFile(context, uri) { success ->
                         if (success) {
                             Log.i("RootModeScreen", "Root log file successfully sent to server: $uri")

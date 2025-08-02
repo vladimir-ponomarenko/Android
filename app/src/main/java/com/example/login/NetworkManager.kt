@@ -649,7 +649,7 @@ class NetworkManager<Context>(private val context: Context, private val serverUr
         if (webSocket == null || !isWebSocketConnected) {
             Log.e(TAG, "WebSocket is not initialized or not connected, attempting to connect...")
             val request = Request.Builder()
-                .url("ws://109.172.114.128:3000:3000/api/v1/ws/phonedata") // TODO Хардкод на время теста. Вынести в MainActivity
+                .url("ws://109.172.114.128:3000/api/v1/ws/phonedata") // TODO Хардкод на время теста. Вынести в MainActivity
                 .header("Authorization", "Bearer ${MainActivity.state.JwtToken}")
                 .build()
             this.webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
