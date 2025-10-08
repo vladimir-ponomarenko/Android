@@ -149,7 +149,7 @@ static int _decode_lte_rlc_ul_stats_subpkt(const char* b, int offset, size_t len
 
         int total_consumed_in_subpacket = offset - start_subpkt;
         if (total_consumed_in_subpacket != subpkt_size) {
-            LOGD("Subpacket %d v%d: Consumed %d bytes, but expected size %d. Adjusting offset.", subpkt_id, subpkt_ver, total_consumed_in_subpacket, subpkt_size);
+          //  LOGD("Subpacket %d v%d: Consumed %d bytes, but expected size %d. Adjusting offset.", subpkt_id, subpkt_ver, total_consumed_in_subpacket, subpkt_size);
             offset = start_subpkt + subpkt_size;
             if (offset > start + length) {
                 LOGD("Error: Adjusted offset exceeds buffer length. Stopping.");

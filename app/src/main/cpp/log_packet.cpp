@@ -49,6 +49,7 @@
 #include "lte/mac/lte_mac_ul_txstatistics.h"
 #include "lte/mac/lte_mac_ul_bufferstatusinternal.h"
 #include "lte/nas/lte_nas_emm_state.h"
+#include "lte/nas/lte_nas_esm_state.h"
 #include "lte/nas/lte_nas_plain.h"
 #include "lte/nb1/lte_nb1_ml1_gm_tx_report.h"
 #include "lte/lte_pdsch_stat_indication.h"
@@ -410,6 +411,14 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             offset += _decode_lte_phy_pdsch_decoding_result_payload(b, offset, length, jj);
             j["payload"]["LtePhyPdschDecodingResult"] = jj;
+            break;
+        }
+        case LTE_NAS_ESM_State: {
+            offset += _decode_by_fmt(LteNasEsmStateFmt,
+                                     ARRAY_SIZE(LteNasEsmStateFmt, Fmt),
+                                     b, offset, length, jj);
+            offset += _decode_lte_nas_esm_state(b, offset, length, jj);
+            j["payload"]["LteNasEsmState"] = jj;
             break;
         }
         case LTE_NAS_EMM_State: {

@@ -162,7 +162,7 @@ static int _decode_lte_phy_irat_subpkt(const char* b, int offset, size_t length,
                 int current_subpkt_end_offset = start_subpkt + subpkt_size_val;
                 if (offset != current_subpkt_end_offset) {
                     if (current_subpkt_end_offset <= start + length && current_subpkt_end_offset > offset) {
-                        LOGD("Subpacket ID %d: Actual consumed %d, SubPktSize %d. Adjusting offset to %d.", subpkt_id_val, (offset - start_subpkt), subpkt_size_val, current_subpkt_end_offset);
+                       // LOGD("Subpacket ID %d: Actual consumed %d, SubPktSize %d. Adjusting offset to %d.", subpkt_id_val, (offset - start_subpkt), subpkt_size_val, current_subpkt_end_offset);
                         offset = current_subpkt_end_offset;
                     } else if (current_subpkt_end_offset < offset) {
                         LOGD("Subpacket ID %d: Consumed %d, EXCEEDED SubPktSize %d. Offset already at %d.", subpkt_id_val, (offset - start_subpkt), subpkt_size_val, offset);

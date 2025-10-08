@@ -275,7 +275,7 @@ static int _decode_lte_rlc_dl_config_log_packet_subpkt(const char* b, int offset
 
                 int total_consumed_by_subpkt = offset - start_subpkt;
                 if (total_consumed_by_subpkt != subpkt_size) {
-                    LOGD("Subpacket ID %d Ver %d: Consumed %d, SubPktSize %d. Adjusting offset.", subpkt_id, subpkt_payload_ver, total_consumed_by_subpkt, subpkt_size);
+                   // LOGD("Subpacket ID %d Ver %d: Consumed %d, SubPktSize %d. Adjusting offset.", subpkt_id, subpkt_payload_ver, total_consumed_by_subpkt, subpkt_size);
                     offset = start_subpkt + subpkt_size;
                     if (offset > start + length) {
                         LOGD("Error: Adjusted offset for subpacket ID %d Ver %d exceeds buffer length. Stopping.", subpkt_id, subpkt_payload_ver);
