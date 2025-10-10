@@ -150,11 +150,12 @@ enum LogPacketType {
     GSM_RR_Cell_Selection_Parameters 						= 0x5130,  // TODO
     GSM_RR_Cell_Information 								= 0x5134,
     GSM_RR_Cell_Reselection_Meas 							= 0x51FC,
+    GSM_DSDS_RR_Signaling_Message                           = 0x5B2F,
 
     Modem_debug_message 									= 0x1FEB,
 };
 
-const array<PktValueName, 81> LogPacketTypeID_To_Name = {{
+const array<PktValueName, 82> LogPacketTypeID_To_Name = {{
     {CDMA_Paging_Channel_Message,                       "CDMA_Paging_Channel_Message", true},
     {_1xEV_Connection_Attempt,                          "1xEV_Connection_Attempt", true},
     {_1xEV_Connection_Release,                          "1xEV_Connection_Release", true},
@@ -247,6 +248,7 @@ const array<PktValueName, 81> LogPacketTypeID_To_Name = {{
     {GSM_RR_Cell_Selection_Parameters,                   "GSM_RR_Cell_Selection_Parameters", true},
     {GSM_RR_Cell_Information,                            "GSM_RR_Cell_Information", true},
     {GSM_RR_Cell_Reselection_Meas,                       "GSM_RR_Cell_Reselection_Meas", true},
+    {GSM_DSDS_RR_Signaling_Message,                      "GSM_DSDS_RR_Signaling_Message", true},
 
     {Modem_debug_message,                                 "Modem_debug_message", true}
  }};

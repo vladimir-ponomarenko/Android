@@ -8,7 +8,8 @@
 #include "consts.h"
 #include <android/log.h>
 #include "nlohmann/json.hpp"
-#include "gsm_rr_cell_reselection_meas.h"
+#include "gsm/gsm_rr_cell_reselection_meas.h"
+#include "gsm/gsm_dsds_rr_signaling_message.h"
 #include "lte/phy/lte_phy_serving_cell_meas_res.h"
 #include "lte/phy/lte_phy_serving_cell_com_loop.h"
 #include "lte/rrc/lte_rrc_mib_message_log_packet.h"
@@ -643,6 +644,15 @@ payload_decode (const char *b, size_t length, LogPacketType type_id, json &j)
                                      b, offset, length, jj);
             j["payload"]["GsmRrCellResMeas"] = jj;
             offset += _decode_gsm_rcrm_payload(b, offset, length, j);
+            break;
+        }
+        case GSM_DSDS_RR_Signaling_Message: {
+//            LOGD("payload_decode: GSM_DSDS_RR_Signaling_Message\n");
+            offset += _decode_by_fmt(GsmDsdsRrSignalingMsg_Fmt,
+                                     ARRAY_SIZE(GsmDsdsRrSignalingMsg_Fmt, Fmt),
+                                     b, offset, length, jj);
+            j["payload"]["GsmDsdsRrSignalingMessage"] = jj;
+            offset += _decode_gsm_dsds_rr_signaling_msg_payload(b, offset, length, j);
             break;
         }
         case WCDMA_CELL_ID: {
