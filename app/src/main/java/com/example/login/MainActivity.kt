@@ -62,6 +62,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -117,6 +118,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         lateinit var networkManager: NetworkManager<Any?>
         private var webSocket: WebSocket? = null
         var instance: MainActivity? = null
+
+        fun isStateInitialized() = ::state.isInitialized
+        fun isNetworkManagerInitialized() = ::networkManager.isInitialized
     }
 
     init {
@@ -189,8 +193,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        state = MainActivityState(applicationContext)
-        networkManager = NetworkManager(this, SERVER_URL, "/api/ws/putdata")
+        if (!isStateInitialized()) {
+            state = MainActivityState(applicationContext)
+        }
+
+        if (!isNetworkManagerInitialized()) {
+            networkManager = NetworkManager(this, SERVER_URL, "/api/ws/putdata")
+        }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         DataManager.getLocation(this, state)
 //        startForegroundService()
@@ -351,7 +360,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val context = LocalContext.current
         val scaffoldState = rememberScaffoldState()
         var showConnectionSnackbar by remember { mutableStateOf(false) }
-        var selectedTabIndex by remember { mutableStateOf(5) }
+        var selectedTabIndex by rememberSaveable { mutableStateOf(5) }
 
         if (!permissionsGranted) {
             PermissionRequestButtons(context) { allGranted ->
