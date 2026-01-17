@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -67,6 +68,8 @@ import java.util.Locale
 @Composable
 fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     val locations = remember(state.selectedNetworkType) {
         when (state.selectedNetworkType) {
@@ -140,13 +143,16 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                 }
             }
 
-            ColorScaleColumn(state)
+            ColorScaleColumn(state, isLandscape = isLandscape)
 
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
-                    .offset(y = 315.dp, x = 5.dp)
+                    .offset(
+                        y = if (isLandscape) 20.dp else 315.dp,
+                        x = 5.dp
+                    )
                     .background(
                         if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF),
                         shape = CircleShape
@@ -157,13 +163,13 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                         shape = CircleShape
                     )
                     .clickable { showChartDialog.value = !showChartDialog.value }
-                    .padding(12.dp)
+                    .padding(if (isLandscape) 8.dp else 12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.BarChart,
                     contentDescription = "Показать график",
                     tint = if (isDarkTheme) Color(0xFF9E9E9E) else Color(0x809E9E9E),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(if (isLandscape) 16.dp else 20.dp)
                 )
             }
 
@@ -171,14 +177,15 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                 SignalBarChart(
                     signalStrengthBuckets = signalPercentages.value,
                     selectedNetworkType = state.selectedNetworkType,
-                    onClose = { showChartDialog.value = false }
+                    onClose = { showChartDialog.value = false },
+                    isLandscape = isLandscape
                 )
             }
 
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp)
+                    .padding(if (isLandscape) 8.dp else 14.dp)
                     .background(
                         if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF),
                         shape = RoundedCornerShape(8.dp)
@@ -192,7 +199,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     Text(
                         text = stringResource(id = R.string.last_update_time) + ": ${lastUpdateTime.value} ${getCurrentDate()}",
                         color = if (isDarkTheme) Color.White else Color(0xFF34204C),
-                        fontSize = 12.sp,
+                        fontSize = if (isLandscape) 10.sp else 12.sp,
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -321,7 +328,7 @@ fun MapTopBar(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
 data class ColorScaleItemData(val color: Color, val text: String)
 
 @Composable
-fun ColorScaleColumn(state: MainActivity.MainActivityState) {
+fun ColorScaleColumn(state: MainActivity.MainActivityState, isLandscape: Boolean = false) {
     val isDarkTheme = isSystemInDarkTheme()
     val colorScaleItems = when (state.selectedNetworkType) {
         "LTE" -> listOf(
@@ -390,13 +397,18 @@ fun ColorScaleColumn(state: MainActivity.MainActivityState) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(y = 30.dp)
+                .align(if (isLandscape) Alignment.CenterStart else Alignment.TopEnd)
+                .offset(
+                    y = if (isLandscape) 10.dp else 30.dp,
+                    x = if (isLandscape) 0.dp else 10.dp
+                )
                 .padding(10.dp)
                 .background(if (isDarkTheme)  Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(15.dp))
                 .border(1.dp, if (isDarkTheme) Color(0x4D9E9E9E) else Color(0x809E9E9E), shape = RoundedCornerShape(15.dp))
-                .padding(5.dp)
-                .width(IntrinsicSize.Max)
+                .padding(if (isLandscape) 3.dp else 5.dp)
+                .width(
+                    if (isLandscape) IntrinsicSize.Min else IntrinsicSize.Max
+                )
         ) {
             colorScaleItems.forEachIndexed { index, item ->
                 val shape = when (index) {
@@ -412,17 +424,21 @@ fun ColorScaleColumn(state: MainActivity.MainActivityState) {
                     modifier = Modifier
                         .background(item.color, shape = shape)
                         .fillMaxWidth()
-                        .padding(2.dp)
+                        .padding(if (isLandscape) 1.dp else 2.dp)
                 ) {
                     Text(
                         text = item.text,
                         color =  Color.White,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(0.dp)
+                        fontSize = if (isLandscape) 9.sp else 10.sp,
+                        modifier = Modifier.fillMaxWidth().padding(
+                            vertical = if (isLandscape) 1.dp else 2.dp,
+                            horizontal = if (isLandscape) 2.dp else 4.dp
+                        )
                     )
                 }
                 if (index < colorScaleItems.lastIndex) {
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(if (isLandscape) 1.dp else 3.dp))
                 }
             }
         }
@@ -582,7 +598,8 @@ fun calculateSignalDistribution(locations: List<Pair<LatLng, Color>>): List<Int>
 fun SignalBarChart(
     signalStrengthBuckets: List<Int>,
     selectedNetworkType: String,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    isLandscape: Boolean = false
 ) {
     if (signalStrengthBuckets.isEmpty()) {
         Text(text = stringResource(id = R.string.no_data_message), color = Color.Red)
@@ -599,92 +616,106 @@ fun SignalBarChart(
         else -> emptyList()
     }
 
-    val maxWidth = 300.dp
-    val barHeight = 30.dp
-    val spacing = 10.dp
+    val maxWidth = if (isLandscape) 250.dp else 300.dp
+    val barHeight = if (isLandscape) 20.dp else 30.dp
+    val spacing = if (isLandscape) 6.dp else 10.dp
     val density = LocalDensity.current
     val maxWidthPx = with(density) { maxWidth.toPx() }
 
     val totalSignals = signalStrengthBuckets.sum()
     val signalPercentages = signalStrengthBuckets.map { (it.toFloat() / totalSignals * 100).toInt() }
 
-    Column(
+    Box(
         modifier = Modifier
-            .padding(10.dp)
-            .background(if (isDarkTheme) Color(0xFF3C3C3E) else  Color(0xFFFFFFFF), shape = RoundedCornerShape(10.dp))
-            .padding(10.dp)
+            .fillMaxSize()
+            .padding(if (isLandscape) 5.dp else 10.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = stringResource(id = R.string.signal_distribution_title),
-                color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(8f)
-            )
-
-            IconButton(
-                onClick = { onClose() },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = "Close",
-                    modifier = Modifier.size(20.dp),
-                    tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
-                )
-            }
-        }
-
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .align(
+                    if (isLandscape) Alignment.Center else Alignment.TopEnd
+                )
+                .background(
+                    if (isDarkTheme) Color(0xFF3C3C3E) else Color(0xFFFFFFFF),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .padding(if (isLandscape) 8.dp else 10.dp)
+                .width(
+                    if (isLandscape) 280.dp else 320.dp
+                )
         ) {
-            signalStrengthBuckets.forEachIndexed { index, bucketCount ->
-                if (bucketCount > 0 && index < signalValues.size) {
-                    val barWidthPx = (signalPercentages[index] / 100f) * maxWidthPx
-                    val color = getNetworkColor(selectedNetworkType, signalValues[index])
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = spacing)
-                            .height(barHeight)
-                    ) {
-                        Text(
-                            text = signalValues[index],
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = if (isDarkTheme) Color.White else Color.Black,
-                            modifier = Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(end = 8.dp)
-                        )
+                Text(
+                    text = stringResource(id = R.string.signal_distribution_title),
+                    color = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (isLandscape) 16.sp else 18.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(8f)
+                )
 
-                        Box(
+                IconButton(
+                    onClick = { onClose() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
+                        modifier = Modifier.size(if (isLandscape) 16.dp else 20.dp),
+                        tint = if (isDarkTheme) Color(0xCCFFFFFF) else Color(0xFF34204C)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(if (isLandscape) 8.dp else 16.dp)
+            ) {
+                signalStrengthBuckets.forEachIndexed { index, bucketCount ->
+                    if (bucketCount > 0 && index < signalValues.size) {
+                        val barWidthPx = (signalPercentages[index] / 100f) * maxWidthPx
+                        val color = getNetworkColor(selectedNetworkType, signalValues[index])
+
+                        Row(
                             modifier = Modifier
-                                .fillMaxHeight()
-                                .width(barWidthPx.dp)
-                                .background(color, RoundedCornerShape(4.dp))
+                                .fillMaxWidth()
+                                .padding(bottom = spacing)
+                                .height(barHeight)
                         ) {
                             Text(
-                                text = "${signalPercentages[index]}%",
+                                text = signalValues[index],
+                                fontSize = if (isLandscape) 9.sp else 10.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = if (isDarkTheme) Color.White else Color.Black,
                                 modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .padding(start = 8.dp),
-                                fontSize = 12.sp,
-                                color = if (isDarkTheme) Color.Black else Color.White,
-                                fontWeight = FontWeight.Bold
+                                    .align(Alignment.CenterVertically)
+                                    .padding(end = if (isLandscape) 4.dp else 8.dp)
                             )
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(barWidthPx.dp)
+                                    .background(color, RoundedCornerShape(4.dp))
+                            ) {
+                                Text(
+                                    text = "${signalPercentages[index]}%",
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .padding(start = if (isLandscape) 4.dp else 8.dp),
+                                    fontSize = if (isLandscape) 10.sp else 12.sp,
+                                    color = if (isDarkTheme) Color.Black else Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
