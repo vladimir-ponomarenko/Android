@@ -606,7 +606,7 @@ fun TrafficScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> 
                     ShimmerTrafficItem(brush = shimmerBrush)
                 }
             } else {
-                items(appTrafficData.value, key = { it.appName }) { appData ->
+                items(appTrafficData.value) { appData ->
                     TrafficItem(appData) { appName ->
                         selectedAppName = appName
                         showAppChart = true

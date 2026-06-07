@@ -254,6 +254,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     val rsrp = lteCellInfo?.rsrp?.toString()?.toIntOrNull()
                     if (rsrp != null && rsrp != 0 && rsrp != 2147483647) {
                         val color = generateColorFromRSRP(rsrp)
+
+                        val ci = if (lteCellInfo.ci == null || lteCellInfo.ci == 2147483647L) "N/A" else lteCellInfo.ci.toString()
+                        val pci = if (lteCellInfo.pci == null || lteCellInfo.pci == 2147483647L) "N/A" else lteCellInfo.pci.toString()
+                        val currentLteLabel = "CI: $ci, PCI: $pci"
+
+                        if (state.prevLteLabel != null && state.prevLteLabel != currentLteLabel) {
+                            state.lteLocations.lastOrNull()?.let { lastLoc ->
+                                state.lteHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevLteLabel!!))
+                            }
+                            state.lteHandoverMarkers.add(HandoverMarker(location, currentLteLabel))
+                        }
+                        state.prevLteLabel = currentLteLabel
                         state.lteLocations.add(Pair(location, color))
                     }
 
@@ -262,6 +274,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     val rssiGsm = gsmCellInfo?.rssi?.toString()?.toIntOrNull()
                     if (rssiGsm != null && rssiGsm != 0 && rssiGsm != 2147483647) {
                         val color = generateColorFromRSSIGsm(rssiGsm)
+                        val cid = if (gsmCellInfo.cid == null || gsmCellInfo.cid == 2147483647L) "N/A" else gsmCellInfo.cid.toString()
+                        val currentGsmLabel = "CID: $cid"
+
+                        if (state.prevGsmLabel != null && state.prevGsmLabel != currentGsmLabel) {
+                            state.gsmLocations.lastOrNull()?.let { lastLoc ->
+                                state.gsmHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevGsmLabel!!))
+                            }
+                            state.gsmHandoverMarkers.add(HandoverMarker(location, currentGsmLabel))
+                        }
+                        state.prevGsmLabel = currentGsmLabel
                         state.gsmLocations.add(Pair(location, color))
                     }
 
@@ -270,6 +292,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     val rscpWcdma = wcdmaCellInfo?.rscp?.toString()?.toIntOrNull()
                     if (rscpWcdma != null && rscpWcdma != 0 && rscpWcdma != 2147483647) {
                         val color = generateColorFromRSCPWcdma(rscpWcdma)
+
+                        val cid = if (wcdmaCellInfo.cid == null || wcdmaCellInfo.cid == 2147483647L) "N/A" else wcdmaCellInfo.cid.toString()
+                        val currentWcdmaLabel = "CID: $cid"
+
+                        if (state.prevWcdmaLabel != null && state.prevWcdmaLabel != currentWcdmaLabel) {
+                            state.wcdmaLocations.lastOrNull()?.let { lastLoc ->
+                                state.wcdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevWcdmaLabel!!))
+                            }
+                            state.wcdmaHandoverMarkers.add(HandoverMarker(location, currentWcdmaLabel))
+                        }
+                        state.prevWcdmaLabel = currentWcdmaLabel
                         state.wcdmaLocations.add(Pair(location, color))
                     }
 
@@ -278,6 +311,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     val rssiCdma = cdmaCellInfo?.rssi?.toString()?.toIntOrNull()
                     if (rssiCdma != null && rssiCdma != 0 && rssiCdma != 2147483647) {
                         val color = generateColorFromRSSICdma(rssiCdma)
+
+                        val bsid = if (cdmaCellInfo.bsid == null || cdmaCellInfo.bsid == 2147483647L) "N/A" else cdmaCellInfo.bsid.toString()
+                        val currentCdmaLabel = "BSID: $bsid"
+
+                        if (state.prevCdmaLabel != null && state.prevCdmaLabel != currentCdmaLabel) {
+                            state.cdmaLocations.lastOrNull()?.let { lastLoc ->
+                                state.cdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevCdmaLabel!!))
+                            }
+                            state.cdmaHandoverMarkers.add(HandoverMarker(location, currentCdmaLabel))
+                        }
+                        state.prevCdmaLabel = currentCdmaLabel
                         state.cdmaLocations.add(Pair(location, color))
                     }
 
@@ -286,6 +330,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     val csiRsrpNr = nrCellInfo?.csiRsrp?.toString()?.toIntOrNull()
                     if (csiRsrpNr != null && csiRsrpNr != 0 && csiRsrpNr != 2147483647) {
                         val color = generateColorFromCSIRsrpNr(csiRsrpNr)
+                        val nci = if (nrCellInfo.nci == null || nrCellInfo.nci == 2147483647L) "N/A" else nrCellInfo.nci.toString()
+                        val pci = if (nrCellInfo.pci == null || nrCellInfo.pci == 2147483647L) "N/A" else nrCellInfo.pci.toString()
+                        val currentNrLabel = "NCI: $nci, PCI: $pci"
+
+                        if (state.prevNrLabel != null && state.prevNrLabel != currentNrLabel) {
+                            state.nrLocations.lastOrNull()?.let { lastLoc ->
+                                state.nrHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevNrLabel!!))
+                            }
+                            state.nrHandoverMarkers.add(HandoverMarker(location, currentNrLabel))
+                        }
+                        state.prevNrLabel = currentNrLabel
                         state.nrLocations.add(Pair(location, color))
                     }
                 }
@@ -762,6 +817,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
+//  Информация о хэндоверах. Отображается на карте
+    data class HandoverMarker(val latLng: LatLng, val text: String)
+
     @SuppressLint("AutoboxingStateCreation")
     class MainActivityState(val context: Context) {
         var Latitude by mutableStateOf("")
@@ -854,6 +912,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val wcdmaLocations = mutableStateListOf<Pair<LatLng, Color>>()
         val cdmaLocations = mutableStateListOf<Pair<LatLng, Color>>()
         val nrLocations = mutableStateListOf<Pair<LatLng, Color>>()
+
+        val lteHandoverMarkers = mutableStateListOf<HandoverMarker>()
+        val gsmHandoverMarkers = mutableStateListOf<HandoverMarker>()
+        val wcdmaHandoverMarkers = mutableStateListOf<HandoverMarker>()
+        val cdmaHandoverMarkers = mutableStateListOf<HandoverMarker>()
+        val nrHandoverMarkers = mutableStateListOf<HandoverMarker>()
+
+        var prevLteLabel: String? = null
+        var prevGsmLabel: String? = null
+        var prevWcdmaLabel: String? = null
+        var prevCdmaLabel: String? = null
+        var prevNrLabel: String? = null
 
         var isSendingCellInfoData by mutableStateOf(false)
 

@@ -2,6 +2,7 @@
 
 package com.example.login
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -63,6 +64,10 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.geometry.Offset
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 
 
 @Composable
@@ -82,10 +87,46 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         }
     }
 
+    val handovers = when (state.selectedNetworkType) {
+        "LTE" -> state.lteHandoverMarkers
+        "GSM" -> state.gsmHandoverMarkers
+        "WCDMA" -> state.wcdmaHandoverMarkers
+        "CDMA" -> state.cdmaHandoverMarkers
+        "NR" -> state.nrHandoverMarkers
+        else -> emptyList()
+    }
+
+    val groupedHandovers = remember(handovers) {
+        val result = mutableListOf<MainActivity.HandoverMarker>()
+        for (marker in handovers) {
+            val closeIndex = result.indexOfFirst {
+                val distance = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    it.latLng.latitude, it.latLng.longitude,
+                    marker.latLng.latitude, marker.latLng.longitude,
+                    distance
+                )
+                distance[0] < 40f // 40 метров порог объединения
+            }
+            if (closeIndex != -1) {
+                val existing = result[closeIndex]
+                if (!existing.text.contains(marker.text)) {
+                    result[closeIndex] = existing.copy(text = existing.text + "\n" + marker.text)
+                }
+            } else {
+                result.add(marker)
+            }
+        }
+        result
+    }
+
     val initialLatLng = locations.lastOrNull()?.first ?: LatLng(55.0415, 82.9346)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(initialLatLng, 15f)
     }
+
+    val currentZoom = cameraPositionState.position.zoom
+    val showHandovers = currentZoom >= 14f
 
     val context = LocalContext.current
     val mapStyleOptions = remember(context, isDarkTheme) {
@@ -140,6 +181,17 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                         fillColor = color,
                         strokeWidth = 0f
                     )
+                }
+
+                if (showHandovers) {
+                    groupedHandovers.forEach { marker ->
+                        Marker(
+                            state = MarkerState(position = marker.latLng),
+                            icon = createTextBitmapDescriptor(context, marker.text, isDarkTheme),
+                            anchor = Offset(0.5f, 0.5f),
+                            zIndex = 1f
+                        )
+                    }
                 }
             }
 
@@ -795,4 +847,51 @@ fun getNetworkColor(networkType: String, signalStrength: String): Color {
         }
         else -> Color.Gray
     }
+}
+
+// Хэлпер для генерации меток хэндовера
+val bitmapCache = mutableMapOf<String, com.google.android.gms.maps.model.BitmapDescriptor>()
+fun createTextBitmapDescriptor(context: Context, text: String, isDarkTheme: Boolean): com.google.android.gms.maps.model.BitmapDescriptor {
+    val cacheKey = "${text}_${isDarkTheme}"
+    bitmapCache[cacheKey]?.let { return it }
+
+    val paintText = android.graphics.Paint().apply {
+        textSize = 22f
+        color = if (isDarkTheme) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+        isAntiAlias = true
+        textAlign = android.graphics.Paint.Align.CENTER
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
+    val paintBackground = android.graphics.Paint().apply {
+        color = if (isDarkTheme) android.graphics.Color.parseColor("#CC000000") else android.graphics.Color.parseColor("#CCFFFFFF")
+        isAntiAlias = true
+    }
+
+    val lines = text.split("\n")
+    var maxLineWidth = 0f
+    lines.forEach { line ->
+        val w = paintText.measureText(line)
+        if (w > maxLineWidth) maxLineWidth = w
+    }
+
+    val textHeight = paintText.descent() - paintText.ascent()
+    val padding = 16f
+
+    val width = (maxLineWidth + padding * 2).toInt()
+    val height = (textHeight * lines.size + padding * 2).toInt()
+
+    val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val rect = android.graphics.RectF(0f, 0f, width.toFloat(), height.toFloat())
+    canvas.drawRoundRect(rect, 12f, 12f, paintBackground)
+
+    lines.forEachIndexed { index, line ->
+        val y = padding - paintText.ascent() + (index * textHeight)
+        canvas.drawText(line, width / 2f, y, paintText)
+    }
+
+    val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
+    bitmapCache[cacheKey] = descriptor
+    return descriptor
 }
