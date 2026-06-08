@@ -240,6 +240,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         lifecycleScope.launch {
             while (true) {
                 val currentTimestamp = System.currentTimeMillis()
+                val timeLabel = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date(currentTimestamp))
 
                 val lat = state.Latitude.toDoubleOrNull()
                 val lng = state.Longtitude.toDoubleOrNull()
@@ -261,9 +262,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         if (state.prevLteLabel != null && state.prevLteLabel != currentLteLabel) {
                             state.lteLocations.lastOrNull()?.let { lastLoc ->
-                                state.lteHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevLteLabel!!))
+                                state.lteHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevLteLabel}"))
                             }
-                            state.lteHandoverMarkers.add(HandoverMarker(location, currentLteLabel))
+                            state.lteHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentLteLabel"))
                         }
                         state.prevLteLabel = currentLteLabel
                         state.lteLocations.add(Pair(location, color))
@@ -279,9 +280,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         if (state.prevGsmLabel != null && state.prevGsmLabel != currentGsmLabel) {
                             state.gsmLocations.lastOrNull()?.let { lastLoc ->
-                                state.gsmHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevGsmLabel!!))
+                                state.gsmHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevGsmLabel}"))
                             }
-                            state.gsmHandoverMarkers.add(HandoverMarker(location, currentGsmLabel))
+                            state.gsmHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentGsmLabel"))
                         }
                         state.prevGsmLabel = currentGsmLabel
                         state.gsmLocations.add(Pair(location, color))
@@ -298,9 +299,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         if (state.prevWcdmaLabel != null && state.prevWcdmaLabel != currentWcdmaLabel) {
                             state.wcdmaLocations.lastOrNull()?.let { lastLoc ->
-                                state.wcdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevWcdmaLabel!!))
+                                state.wcdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevWcdmaLabel}"))
                             }
-                            state.wcdmaHandoverMarkers.add(HandoverMarker(location, currentWcdmaLabel))
+                            state.wcdmaHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentWcdmaLabel"))
                         }
                         state.prevWcdmaLabel = currentWcdmaLabel
                         state.wcdmaLocations.add(Pair(location, color))
@@ -317,9 +318,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         if (state.prevCdmaLabel != null && state.prevCdmaLabel != currentCdmaLabel) {
                             state.cdmaLocations.lastOrNull()?.let { lastLoc ->
-                                state.cdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevCdmaLabel!!))
+                                state.cdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevCdmaLabel}"))
                             }
-                            state.cdmaHandoverMarkers.add(HandoverMarker(location, currentCdmaLabel))
+                            state.cdmaHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentCdmaLabel"))
                         }
                         state.prevCdmaLabel = currentCdmaLabel
                         state.cdmaLocations.add(Pair(location, color))
@@ -336,9 +337,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         if (state.prevNrLabel != null && state.prevNrLabel != currentNrLabel) {
                             state.nrLocations.lastOrNull()?.let { lastLoc ->
-                                state.nrHandoverMarkers.add(HandoverMarker(lastLoc.first, state.prevNrLabel!!))
+                                state.nrHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevNrLabel}"))
                             }
-                            state.nrHandoverMarkers.add(HandoverMarker(location, currentNrLabel))
+                            state.nrHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentNrLabel"))
                         }
                         state.prevNrLabel = currentNrLabel
                         state.nrLocations.add(Pair(location, color))
@@ -402,7 +403,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     addChartDataForDetailedChart(state.rssiDataNrDetailed, it.csiRsrp?.toString() ?: "0", currentTimestamp, it.nci.toString())
                     addChartDataForDetailedChart(state.asuLevelNrDetailed, it.asuLevel?.toString() ?: "0", currentTimestamp, it.nci.toString())
                 }
-
+                state.lastTimeLabel = timeLabel
                 delay(UPDATE_INTERVAL)
             }
         }
@@ -905,6 +906,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         // Выбранный тип сети для тепловой карты
         var selectedNetworkType by mutableStateOf("LTE")
+        var lastTimeLabel by mutableStateOf("")
 
         // Списки для хранения данных для каждого типа сети
         val lteLocations = mutableStateListOf<Pair<LatLng, Color>>()
