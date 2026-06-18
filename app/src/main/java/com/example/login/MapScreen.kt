@@ -96,7 +96,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         else -> emptyList()
     }
 
-    val groupedHandovers = remember(handovers) {
+    val groupedHandovers = remember(handovers.size) {
         val result = mutableListOf<MainActivity.HandoverMarker>()
         for (marker in handovers) {
             val closeIndex = result.indexOfFirst {
@@ -106,7 +106,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
                     marker.latLng.latitude, marker.latLng.longitude,
                     distance
                 )
-                distance[0] < 40f // 40 метров порог объединения
+                distance[0] < 40f
             }
             if (closeIndex != -1) {
                 val existing = result[closeIndex]
@@ -851,34 +851,55 @@ fun getNetworkColor(networkType: String, signalStrength: String): Color {
 
 // Хэлпер для генерации меток хэндовера
 val bitmapCache = mutableMapOf<String, com.google.android.gms.maps.model.BitmapDescriptor>()
+
 fun createTextBitmapDescriptor(context: Context, text: String, isDarkTheme: Boolean): com.google.android.gms.maps.model.BitmapDescriptor {
     val cacheKey = "${text}_${isDarkTheme}"
     bitmapCache[cacheKey]?.let { return it }
 
-    val paintText = android.graphics.Paint().apply {
-        textSize = 22f
+    val paintTextCentered = android.graphics.Paint().apply {
+        textSize = 20f
         color = if (isDarkTheme) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         isAntiAlias = true
         textAlign = android.graphics.Paint.Align.CENTER
         typeface = android.graphics.Typeface.DEFAULT_BOLD
     }
+
+    val paintTextLeft = android.graphics.Paint(paintTextCentered).apply {
+        textAlign = android.graphics.Paint.Align.LEFT
+    }
+
     val paintBackground = android.graphics.Paint().apply {
-        color = if (isDarkTheme) android.graphics.Color.parseColor("#CC000000") else android.graphics.Color.parseColor("#CCFFFFFF")
+        color = if (isDarkTheme) android.graphics.Color.parseColor("#E61C1C1E") else android.graphics.Color.parseColor("#E6FFFFFF")
         isAntiAlias = true
     }
 
-    val lines = text.split("\n")
+    val allLines = text.split("\n")
+    val maxHandovers = 4
+    val blocks = allLines.chunked(3)
+
+    val displayBlocks = if (blocks.size > maxHandovers) blocks.takeLast(maxHandovers) else blocks
+
+    val linesToDraw = mutableListOf<String>()
+    if (blocks.size > maxHandovers) {
+        linesToDraw.add("Скрыто ${blocks.size - maxHandovers}")
+    }
+    displayBlocks.forEach { linesToDraw.addAll(it) }
+
     var maxLineWidth = 0f
-    lines.forEach { line ->
-        val w = paintText.measureText(line)
+    linesToDraw.forEach { line ->
+        val w = if (line.startsWith("OUT:") || line.startsWith("IN:")) {
+            paintTextLeft.measureText(line)
+        } else {
+            paintTextCentered.measureText(line)
+        }
         if (w > maxLineWidth) maxLineWidth = w
     }
 
-    val textHeight = paintText.descent() - paintText.ascent()
+    val textHeight = paintTextCentered.descent() - paintTextCentered.ascent()
     val padding = 16f
 
-    val width = (maxLineWidth + padding * 2).toInt()
-    val height = (textHeight * lines.size + padding * 2).toInt()
+    val width = (maxLineWidth + padding * 2).toInt().coerceAtLeast(1)
+    val height = (textHeight * linesToDraw.size + padding * 2).toInt().coerceAtLeast(1)
 
     val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bitmap)
@@ -886,9 +907,27 @@ fun createTextBitmapDescriptor(context: Context, text: String, isDarkTheme: Bool
     val rect = android.graphics.RectF(0f, 0f, width.toFloat(), height.toFloat())
     canvas.drawRoundRect(rect, 12f, 12f, paintBackground)
 
-    lines.forEachIndexed { index, line ->
-        val y = padding - paintText.ascent() + (index * textHeight)
-        canvas.drawText(line, width / 2f, y, paintText)
+    val outColor = android.graphics.Color.parseColor("#FF6B6B")
+    val inColor = android.graphics.Color.parseColor("#4DA6FF")
+    val defaultColor = if (isDarkTheme) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+
+    linesToDraw.forEachIndexed { index, line ->
+        val y = padding - paintTextCentered.ascent() + (index * textHeight)
+
+        when {
+            line.startsWith("OUT:") -> {
+                paintTextLeft.color = outColor
+                canvas.drawText(line, padding, y, paintTextLeft)
+            }
+            line.startsWith("IN:") -> {
+                paintTextLeft.color = inColor
+                canvas.drawText(line, padding, y, paintTextLeft)
+            }
+            else -> {
+                paintTextCentered.color = defaultColor
+                canvas.drawText(line, width / 2f, y, paintTextCentered)
+            }
+        }
     }
 
     val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)

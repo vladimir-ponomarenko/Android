@@ -250,6 +250,7 @@ object DataManager {
         return adjustedLocation
     }
     @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
     fun getCellInfo(context: Context, state: MainActivity.MainActivityState) {
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -278,12 +279,38 @@ object DataManager {
         }
 
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-        val cellInfoList = telephonyManager.allCellInfo
 
-        if (cellInfoList != null) {
-            processCellInfo(cellInfoList, state)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            telephonyManager.requestCellInfoUpdate(
+                ContextCompat.getMainExecutor(context),
+                object : TelephonyManager.CellInfoCallback() {
+                    override fun onCellInfo(cellInfoList: MutableList<CellInfo>) {
+                        if (cellInfoList.isNotEmpty()) {
+                            processCellInfo(cellInfoList, state)
+                        } else {
+                            val fallbackList = if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                telephonyManager.allCellInfo
+                            } else null
+
+                            if (fallbackList != null) {
+                                processCellInfo(fallbackList, state)
+                            } else {
+                                Log.d(MainActivity.TAG, "cellInfoList is null после коллбэка")
+                            }
+                        }
+                    }
+                }
+            )
         } else {
-            Log.d(MainActivity.TAG, "cellInfoList is null, GPS может быть отключен или нет доступных данных cell info")
+            val cellInfoList = if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                telephonyManager.allCellInfo
+            } else null
+
+            if (cellInfoList != null) {
+                processCellInfo(cellInfoList, state)
+            } else {
+                Log.d(MainActivity.TAG, "cellInfoList is null, GPS может быть отключен или нет доступных данных cell info")
+            }
         }
     }
 
@@ -580,22 +607,93 @@ object DataManager {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
     internal fun getSignalStrength(state: MainActivity.MainActivityState) {
         val context = state.context
         if (PermissionUtils.checkPhoneStatePermission(context) &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             val telephonyManager =
                 context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            val cellInfoList = telephonyManager.allCellInfo
-            if (cellInfoList.isNullOrEmpty()) {
-                setEmptyCellInfo(state)
-            } else {
-                for (info in cellInfoList) {
-                    if (info is CellInfoLte) {
-                        extractLteCellInfo(state, info, telephonyManager)
-                        break
+
+            val processSignalData = { cellInfoList: List<CellInfo>? ->
+                if (cellInfoList.isNullOrEmpty()) {
+                    setEmptyCellInfo(state)
+                } else {
+                    val activeCell = cellInfoList.firstOrNull { it.isRegistered } ?: cellInfoList.first()
+
+                    if (activeCell is CellInfoLte) {
+                        extractLteCellInfo(state, activeCell, telephonyManager)
+                    } else {
+                        val cellData = when (activeCell) {
+                            is CellInfoGsm -> extractGsmCellInfoToJson(activeCell)
+                            is CellInfoWcdma -> extractWcdmaCellInfoToJson(activeCell)
+                            is CellInfoCdma -> extractCdmaCellInfoToJson(activeCell)
+                            else -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && activeCell is CellInfoNr) extractNrCellInfoToJson(activeCell) else null
+                        }
+
+                        if (cellData != null) {
+                            state.Rsrp = (cellData.rsrp ?: cellData.rscp ?: cellData.csiRsrp ?: cellData.ssRsrp ?: "N/A").let { if (it != "N/A") "$it dBm" else "N/A" }
+                            state.Rssi = (cellData.rssi ?: cellData.ssRsrpDbm ?: "N/A").let { if (it != "N/A") "$it dBm" else "N/A" }
+                            state.Rsrq = (cellData.rsrq ?: cellData.csiRsrq ?: cellData.ssRsrq ?: "N/A").let { if (it != "N/A") "$it dB" else "N/A" }
+                            state.Rssnr = (cellData.rssnr ?: cellData.csiSinr ?: cellData.ssSinr ?: cellData.ecNo ?: "N/A").let { if (it != "N/A") "$it dB" else "N/A" }
+                            state.Cqi = cellData.cqi?.toString() ?: "N/A"
+
+                            state.Bandwidth = telephonyManager.dataNetworkType.toString()
+
+                            state.Cellid = when (val cellLocation = telephonyManager.cellLocation) {
+                                is GsmCellLocation -> cellLocation.cid.toString()
+                                is CdmaCellLocation -> cellLocation.baseStationId.toString()
+                                else -> (cellData.ci ?: cellData.cid ?: cellData.bsid ?: cellData.nci ?: "N/A").toString()
+                            }
+
+                            state.Mcc = cellData.mcc?.toString() ?: "N/A"
+                            state.Mnc = cellData.mnc?.toString() ?: "N/A"
+                            state.Lac = try {
+                                (telephonyManager.cellLocation as? GsmCellLocation)?.lac?.toString() ?: cellData.lac?.toString() ?: cellData.nid?.toString() ?: "N/A"
+                            } catch (e: Exception) {
+                                cellData.lac?.toString() ?: cellData.nid?.toString() ?: "N/A"
+                            }
+                            state.Tac = cellData.tac?.toString() ?: "N/A"
+                            state.Pci = (cellData.pci ?: cellData.psc ?: cellData.bsic ?: "N/A").toString()
+                            state.Earfcn = (cellData.earfcn ?: cellData.arfcn ?: cellData.uarfcn ?: cellData.nrarfcn ?: "N/A").toString()
+                            state.Ci = (cellData.ci ?: cellData.cid ?: "N/A").toString()
+                            state.NetworkType = telephonyManager.networkType.toString()
+                            state.SignalStrength = (cellData.rssi ?: cellData.rsrp ?: cellData.ssRsrpDbm ?: "N/A").toString()
+                            state.BitErrorRate = cellData.bitErrorRate?.toString() ?: "N/A"
+                            state.TimingAdvance = (cellData.timingAdvance ?: cellData.timingAdvanceMicros ?: "N/A").toString()
+                            state.Band = cellData.earfcn?.toInt()?.let { getBandFromEarfcn(it) } ?: "N/A"
+                            state.Operator = telephonyManager.networkOperatorName
+                            state.Technology = cellData.type
+
+                            logCellInfo(state)
+                        } else {
+                            setEmptyCellInfo(state)
+                        }
                     }
                 }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                telephonyManager.requestCellInfoUpdate(
+                    ContextCompat.getMainExecutor(context),
+                    object : TelephonyManager.CellInfoCallback() {
+                        override fun onCellInfo(cellInfoList: MutableList<CellInfo>) {
+                            if (cellInfoList.isNotEmpty()) {
+                                processSignalData(cellInfoList)
+                            } else {
+                                val fallbackList = if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                    telephonyManager.allCellInfo
+                                } else null
+                                processSignalData(fallbackList)
+                            }
+                        }
+                    }
+                )
+            } else {
+                val list = if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    telephonyManager.allCellInfo
+                } else null
+                processSignalData(list)
             }
         } else {
             setNoPermissionCellInfo(state)

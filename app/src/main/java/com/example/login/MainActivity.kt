@@ -261,10 +261,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val currentLteLabel = "CI: $ci, PCI: $pci"
 
                         if (state.prevLteLabel != null && state.prevLteLabel != currentLteLabel) {
-                            state.lteLocations.lastOrNull()?.let { lastLoc ->
-                                state.lteHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevLteLabel}"))
-                            }
-                            state.lteHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentLteLabel"))
+                            val handoverText = "$timeLabel\nOUT: ${state.prevLteLabel}\nIN: $currentLteLabel"
+                            state.lteHandoverMarkers.add(HandoverMarker(location, handoverText))
                         }
                         state.prevLteLabel = currentLteLabel
                         state.lteLocations.add(Pair(location, color))
@@ -279,10 +277,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val currentGsmLabel = "CID: $cid"
 
                         if (state.prevGsmLabel != null && state.prevGsmLabel != currentGsmLabel) {
-                            state.gsmLocations.lastOrNull()?.let { lastLoc ->
-                                state.gsmHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevGsmLabel}"))
-                            }
-                            state.gsmHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentGsmLabel"))
+                            val handoverText = "$timeLabel\nOUT: ${state.prevGsmLabel}\nIN: $currentGsmLabel"
+                            state.gsmHandoverMarkers.add(HandoverMarker(location, handoverText))
                         }
                         state.prevGsmLabel = currentGsmLabel
                         state.gsmLocations.add(Pair(location, color))
@@ -298,10 +294,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val currentWcdmaLabel = "CID: $cid"
 
                         if (state.prevWcdmaLabel != null && state.prevWcdmaLabel != currentWcdmaLabel) {
-                            state.wcdmaLocations.lastOrNull()?.let { lastLoc ->
-                                state.wcdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevWcdmaLabel}"))
-                            }
-                            state.wcdmaHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentWcdmaLabel"))
+                            val handoverText = "$timeLabel\nOUT: ${state.prevWcdmaLabel}\nIN: $currentWcdmaLabel"
+                            state.wcdmaHandoverMarkers.add(HandoverMarker(location, handoverText))
                         }
                         state.prevWcdmaLabel = currentWcdmaLabel
                         state.wcdmaLocations.add(Pair(location, color))
@@ -317,10 +311,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val currentCdmaLabel = "BSID: $bsid"
 
                         if (state.prevCdmaLabel != null && state.prevCdmaLabel != currentCdmaLabel) {
-                            state.cdmaLocations.lastOrNull()?.let { lastLoc ->
-                                state.cdmaHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevCdmaLabel}"))
-                            }
-                            state.cdmaHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentCdmaLabel"))
+                            val handoverText = "$timeLabel\nOUT: ${state.prevCdmaLabel}\nIN: $currentCdmaLabel"
+                            state.cdmaHandoverMarkers.add(HandoverMarker(location, handoverText))
                         }
                         state.prevCdmaLabel = currentCdmaLabel
                         state.cdmaLocations.add(Pair(location, color))
@@ -336,10 +328,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val currentNrLabel = "NCI: $nci, PCI: $pci"
 
                         if (state.prevNrLabel != null && state.prevNrLabel != currentNrLabel) {
-                            state.nrLocations.lastOrNull()?.let { lastLoc ->
-                                state.nrHandoverMarkers.add(HandoverMarker(lastLoc.first, "[${state.lastTimeLabel}] ${state.prevNrLabel}"))
-                            }
-                            state.nrHandoverMarkers.add(HandoverMarker(location, "[$timeLabel] $currentNrLabel"))
+                            val handoverText = "$timeLabel\nOUT: ${state.prevNrLabel}\nIN: $currentNrLabel"
+                            state.nrHandoverMarkers.add(HandoverMarker(location, handoverText))
                         }
                         state.prevNrLabel = currentNrLabel
                         state.nrLocations.add(Pair(location, color))
