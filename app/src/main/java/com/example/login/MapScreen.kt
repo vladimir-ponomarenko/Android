@@ -96,7 +96,7 @@ fun MapScreen(state: MainActivity.MainActivityState, onNavigateTo: (Int) -> Unit
         else -> emptyList()
     }
 
-    val groupedHandovers = remember(handovers.size) {
+    val groupedHandovers = remember(handovers.size, state.selectedNetworkType) {
         val result = mutableListOf<MainActivity.HandoverMarker>()
         for (marker in handovers) {
             val closeIndex = result.indexOfFirst {
